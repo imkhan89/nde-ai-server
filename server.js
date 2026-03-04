@@ -42,7 +42,7 @@ return text
 SHOPIFY SEARCH
 ===================== */
 
-async function shopifySearch(query){
+async function shopifySearch(query, model){
 
 try{
 
@@ -54,19 +54,24 @@ const response = await axios.get(url);
 const products =
 response.data.resources.results.products || [];
 
-if(products.length===0) return null;
+if(products.length === 0) return null;
 
-const p = products[0];
+/* SMART FILTER */
 
-return{
-title:p.title,
-handle:p.handle
+const match = products.find(p =>
+p.title.toLowerCase().includes(model.toLowerCase())
+);
+
+const product = match || products[0];
+
+return {
+title: product.title,
+handle: product.handle
 };
 
 }catch(err){
 
 console.log("Shopify error:",err.message);
-
 return null;
 
 }
