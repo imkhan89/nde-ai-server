@@ -11,19 +11,21 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
-/* HEALTH CHECK */
+/* =====================
+HEALTH CHECK
+===================== */
 
 app.get("/", (req,res)=>{
 res.send("NDE AI SERVER RUNNING");
 });
 
-/* TEST ROUTE */
-
 app.get("/test",(req,res)=>{
 res.send("Webhook reachable");
 });
 
-/* XML SAFE */
+/* =====================
+XML SAFE
+===================== */
 
 function xmlSafe(text){
 
@@ -36,7 +38,9 @@ return text
 
 }
 
-/* SHOPIFY SEARCH */
+/* =====================
+SHOPIFY SEARCH
+===================== */
 
 async function shopifySearch(query){
 
@@ -69,7 +73,9 @@ return null;
 
 }
 
-/* OPENAI DETECTION */
+/* =====================
+OPENAI DETECTION
+===================== */
 
 async function detectVehicle(message){
 
@@ -116,29 +122,36 @@ return null;
 
 }
 
-/* WHATSAPP WEBHOOK */
+/* =====================
+WHATSAPP WEBHOOK
+===================== */
 
 app.post("/whatsapp", async (req,res)=>{
 
-console.log("Incoming:",req.body);
+console.log("TWILIO WEBHOOK HIT");
+console.log(req.body);
 
 const message = (req.body.Body || "").toLowerCase();
 
-let reply = "";
+/* ALWAYS respond quickly */
 
-/* BASIC GREETING RESPONSE */
+let reply =
+"Welcome to NDE Store 🚗\n\nPlease share your vehicle model and required part.";
+
+try{
+
+/* greeting */
 
 if(message.includes("hello") || message.includes("hi")){
 
-reply = "Welcome to NDE Store 🚗\n\nPlease share your vehicle model and required part.";
+reply =
+"Welcome to NDE Store 🚗\n\nPlease share your vehicle model and required part.";
 
 }
 
-/* PRODUCT SEARCH */
+/* product request */
 
 else{
-
-try{
 
 const vehicle = await detectVehicle(message);
 
@@ -152,7 +165,8 @@ await shopifySearch(query);
 
 if(product){
 
-reply = `Thank you for contacting NDE Store.
+reply =
+`Thank you for contacting NDE Store.
 
 ${product.title}
 
@@ -165,19 +179,11 @@ Delivery across Pakistan in 2–3 working days.`;
 
 }
 
+}
+
 }catch(err){
 
 console.log("Webhook error:",err.message);
-
-}
-
-}
-
-/* FALLBACK MESSAGE */
-
-if(!reply){
-
-reply = "Please share your vehicle model and required part so we can assist you.";
 
 }
 
@@ -194,7 +200,9 @@ res.send(twiml);
 
 });
 
-/* START SERVER */
+/* =====================
+START SERVER
+===================== */
 
 app.listen(PORT,"0.0.0.0",()=>{
 
