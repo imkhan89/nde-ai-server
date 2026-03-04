@@ -46,8 +46,7 @@ async function shopifySearch(vehicle){
 
 try{
 
-const query =
-`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
+const query = vehicle.part;
 
 const url =
 `https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
