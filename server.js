@@ -15,183 +15,168 @@ const OPENAI_KEY = process.env.OPENAI_API_KEY;
 HEALTH CHECK
 ===================== */
 
-app.get("/", (req,res)=>{
-res.send("NDE AI SERVER RUNNING");
+app.get("/", (req, res) => {
+  res.send("NDE AI SERVER RUNNING");
 });
 
 /* =====================
-DEBUG TEST ROUTE
+DEBUG ROUTE
 ===================== */
 
-app.get("/test",(req,res)=>{
-res.send("Webhook reachable");
+app.get("/test", (req, res) => {
+  res.send("Webhook reachable");
 });
 
 /* =====================
-XML SAFE
+XML SAFE FUNCTION
 ===================== */
 
-function xmlSafe(text){
+function xmlSafe(text) {
+  if (!text) return "";
 
-if(!text) return "";
-
-return text
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;");
-
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 /* =====================
-SHOPIFY SEARCH
+SHOPIFY PRODUCT SEARCH
 ===================== */
 
-async function shopifySearch(query){
+async function shopifySearch(query) {
+  try {
 
-try{
+    const url =
+      `https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
 
-const url =
-`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
+    const response = await axios.get(url);
 
-const response = await axios.get(url);
+    const products =
+      response.data.resources.results.products || [];
 
-const products =
-response.data.resources.results.products || [];
+    if (products.length === 0) return null;
 
-if(products.length===0) return null;
+    const p = products[0];
 
-const p = products[0];
+    return {
+      title: p.title,
+      handle: p.handle,
+      price: p.price || ""
+    };
 
-return{
-title:p.title,
-handle:p.handle,
-price:p.price || ""
-};
+  } catch (err) {
 
-}catch(err){
+    console.log("Shopify error:", err.message);
+    return null;
 
-console.log("Shopify error:",err.message);
-
-return null;
-
-}
-
+  }
 }
 
 /* =====================
 OPENAI VEHICLE DETECTION
 ===================== */
 
-async function detectVehicle(message){
+async function detectVehicle(message) {
 
-try{
+  if (!OPENAI_KEY) return null;
 
-const response = await axios.post(
-"https://api.openai.com/v1/chat/completions",
-{
-model:"gpt-4o-mini",
-messages:[
-{
-role:"system",
-content:`Extract vehicle information from the message.
+  try {
 
-Return JSON:
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Extract vehicle make, model, year and part from message. Return JSON."
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ],
+        max_tokens: 80
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${OPENAI_KEY}`
+        }
+      }
+    );
 
-{
-"make":"",
-"model":"",
-"year":"",
-"part":""
-}`
-},
-{
-role:"user",
-content:message
-}
-],
-max_tokens:80
-},
-{
-headers:{
-Authorization:`Bearer ${OPENAI_KEY}`
-}
-}
-);
+    let text = response.data.choices[0].message.content;
 
-let text = response.data.choices[0].message.content;
+    text = text.replace(/```json/g, "").replace(/```/g, "");
 
-text = text.replace(/```json/g,"").replace(/```/g,"");
+    return JSON.parse(text);
 
-return JSON.parse(text);
+  } catch (err) {
 
-}catch(err){
+    console.log("OpenAI error:", err.message);
+    return null;
 
-console.log("OpenAI error:",err.message);
-
-return null;
-
-}
-
+  }
 }
 
 /* =====================
 WHATSAPP WEBHOOK
 ===================== */
 
-app.post("/whatsapp", async (req,res)=>{
+app.post("/whatsapp", async (req, res) => {
 
-console.log("TWILIO REQUEST RECEIVED");
-console.log(req.body);
+  console.log("TWILIO REQUEST RECEIVED");
+  console.log(req.body);
 
-const message = req.body.Body || "";
+  const message = req.body.Body || "";
 
-let reply =
-"Thank you for contacting NDE Store. Please share your vehicle model and required part.";
+  let reply =
+    "Welcome to NDE Store. Please share your vehicle model and required part.";
 
-try{
+  try {
 
-const vehicle =
-await detectVehicle(message);
+    const vehicle = await detectVehicle(message);
 
-if(vehicle && vehicle.part){
+    if (vehicle && vehicle.part) {
 
-const query =
-`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part}`;
+      const query =
+        `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part}`;
 
-const product =
-await shopifySearch(query);
+      const product =
+        await shopifySearch(query);
 
-if(product){
+      if (product) {
 
-reply = `Thank you for contacting NDE Store.
+        reply =
+`Thank you for contacting NDE Store.
 
 ${product.title}
 
 Order here:
 https://ndestore.com/products/${product.handle}
 
-Delivery across Pakistan in 2–3 working days.
+Delivery across Pakistan in 2–3 working days.`;
 
-If you need help selecting the correct part please confirm your vehicle model year.`;
+      }
 
-}
+    }
 
-}
+  } catch (err) {
 
-}catch(err){
+    console.log("Webhook error:", err.message);
 
-console.log("Webhook error:",err.message);
+  }
 
-}
-
-const twiml =
+  const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
 <Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
-res.set("Content-Type","text/xml");
-res.send(twiml);
+  res.set("Content-Type", "text/xml");
+  res.send(twiml);
 
 });
 
@@ -199,8 +184,6 @@ res.send(twiml);
 START SERVER
 ===================== */
 
-app.listen(PORT,"0.0.0.0",()=>{
-
-console.log(`Server running on port ${PORT}`);
-
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
