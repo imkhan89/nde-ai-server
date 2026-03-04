@@ -69,6 +69,23 @@ console.log("Catalog load error:", err.message);
 }
 
 /* =====================
+LOCAL PRODUCT SEARCH
+===================== */
+
+function searchProducts(query){
+
+query = query.toLowerCase();
+
+const results = PRODUCT_INDEX.filter(p =>
+p.title.includes(query)
+);
+
+return results.slice(0,3);
+
+}
+
+
+/* =====================
 HEALTH CHECK
 ===================== */
 
@@ -206,7 +223,9 @@ if(vehicle){
 const query =
 `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
 
-const product = await shopifySearch(query, vehicle.model);
+const results = searchProducts(query);
+
+const product = results[0];
   
 if(product){
 
