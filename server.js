@@ -149,8 +149,8 @@ if(vehicle){
 const query =
 `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
 
-const product = await shopifySearch(query);
-
+const product = await shopifySearch(query, vehicle.model);
+  
 if(product){
 
 reply =
