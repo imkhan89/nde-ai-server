@@ -24,10 +24,17 @@ const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER;
 
-const twilioClient = twilio(TWILIO_SID, TWILIO_TOKEN);
+let twilioClient = null;
+
+if (TWILIO_SID && TWILIO_TOKEN) {
+  twilioClient = twilio(TWILIO_SID, TWILIO_TOKEN);
+  console.log("Twilio initialized");
+} else {
+  console.log("Twilio credentials missing");
+}
 
 /* =========================
-MEMORY SESSION
+SESSION MEMORY
 ========================= */
 
 const sessions = {};
@@ -52,7 +59,7 @@ function xmlSafe(str) {
 }
 
 /* =========================
-SHOPIFY SEARCH
+SHOPIFY SMART SEARCH
 ========================= */
 
 async function searchShopify(query) {
@@ -60,36 +67,51 @@ async function searchShopify(query) {
   try {
 
     const url =
-      `https://${SHOP}/admin/api/2024-01/products.json?limit=100`;
+`https://${SHOP}/admin/api/2024-01/products.json?title=${encodeURIComponent(query)}&limit=10`;
 
-    const r = await axios.get(url, {
+    const response = await axios.get(url, {
       headers: {
         "X-Shopify-Access-Token": SHOPIFY_TOKEN
-      }
+      },
+      timeout: 5000
     });
 
-    const products = r.data.products || [];
+    const products = response.data.products || [];
 
-    const q = query.toLowerCase();
+    if (products.length === 0) return null;
 
-    const match = products.find(p =>
-      p.title.toLowerCase().includes(q)
-    );
-
-    if (!match) return null;
+    const p = products[0];
 
     return {
-      title: match.title,
-      price: match.variants[0].price,
-      handle: match.handle
+      title: p.title,
+      price: p.variants?.[0]?.price || "N/A",
+      handle: p.handle
     };
 
   } catch (err) {
 
-    console.log("Shopify error", err.message);
+    console.log("Shopify search error:", err.message);
     return null;
 
   }
+
+}
+
+/* =========================
+SMART PRODUCT SEARCH
+========================= */
+
+async function smartShopifySearch(vehicle, part) {
+
+  const query = `${vehicle} ${part}`;
+
+  let product = await searchShopify(query);
+
+  if (product) return product;
+
+  product = await searchShopify(part);
+
+  return product;
 
 }
 
@@ -139,7 +161,7 @@ Return JSON only.
 
     return JSON.parse(text);
 
-  } catch (err) {
+  } catch {
 
     return null;
 
@@ -148,7 +170,7 @@ Return JSON only.
 }
 
 /* =========================
-PRO SALES RESPONSE
+PRO SALES MESSAGE
 ========================= */
 
 function salesReply(product) {
@@ -163,9 +185,9 @@ Price: PKR ${product.price}
 Order here:
 https://ndestore.com/products/${product.handle}
 
-Delivery across Pakistan in 2-3 working days.
+Delivery across Pakistan within 2-3 working days.
 
-If you need help choosing the correct part please share your vehicle model and year.
+If you need assistance selecting the correct part please share your vehicle model and year.
 `;
 
 }
@@ -177,7 +199,7 @@ WHATSAPP WEBHOOK
 app.post("/whatsapp", async (req, res) => {
 
   const msg = req.body.Body || "";
-  const sender = req.body.From.replace("whatsapp:", "");
+  const sender = (req.body.From || "").replace("whatsapp:", "");
 
   if (!sessions[sender]) {
     sessions[sender] = {};
@@ -188,14 +210,14 @@ app.post("/whatsapp", async (req, res) => {
 
   try {
 
-    const v = await detectVehicle(msg);
+    const vehicle = await detectVehicle(msg);
 
-    if (v) {
+    if (vehicle) {
 
-      if (v.brand) sessions[sender].brand = v.brand;
-      if (v.model) sessions[sender].model = v.model;
-      if (v.part) sessions[sender].part = v.part;
-      if (v.year) sessions[sender].year = v.year;
+      if (vehicle.brand) sessions[sender].brand = vehicle.brand;
+      if (vehicle.model) sessions[sender].model = vehicle.model;
+      if (vehicle.part) sessions[sender].part = vehicle.part;
+      if (vehicle.year) sessions[sender].year = vehicle.year;
 
     }
 
@@ -209,9 +231,7 @@ app.post("/whatsapp", async (req, res) => {
 
     if (s.model && s.part) {
 
-      const query = `${s.model} ${s.part}`;
-
-      const product = await searchShopify(query);
+      const product = await smartShopifySearch(s.model, s.part);
 
       if (product) {
 
@@ -233,7 +253,7 @@ Please confirm the model year so we can recommend the correct part.
 
   } catch (err) {
 
-    console.log("Webhook error", err.message);
+    console.log("Webhook error:", err.message);
 
   }
 
