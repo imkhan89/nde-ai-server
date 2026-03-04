@@ -47,6 +47,8 @@ if(products.length === 0) break;
 
 allProducts = allProducts.concat(products);
 
+console.log("Products loaded:", allProducts.length);
+  
 since_id = products[products.length - 1].id;
 
 }
