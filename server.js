@@ -69,6 +69,32 @@ console.log("Catalog load error:", err.message);
 }
 
 /* =====================
+SHOPIFY PRODUCT COUNT TEST
+===================== */
+
+app.get("/product-count", async (req,res)=>{
+
+try{
+
+const response = await axios.get(
+`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products/count.json`,
+{
+headers:{
+"X-Shopify-Access-Token":process.env.SHOPIFY_ADMIN_API_TOKEN
+}
+});
+
+res.json(response.data);
+
+}catch(err){
+
+res.send(err.message);
+
+}
+
+});
+
+/* =====================
 LOCAL PRODUCT SEARCH
 ===================== */
 
