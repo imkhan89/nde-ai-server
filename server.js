@@ -11,21 +11,20 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
-const SHOP = process.env.SHOPIFY_STORE_DOMAIN;
 
-/* ======================
+/* =====================
 HEALTH CHECK
-====================== */
+===================== */
 
-app.get("/", (req, res) => {
-  res.send("NDE AI SERVER RUNNING");
+app.get("/", (req,res)=>{
+res.send("NDE AI SERVER RUNNING");
 });
 
-/* ======================
+/* =====================
 XML SAFE
-====================== */
+===================== */
 
-function xmlSafe(text) {
+function xmlSafe(text){
 
 if(!text) return "";
 
@@ -36,9 +35,45 @@ return text
 
 }
 
-/* ======================
-OPENAI VEHICLE DETECTION
-====================== */
+/* =====================
+SHOPIFY SEARCH
+===================== */
+
+async function shopifySearch(query){
+
+try{
+
+const url =
+`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
+
+const response = await axios.get(url);
+
+const products =
+response.data.resources.results.products || [];
+
+if(products.length===0) return null;
+
+const p = products[0];
+
+return{
+title:p.title,
+handle:p.handle,
+price:p.price || ""
+};
+
+}catch(err){
+
+console.log("Shopify error:",err.message);
+
+return null;
+
+}
+
+}
+
+/* =====================
+OPENAI DETECTION
+===================== */
 
 async function detectVehicle(message){
 
@@ -51,18 +86,7 @@ model:"gpt-4o-mini",
 messages:[
 {
 role:"system",
-content:`
-Extract vehicle details from message.
-
-Return JSON:
-
-{
-"make":"",
-"model":"",
-"year":"",
-"part":""
-}
-`
+content:"Extract car make model year and part. Return JSON."
 },
 {
 role:"user",
@@ -94,58 +118,25 @@ return null;
 
 }
 
-/* ======================
-SHOPIFY SEARCH
-====================== */
-
-async function shopifySearch(query){
-
-try{
-
-const url =
-`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
-
-const response = await axios.get(url);
-
-const products =
-response.data.resources.results.products || [];
-
-if(products.length===0) return null;
-
-const p = products[0];
-
-return{
-title:p.title,
-price:p.price || "Check price",
-handle:p.handle
-};
-
-}catch(err){
-
-console.log("Shopify error:",err.message);
-
-return null;
-
-}
-
-}
-
-/* ======================
+/* =====================
 WHATSAPP WEBHOOK
-====================== */
+===================== */
 
 app.post("/whatsapp", async (req,res)=>{
 
-console.log("Incoming message:",req.body);
+console.log("Incoming:",req.body);
 
 const message = req.body.Body || "";
 
+/* ALWAYS reply quickly */
+
 let reply =
-"Welcome to NDE Store. Please share your vehicle make, model and required part.";
+"Thank you for contacting NDE Store. Please share your vehicle model and required part.";
 
 try{
 
-const vehicle = await detectVehicle(message);
+const vehicle =
+await detectVehicle(message);
 
 if(vehicle && vehicle.part){
 
@@ -187,9 +178,9 @@ res.send(twiml);
 
 });
 
-/* ======================
+/* =====================
 START SERVER
-====================== */
+===================== */
 
 app.listen(PORT,()=>{
 
