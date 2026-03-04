@@ -25,7 +25,7 @@ const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_NUMBER = process.env.TWILIO_WHATSAPP_NUMBER;
 
 /* =============================
-SAFE TWILIO INITIALIZATION
+TWILIO INIT
 ============================= */
 
 let twilioClient = null;
@@ -56,34 +56,37 @@ XML SAFE
 ============================= */
 
 function xmlSafe(text) {
+
   if (!text) return "";
+
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+
 }
 
 /* =============================
-OPENAI VEHICLE + PART DETECTION
+OPENAI VEHICLE DETECTION
 ============================= */
 
-async function detectVehicle(message) {
+async function detectVehicle(message){
 
-  if (!OPENAI_KEY) return null;
+if(!OPENAI_KEY) return null;
 
-  try {
+try{
 
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: `
-Extract vehicle information from customer message.
+const response = await axios.post(
+"https://api.openai.com/v1/chat/completions",
+{
+model:"gpt-4o-mini",
+messages:[
+{
+role:"system",
+content:`
+Extract car info from message.
 
-Return JSON only.
+Return JSON only:
 
 {
 "make":"",
@@ -92,101 +95,97 @@ Return JSON only.
 "part":""
 }
 `
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ],
-        max_tokens: 80
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`
-        }
-      }
-    );
+},
+{role:"user",content:message}
+],
+max_tokens:80
+},
+{
+headers:{
+Authorization:`Bearer ${OPENAI_KEY}`
+}
+}
+);
 
-    const text = response.data.choices[0].message.content;
+let text = response.data.choices[0].message.content;
 
-    return JSON.parse(text);
+/* SAFE JSON PARSE */
 
-  } catch (err) {
+text = text.replace(/```json/g,"").replace(/```/g,"");
 
-    console.log("Vehicle detection error:", err.message);
-    return null;
+return JSON.parse(text);
 
-  }
+}catch(err){
+
+console.log("Vehicle detection error:",err.message);
+
+return null;
+
+}
 
 }
 
 /* =============================
-SHOPIFY SEARCH (SCALES 10K+ PRODUCTS)
+SHOPIFY SEARCH (LARGE CATALOG)
 ============================= */
 
-async function shopifySearch(query) {
+async function shopifySearch(query){
 
-  try {
+try{
 
-    const url =
-`https://${SHOP}/admin/api/2024-01/products.json?title=${encodeURIComponent(query)}&limit=5`;
+const url =
+`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
 
-    const response = await axios.get(url, {
-      headers: {
-        "X-Shopify-Access-Token": SHOPIFY_TOKEN
-      },
-      timeout: 5000
-    });
+const response = await axios.get(url);
 
-    const products = response.data.products || [];
+const products =
+response.data.resources.results.products || [];
 
-    if (products.length === 0) return null;
+if(products.length===0) return null;
 
-    const p = products[0];
+const p = products[0];
 
-    return {
-      title: p.title,
-      price: p.variants?.[0]?.price || "N/A",
-      handle: p.handle
-    };
+return{
+title:p.title,
+price:p.price || "Check price",
+handle:p.handle
+};
 
-  } catch (err) {
+}catch(err){
 
-    console.log("Shopify error:", err.message);
-    return null;
+console.log("Shopify search error:",err.message);
 
-  }
+return null;
+
+}
 
 }
 
 /* =============================
-SMART AUTOMOTIVE SEARCH
+SMART PRODUCT SEARCH
 ============================= */
 
-async function smartProductSearch(vehicle, part) {
+async function smartSearch(vehicle,part){
 
-  if (!vehicle || !part) return null;
+let product =
+await shopifySearch(`${vehicle} ${part}`);
 
-  let product =
-    await shopifySearch(`${vehicle} ${part}`);
+if(product) return product;
 
-  if (product) return product;
+product =
+await shopifySearch(part);
 
-  product =
-    await shopifySearch(part);
-
-  return product;
+return product;
 
 }
 
 /* =============================
-PRO SALES RESPONSE
+SALES RESPONSE
 ============================= */
 
-function salesResponse(product) {
+function salesResponse(product){
 
-  return `
-Thank you for contacting NDE Store.
+return `Thank you for contacting NDE Store.
 
 ${product.title}
 
@@ -195,10 +194,9 @@ Price: PKR ${product.price}
 Order here:
 https://ndestore.com/products/${product.handle}
 
-Delivery across Pakistan within 2–3 working days.
+Delivery across Pakistan in 2–3 working days.
 
-If you need help selecting the correct part please share your vehicle model and year.
-`;
+If you need help selecting the correct part please share your vehicle model year.`;
 
 }
 
@@ -206,88 +204,101 @@ If you need help selecting the correct part please share your vehicle model and 
 WHATSAPP WEBHOOK
 ============================= */
 
-app.post("/whatsapp", async (req, res) => {
+app.post("/whatsapp", async (req,res)=>{
 
-  const incomingMsg = req.body.Body || "";
-  const sender = (req.body.From || "").replace("whatsapp:", "");
+console.log("Incoming message:",req.body);
 
-  if (!sessions[sender]) {
-    sessions[sender] = {};
-  }
+const incomingMsg = req.body.Body || "";
+const sender = (req.body.From || "").replace("whatsapp:","");
 
-  let reply =
+if(!sessions[sender]){
+sessions[sender]={};
+}
+
+let reply =
 "Welcome to NDE Store. Please share your vehicle make, model and required part.";
 
-  try {
+try{
 
-    const vehicleData = await detectVehicle(incomingMsg);
+const vehicleData =
+await detectVehicle(incomingMsg);
 
-    if (vehicleData) {
+if(vehicleData){
 
-      if (vehicleData.make) sessions[sender].make = vehicleData.make;
-      if (vehicleData.model) sessions[sender].model = vehicleData.model;
-      if (vehicleData.part) sessions[sender].part = vehicleData.part;
-      if (vehicleData.year) sessions[sender].year = vehicleData.year;
+if(vehicleData.make)
+sessions[sender].make=vehicleData.make;
 
-    }
+if(vehicleData.model)
+sessions[sender].model=vehicleData.model;
 
-    const yearMatch = incomingMsg.match(/\b(19|20)\d{2}\b/);
+if(vehicleData.part)
+sessions[sender].part=vehicleData.part;
 
-    if (yearMatch) {
-      sessions[sender].year = yearMatch[0];
-    }
+if(vehicleData.year)
+sessions[sender].year=vehicleData.year;
 
-    const s = sessions[sender];
+}
 
-    if (s.model && s.part) {
+/* YEAR DETECTION */
 
-      const vehicle =
-        `${s.make || ""} ${s.model}`;
+const yearMatch =
+incomingMsg.match(/\b(19|20)\d{2}\b/);
 
-      const product =
-        await smartProductSearch(vehicle, s.part);
+if(yearMatch)
+sessions[sender].year=yearMatch[0];
 
-      if (product) {
+const s = sessions[sender];
 
-        reply = salesResponse(product);
+if(s.model && s.part){
 
-      } else {
+const vehicle =
+`${s.make || ""} ${s.model}`;
 
-        reply = `
-Thank you for your message.
+const product =
+await smartSearch(vehicle,s.part);
+
+if(product){
+
+reply = salesResponse(product);
+
+}else{
+
+reply =
+`Thank you for your message.
 
 We may have ${s.part} available for ${vehicle}.
 
-Please confirm the model year so we can recommend the correct part.
-`;
+Please confirm the model year so we can recommend the correct part.`;
 
-      }
+}
 
-    }
+}
 
-  } catch (err) {
+}catch(err){
 
-    console.log("Webhook error:", err.message);
+console.log("Webhook error:",err.message);
 
-  }
+}
 
-  const twiml =
+/* TWILIO RESPONSE */
+
+const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
 <Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
-  res.set("Content-Type", "text/xml");
-  res.send(twiml);
+res.writeHead(200,{"Content-Type":"text/xml"});
+res.end(twiml);
 
 });
 
 /* =============================
-START SERVER
+SERVER START
 ============================= */
 
-app.listen(PORT, () => {
+app.listen(PORT,()=>{
 
-  console.log("Server running on port", PORT);
+console.log("Server running on port",PORT);
 
 });
