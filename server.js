@@ -258,8 +258,8 @@ if(vehicle){
 const query =
 `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
 
-const results = searchProducts(query);
-
+const results = searchProducts(vehicle);
+  
 const product = results[0];
   
 if(product){
