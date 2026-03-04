@@ -50,24 +50,22 @@ const query =
 `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
 
 const url =
-`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
+`https://ndestore.com/search?q=${encodeURIComponent(query)}&view=json`;
 
 const response = await axios.get(url);
 
-const products =
-response.data.resources.results.products || [];
+const products = response.data.products || [];
 
 if(products.length === 0) return null;
 
 const year = parseInt(vehicle.year);
 
-/* FILTER BY MODEL + YEAR */
-
 const match = products.find(p => {
 
 const title = p.title.toLowerCase();
 
-if(!title.includes(vehicle.model.toLowerCase())) return false;
+if(!title.includes(vehicle.model.toLowerCase()))
+return false;
 
 const yearMatch = title.match(/\((\d{4})-(\d{4})\)/);
 
@@ -95,6 +93,8 @@ return null;
 }
 
 }
+
+
 /* =====================
 OPENAI DETECTION
 ===================== */
