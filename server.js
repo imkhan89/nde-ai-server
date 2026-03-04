@@ -11,6 +11,67 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
+
+/* =====================
+PRODUCT INDEX
+===================== */
+
+let PRODUCT_INDEX = [];
+
+async function loadProducts(){
+
+try{
+
+console.log("Loading Shopify catalog...");
+
+let url =
+`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-01/products.json?limit=250`;
+
+let allProducts = [];
+
+while(url){
+
+const response = await axios.get(url,{
+headers:{
+"X-Shopify-Access-Token":process.env.SHOPIFY_ADMIN_API_TOKEN
+}
+});
+
+const products = response.data.products || [];
+
+allProducts = allProducts.concat(products);
+
+const link = response.headers.link;
+
+if(link && link.includes('rel="next"')){
+
+url = link.match(/<(.*?)>/)[1];
+
+}else{
+
+url = null;
+
+}
+
+}
+
+PRODUCT_INDEX = allProducts.map(p=>({
+
+title:p.title.toLowerCase(),
+handle:p.handle
+
+}));
+
+console.log("Total products indexed:",PRODUCT_INDEX.length);
+
+}catch(err){
+
+console.log("Catalog load error:",err.message);
+
+}
+
+}
+
 /* =====================
 SHOPIFY PRODUCT COUNT TEST
 ===================== */
