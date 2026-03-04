@@ -291,8 +291,10 @@ res.send(twiml);
 START SERVER
 ===================== */
 
-app.listen(PORT,"0.0.0.0",()=>{
+app.listen(PORT, async () => {
 
-console.log("Server running on port",PORT);
+console.log("Server running on port", PORT);
+
+await loadProducts();
 
 });
