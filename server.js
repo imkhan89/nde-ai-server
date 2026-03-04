@@ -102,9 +102,21 @@ function searchProducts(query){
 
 query = query.toLowerCase();
 
-const results = PRODUCT_INDEX.filter(p =>
-p.title.includes(query)
-);
+const words = query.split(" ").filter(w => w.length > 2);
+
+const results = PRODUCT_INDEX.filter(product => {
+
+let score = 0;
+
+words.forEach(word => {
+if(product.title.includes(word)){
+score++;
+}
+});
+
+return score >= 2; // at least 2 keyword matches
+
+});
 
 return results.slice(0,3);
 
