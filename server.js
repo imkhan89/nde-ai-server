@@ -122,10 +122,21 @@ app.post("/whatsapp", async (req,res)=>{
 
 console.log("Incoming:",req.body);
 
-const message = req.body.Body || "";
+const message = (req.body.Body || "").toLowerCase();
 
-let reply =
-"Welcome to NDE Store. Please share your vehicle model and required part.";
+let reply = "";
+
+/* BASIC GREETING RESPONSE */
+
+if(message.includes("hello") || message.includes("hi")){
+
+reply = "Welcome to NDE Store 🚗\n\nPlease share your vehicle model and required part.";
+
+}
+
+/* PRODUCT SEARCH */
+
+else{
 
 try{
 
@@ -159,6 +170,18 @@ Delivery across Pakistan in 2–3 working days.`;
 console.log("Webhook error:",err.message);
 
 }
+
+}
+
+/* FALLBACK MESSAGE */
+
+if(!reply){
+
+reply = "Please share your vehicle model and required part so we can assist you.";
+
+}
+
+/* TWILIO RESPONSE */
 
 const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
