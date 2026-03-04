@@ -58,13 +58,11 @@ response.data.resources.results.products || [];
 
 if(products.length === 0) return null;
 
-/* PICK BEST MATCH */
-
-let product = products.find(p =>
+const match = products.find(p =>
 p.title.toLowerCase().includes(vehicle.model.toLowerCase())
 );
 
-if(!product) product = products[0];
+const product = match || products[0];
 
 return {
 title: product.title,
