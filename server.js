@@ -10,14 +10,13 @@ app.post("/webhook", async (req, res) => {
 
   try {
 
-    /* STEP 1 — SUPPORT QUESTIONS */
+    /* STEP 1: SUPPORT */
     const support = supportReplies(incomingMsg);
-
     if (support) {
       reply = support;
     }
 
-    /* STEP 2 — PRODUCT SEARCH */
+    /* STEP 2: PRODUCT SEARCH */
     if (!reply) {
 
       const product = await searchProduct(incomingMsg);
@@ -38,30 +37,37 @@ https://ndestore.com/products/${product.handle}`;
 
     }
 
-    /* STEP 3 — AI RESPONSE */
+    /* STEP 3: AI RESPONSE */
     if (!reply) {
 
-      const ai = await openai.chat.completions.create({
+      try {
 
-        model: "gpt-4o-mini",
-
-        messages: [
-          {
-            role: "system",
-            content:
+        const ai = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
 "You are an automotive parts assistant for ndestore.com."
-          },
-          {
-            role: "user",
-            content: incomingMsg
-          }
-        ],
+            },
+            {
+              role: "user",
+              content: incomingMsg
+            }
+          ],
+          max_tokens: 120
+        });
 
-        max_tokens: 120
+        reply = ai.choices[0].message.content;
 
-      });
+      } catch (err) {
 
-      reply = ai.choices[0].message.content;
+        console.log("OpenAI error:", err.message);
+
+        reply =
+"Please share your car model, year, and required part so we can assist you.";
+
+      }
 
     }
 
@@ -70,7 +76,7 @@ https://ndestore.com/products/${product.handle}`;
     console.log("Webhook error:", err.message);
 
     reply =
-"Sorry, our system is busy. Please send your car model and part name.";
+"Sorry, we could not process your request. Please try again.";
 
   }
 
