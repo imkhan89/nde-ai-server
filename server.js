@@ -9,7 +9,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
 /* =====================
@@ -18,6 +17,14 @@ HEALTH CHECK
 
 app.get("/", (req,res)=>{
 res.send("NDE AI SERVER RUNNING");
+});
+
+/* =====================
+DEBUG TEST ROUTE
+===================== */
+
+app.get("/test",(req,res)=>{
+res.send("Webhook reachable");
 });
 
 /* =====================
@@ -72,7 +79,7 @@ return null;
 }
 
 /* =====================
-OPENAI DETECTION
+OPENAI VEHICLE DETECTION
 ===================== */
 
 async function detectVehicle(message){
@@ -86,7 +93,16 @@ model:"gpt-4o-mini",
 messages:[
 {
 role:"system",
-content:"Extract car make model year and part. Return JSON."
+content:`Extract vehicle information from the message.
+
+Return JSON:
+
+{
+"make":"",
+"model":"",
+"year":"",
+"part":""
+}`
 },
 {
 role:"user",
@@ -124,11 +140,10 @@ WHATSAPP WEBHOOK
 
 app.post("/whatsapp", async (req,res)=>{
 
-console.log("Incoming:",req.body);
+console.log("TWILIO REQUEST RECEIVED");
+console.log(req.body);
 
 const message = req.body.Body || "";
-
-/* ALWAYS reply quickly */
 
 let reply =
 "Thank you for contacting NDE Store. Please share your vehicle model and required part.";
@@ -155,7 +170,9 @@ ${product.title}
 Order here:
 https://ndestore.com/products/${product.handle}
 
-Delivery across Pakistan in 2–3 working days.`;
+Delivery across Pakistan in 2–3 working days.
+
+If you need help selecting the correct part please confirm your vehicle model year.`;
 
 }
 
@@ -182,8 +199,8 @@ res.send(twiml);
 START SERVER
 ===================== */
 
-app.listen(PORT,()=>{
+app.listen(PORT,"0.0.0.0",()=>{
 
-console.log("Server running on port",PORT);
+console.log(`Server running on port ${PORT}`);
 
 });
