@@ -42,9 +42,12 @@ return text
 SHOPIFY SEARCH
 ===================== */
 
-async function shopifySearch(query, model){
+async function shopifySearch(vehicle){
 
 try{
+
+const query =
+`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
 
 const url =
 `https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
@@ -56,11 +59,26 @@ response.data.resources.results.products || [];
 
 if(products.length === 0) return null;
 
-/* SMART FILTER */
+const year = parseInt(vehicle.year);
 
-const match = products.find(p =>
-p.title.toLowerCase().includes(model.toLowerCase())
-);
+/* FILTER BY MODEL + YEAR */
+
+const match = products.find(p => {
+
+const title = p.title.toLowerCase();
+
+if(!title.includes(vehicle.model.toLowerCase())) return false;
+
+const yearMatch = title.match(/\((\d{4})-(\d{4})\)/);
+
+if(!yearMatch) return true;
+
+const start = parseInt(yearMatch[1]);
+const end = parseInt(yearMatch[2]);
+
+return year >= start && year <= end;
+
+});
 
 const product = match || products[0];
 
@@ -77,7 +95,6 @@ return null;
 }
 
 }
-
 /* =====================
 OPENAI DETECTION
 ===================== */
