@@ -236,6 +236,25 @@ return null;
 
 }
 
+function searchProducts(vehicle){
+
+const model = (vehicle.model || "").toLowerCase();
+const part = (vehicle.part || "").toLowerCase();
+
+const results = PRODUCT_INDEX.filter(p => {
+
+return (
+p.title.includes(model) &&
+p.title.includes(part)
+);
+
+});
+
+return results.slice(0,3);
+
+}
+
+
 /* =====================
 WHATSAPP WEBHOOK
 ===================== */
@@ -255,14 +274,11 @@ const vehicle = await detectVehicle(message);
 
 if(vehicle){
 
-const query =
-`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
-
 const results = searchProducts(vehicle);
-  
+
+if(results.length > 0){
+
 const product = results[0];
-  
-if(product){
 
 reply =
 `🚗 ${product.title}
