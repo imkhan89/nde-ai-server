@@ -7,19 +7,45 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+/* ============================= */
+/* SAFE ENVIRONMENT VARIABLES */
+/* ============================= */
 
-const SHOP = process.env.SHOPIFY_STORE_DOMAIN;
-const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const OPENAI_KEY = process.env.OPENAI_API_KEY || null;
+const SHOP = process.env.SHOPIFY_STORE_DOMAIN || "";
+const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN || "";
+
+/* ============================= */
+/* SAFE OPENAI INITIALIZATION */
+/* ============================= */
+
+let openai = null;
+
+if (OPENAI_KEY) {
+  openai = new OpenAI({ apiKey: OPENAI_KEY });
+  console.log("OpenAI initialized");
+} else {
+  console.log("WARNING: OPENAI_API_KEY missing");
+}
+
+/* ============================= */
+/* HEALTH CHECK */
+/* ============================= */
 
 app.get("/", (req, res) => {
   res.send("NDE AI SERVER RUNNING");
 });
 
-/* PRODUCT SEARCH */
+/* ============================= */
+/* SHOPIFY PRODUCT SEARCH */
+/* ============================= */
+
 async function searchProduct(query) {
+
+  if (!SHOP || !TOKEN) {
+    console.log("Shopify credentials missing");
+    return null;
+  }
 
   try {
 
@@ -32,7 +58,7 @@ async function searchProduct(query) {
       }
     });
 
-    const products = response.data.products;
+    const products = response.data.products || [];
 
     const match = products.find(p =>
       p.title.toLowerCase().includes(query.toLowerCase())
@@ -42,7 +68,7 @@ async function searchProduct(query) {
 
     return {
       title: match.title,
-      price: match.variants[0].price,
+      price: match.variants?.[0]?.price || "N/A",
       handle: match.handle
     };
 
@@ -55,22 +81,63 @@ async function searchProduct(query) {
 
 }
 
-/* WEBHOOK */
+/* ============================= */
+/* BASIC CUSTOMER SUPPORT */
+/* ============================= */
+
+function supportReplies(message) {
+
+  const msg = message.toLowerCase();
+
+  if (msg.includes("delivery"))
+    return "Delivery takes 2–3 working days across Pakistan.";
+
+  if (msg.includes("payment"))
+    return "We offer Cash on Delivery (COD) across Pakistan.";
+
+  if (msg.includes("return"))
+    return "Returns are accepted within 7 days if unused.";
+
+  if (msg.includes("location"))
+    return "We deliver nationwide across Pakistan.";
+
+  return null;
+
+}
+
+/* ============================= */
+/* WHATSAPP WEBHOOK */
+/* ============================= */
+
 app.post("/webhook", async (req, res) => {
 
   const incomingMsg = req.body.Body || "";
+  const sender = req.body.From || "";
 
+  console.log("Customer:", sender);
   console.log("Message:", incomingMsg);
 
-  let reply = "Please send car model and required part.";
+  let reply = "Please share your car model and required part.";
 
   try {
 
-    const product = await searchProduct(incomingMsg);
+    /* STEP 1 — SUPPORT QUESTIONS */
 
-    if (product) {
+    const support = supportReplies(incomingMsg);
 
-      reply =
+    if (support) {
+      reply = support;
+    }
+
+    /* STEP 2 — PRODUCT SEARCH */
+
+    if (!support) {
+
+      const product = await searchProduct(incomingMsg);
+
+      if (product) {
+
+        reply =
 `Yes, we have this available.
 
 ${product.title}
@@ -80,16 +147,47 @@ Price: PKR ${product.price}
 Order here:
 https://ndestore.com/products/${product.handle}`;
 
-    } else {
+      }
 
-      const ai = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          { role: "user", content: incomingMsg }
-        ]
-      });
+    }
 
-      reply = ai.choices[0].message.content;
+    /* STEP 3 — AI RESPONSE */
+
+    if (!support && reply === "Please share your car model and required part.") {
+
+      if (openai) {
+
+        try {
+
+          const ai = await openai.chat.completions.create({
+
+            model: "gpt-4o-mini",
+
+            messages: [
+              {
+                role: "system",
+                content:
+"You are a professional automotive parts sales assistant for ndestore.com."
+              },
+              {
+                role: "user",
+                content: incomingMsg
+              }
+            ],
+
+            max_tokens: 120
+
+          });
+
+          reply = ai.choices?.[0]?.message?.content || reply;
+
+        } catch (err) {
+
+          console.log("OpenAI error:", err.message);
+
+        }
+
+      }
 
     }
 
@@ -98,6 +196,10 @@ https://ndestore.com/products/${product.handle}`;
     console.log("Webhook error:", err.message);
 
   }
+
+  /* ============================= */
+  /* ALWAYS RETURN TWILIO RESPONSE */
+  /* ============================= */
 
   const twiml = `
 <Response>
@@ -109,6 +211,10 @@ https://ndestore.com/products/${product.handle}`;
   res.send(twiml);
 
 });
+
+/* ============================= */
+/* START SERVER */
+/* ============================= */
 
 const PORT = process.env.PORT || 3000;
 
