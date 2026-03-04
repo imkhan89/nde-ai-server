@@ -126,7 +126,7 @@ return null;
 WHATSAPP WEBHOOK
 ===================== */
 
-app.post("/whatsapp", (req,res)=>{
+app.all("/whatsapp", (req,res)=>{
 
 console.log("TWILIO WEBHOOK HIT");
 console.log(req.body);
