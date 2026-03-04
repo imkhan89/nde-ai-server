@@ -50,35 +50,22 @@ const query =
 `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
 
 const url =
-`https://ndestore.com/search?q=${encodeURIComponent(query)}&view=json`;
+`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
 
 const response = await axios.get(url);
 
-const products = response.data.products || [];
+const products =
+response.data.resources.results.products || [];
 
 if(products.length === 0) return null;
 
-const year = parseInt(vehicle.year);
+/* PICK BEST MATCH */
 
-const match = products.find(p => {
+let product = products.find(p =>
+p.title.toLowerCase().includes(vehicle.model.toLowerCase())
+);
 
-const title = p.title.toLowerCase();
-
-if(!title.includes(vehicle.model.toLowerCase()))
-return false;
-
-const yearMatch = title.match(/\((\d{4})-(\d{4})\)/);
-
-if(!yearMatch) return true;
-
-const start = parseInt(yearMatch[1]);
-const end = parseInt(yearMatch[2]);
-
-return year >= start && year <= end;
-
-});
-
-const product = match || products[0];
+if(!product) product = products[0];
 
 return {
 title: product.title,
@@ -93,7 +80,6 @@ return null;
 }
 
 }
-
 
 /* =====================
 OPENAI DETECTION
