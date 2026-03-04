@@ -1,8 +1,9 @@
 import express from "express";
+import twilio from "twilio";
 
 const app = express();
 
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -15,14 +16,13 @@ app.post("/webhook", (req, res) => {
 
   console.log("Incoming message:", incomingMsg);
 
-  let reply = "Hello from NDE AI Assistant";
+  const MessagingResponse = twilio.twiml.MessagingResponse;
+  const twiml = new MessagingResponse();
+
+  twiml.message("Hello from NDE AI Assistant");
 
   res.type("text/xml");
-  res.send(`
-<Response>
-<Message>${reply}</Message>
-</Response>
-`);
+  res.send(twiml.toString());
 
 });
 
