@@ -126,15 +126,68 @@ return null;
 WHATSAPP WEBHOOK
 ===================== */
 
-app.all("/whatsapp", (req,res)=>{
+app.post("/whatsapp", async (req,res)=>{
 
 console.log("TWILIO WEBHOOK HIT");
 console.log(req.body);
 
+const message = req.body.Body || "";
+
+let reply = "";
+
+try{
+
+const vehicle = await detectVehicle(message);
+
+if(vehicle){
+
+const query =
+`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part || ""}`;
+
+const product = await shopifySearch(query);
+
+if(product){
+
+reply =
+`🚗 ${product.title}
+
+Order here:
+https://ndestore.com/products/${product.handle}
+
+Delivery across Pakistan in 2–3 working days`;
+
+}else{
+
+reply =
+`We could not find the exact part.
+
+Vehicle:
+${vehicle.make || ""} ${vehicle.model || ""}
+
+Please confirm the required part.`;
+
+}
+
+}else{
+
+reply =
+"Please share vehicle model and required part.";
+
+}
+
+}catch(err){
+
+console.log(err);
+
+reply =
+"Please share vehicle model and required part.";
+
+}
+
 const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-<Message>Hello from NDE AI 🚗</Message>
+<Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
 res.set("Content-Type","text/xml");
