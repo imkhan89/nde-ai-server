@@ -48,9 +48,9 @@ headers:{
 }
 );
 
-const products = response.data.products;
+const products = response.data.products || [];
 
-if(!products.length) break;
+if(products.length === 0) break;
 
 allProducts = allProducts.concat(products);
 
@@ -58,38 +58,21 @@ since_id = products[products.length - 1].id;
 
 }
 
-PRODUCT_INDEX = allProducts.map(p=>({
-title:p.title.toLowerCase(),
-handle:p.handle
+PRODUCT_INDEX = allProducts.map(p => ({
+title: p.title.toLowerCase(),
+handle: p.handle
 }));
 
 console.log("Total products indexed:", PRODUCT_INDEX.length);
 
 }catch(err){
 
-console.log("Catalog load error:",err.message);
+console.log("Catalog load error:", err.message);
 
 }
 
 }
-
-PRODUCT_INDEX = allProducts.map(p=>({
-
-title:p.title.toLowerCase(),
-handle:p.handle
-
-}));
-
-console.log("Total products indexed:",PRODUCT_INDEX.length);
-
-}catch(err){
-
-console.log("Catalog load error:",err.message);
-
-}
-
-}
-
+  
 /* =====================
 SHOPIFY PRODUCT COUNT TEST
 ===================== */
