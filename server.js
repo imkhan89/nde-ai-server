@@ -100,25 +100,26 @@ LOCAL PRODUCT SEARCH
 
 function searchProducts(vehicle){
 
-const make = (vehicle.make || "").toLowerCase();
 const model = (vehicle.model || "").toLowerCase();
-const part = (vehicle.part || "").toLowerCase();
 
-const results = PRODUCT_INDEX.filter(product => {
+const partWords = (vehicle.part || "")
+.toLowerCase()
+.split(" ")
+.filter(w => w.length > 2);
 
-const title = product.title;
+const results = PRODUCT_INDEX.filter(p => {
 
-return (
-title.includes(model) &&
-title.includes(part)
-);
+const title = p.title;
+
+if(!title.includes(model)) return false;
+
+return partWords.some(word => title.includes(word));
 
 });
 
 return results.slice(0,3);
 
 }
-
 
 /* =====================
 HEALTH CHECK
