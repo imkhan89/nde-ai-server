@@ -126,73 +126,15 @@ return null;
 WHATSAPP WEBHOOK
 ===================== */
 
-app.post("/whatsapp", async (req,res)=>{
+app.post("/whatsapp", (req,res)=>{
 
 console.log("TWILIO WEBHOOK HIT");
 console.log(req.body);
 
-const message = (req.body.Body || "").toLowerCase();
-
-/* ALWAYS respond quickly */
-
-let reply =
-"Welcome to NDE Store 🚗\n\nPlease share your vehicle model and required part.";
-
-try{
-
-/* greeting */
-
-if(message.includes("hello") || message.includes("hi")){
-
-reply =
-"Welcome to NDE Store 🚗\n\nPlease share your vehicle model and required part.";
-
-}
-
-/* product request */
-
-else{
-
-const vehicle = await detectVehicle(message);
-
-if(vehicle && vehicle.part){
-
-const query =
-`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part}`;
-
-const product =
-await shopifySearch(query);
-
-if(product){
-
-reply =
-`Thank you for contacting NDE Store.
-
-${product.title}
-
-Order here:
-https://ndestore.com/products/${product.handle}
-
-Delivery across Pakistan in 2–3 working days.`;
-
-}
-
-}
-
-}
-
-}catch(err){
-
-console.log("Webhook error:",err.message);
-
-}
-
-/* TWILIO RESPONSE */
-
 const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-<Message>${xmlSafe(reply)}</Message>
+<Message>Hello from NDE AI 🚗</Message>
 </Response>`;
 
 res.set("Content-Type","text/xml");
