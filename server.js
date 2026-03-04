@@ -98,23 +98,20 @@ res.send(err.message);
 LOCAL PRODUCT SEARCH
 ===================== */
 
-function searchProducts(query){
+function searchProducts(vehicle){
 
-query = query.toLowerCase();
-
-const words = query.split(" ").filter(w => w.length > 2);
+const make = (vehicle.make || "").toLowerCase();
+const model = (vehicle.model || "").toLowerCase();
+const part = (vehicle.part || "").toLowerCase();
 
 const results = PRODUCT_INDEX.filter(product => {
 
-let score = 0;
+const title = product.title;
 
-words.forEach(word => {
-if(product.title.includes(word)){
-score++;
-}
-});
-
-return score >= 2; // at least 2 keyword matches
+return (
+title.includes(model) &&
+title.includes(part)
+);
 
 });
 
