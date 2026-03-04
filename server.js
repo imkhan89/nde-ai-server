@@ -11,146 +11,137 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const OPENAI_KEY = process.env.OPENAI_API_KEY;
 
-/* =====================
-HEALTH CHECK
-===================== */
+/* HEALTH CHECK */
 
-app.get("/", (req, res) => {
-  res.send("NDE AI SERVER RUNNING");
+app.get("/", (req,res)=>{
+res.send("NDE AI SERVER RUNNING");
 });
 
-/* =====================
-DEBUG ROUTE
-===================== */
+/* TEST ROUTE */
 
-app.get("/test", (req, res) => {
-  res.send("Webhook reachable");
+app.get("/test",(req,res)=>{
+res.send("Webhook reachable");
 });
 
-/* =====================
-XML SAFE FUNCTION
-===================== */
+/* XML SAFE */
 
-function xmlSafe(text) {
-  if (!text) return "";
+function xmlSafe(text){
 
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+if(!text) return "";
+
+return text
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
+
 }
 
-/* =====================
-SHOPIFY PRODUCT SEARCH
-===================== */
+/* SHOPIFY SEARCH */
 
-async function shopifySearch(query) {
-  try {
+async function shopifySearch(query){
 
-    const url =
-      `https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
+try{
 
-    const response = await axios.get(url);
+const url =
+`https://ndestore.com/search/suggest.json?q=${encodeURIComponent(query)}&resources[type]=product`;
 
-    const products =
-      response.data.resources.results.products || [];
+const response = await axios.get(url);
 
-    if (products.length === 0) return null;
+const products =
+response.data.resources.results.products || [];
 
-    const p = products[0];
+if(products.length===0) return null;
 
-    return {
-      title: p.title,
-      handle: p.handle,
-      price: p.price || ""
-    };
+const p = products[0];
 
-  } catch (err) {
+return{
+title:p.title,
+handle:p.handle
+};
 
-    console.log("Shopify error:", err.message);
-    return null;
+}catch(err){
 
-  }
+console.log("Shopify error:",err.message);
+
+return null;
+
 }
 
-/* =====================
-OPENAI VEHICLE DETECTION
-===================== */
-
-async function detectVehicle(message) {
-
-  if (!OPENAI_KEY) return null;
-
-  try {
-
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "Extract vehicle make, model, year and part from message. Return JSON."
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ],
-        max_tokens: 80
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${OPENAI_KEY}`
-        }
-      }
-    );
-
-    let text = response.data.choices[0].message.content;
-
-    text = text.replace(/```json/g, "").replace(/```/g, "");
-
-    return JSON.parse(text);
-
-  } catch (err) {
-
-    console.log("OpenAI error:", err.message);
-    return null;
-
-  }
 }
 
-/* =====================
-WHATSAPP WEBHOOK
-===================== */
+/* OPENAI DETECTION */
 
-app.post("/whatsapp", async (req, res) => {
+async function detectVehicle(message){
 
-  console.log("TWILIO REQUEST RECEIVED");
-  console.log(req.body);
+if(!OPENAI_KEY) return null;
 
-  const message = req.body.Body || "";
+try{
 
-  let reply =
-    "Welcome to NDE Store. Please share your vehicle model and required part.";
+const response = await axios.post(
+"https://api.openai.com/v1/chat/completions",
+{
+model:"gpt-4o-mini",
+messages:[
+{
+role:"system",
+content:"Extract car make model year and part. Return JSON."
+},
+{
+role:"user",
+content:message
+}
+],
+max_tokens:80
+},
+{
+headers:{
+Authorization:`Bearer ${OPENAI_KEY}`
+}
+}
+);
 
-  try {
+let text = response.data.choices[0].message.content;
 
-    const vehicle = await detectVehicle(message);
+text = text.replace(/```json/g,"").replace(/```/g,"");
 
-    if (vehicle && vehicle.part) {
+return JSON.parse(text);
 
-      const query =
-        `${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part}`;
+}catch(err){
 
-      const product =
-        await shopifySearch(query);
+console.log("OpenAI error:",err.message);
 
-      if (product) {
+return null;
 
-        reply =
-`Thank you for contacting NDE Store.
+}
+
+}
+
+/* WHATSAPP WEBHOOK */
+
+app.post("/whatsapp", async (req,res)=>{
+
+console.log("Incoming:",req.body);
+
+const message = req.body.Body || "";
+
+let reply =
+"Welcome to NDE Store. Please share your vehicle model and required part.";
+
+try{
+
+const vehicle = await detectVehicle(message);
+
+if(vehicle && vehicle.part){
+
+const query =
+`${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.part}`;
+
+const product =
+await shopifySearch(query);
+
+if(product){
+
+reply = `Thank you for contacting NDE Store.
 
 ${product.title}
 
@@ -159,31 +150,31 @@ https://ndestore.com/products/${product.handle}
 
 Delivery across Pakistan in 2–3 working days.`;
 
-      }
+}
 
-    }
+}
 
-  } catch (err) {
+}catch(err){
 
-    console.log("Webhook error:", err.message);
+console.log("Webhook error:",err.message);
 
-  }
+}
 
-  const twiml =
+const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
 <Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
-  res.set("Content-Type", "text/xml");
-  res.send(twiml);
+res.set("Content-Type","text/xml");
+res.send(twiml);
 
 });
 
-/* =====================
-START SERVER
-===================== */
+/* START SERVER */
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(PORT,"0.0.0.0",()=>{
+
+console.log("Server running on port",PORT);
+
 });
