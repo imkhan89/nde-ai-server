@@ -31,9 +31,7 @@ res.json(response.data);
 
 }catch(err){
 
-console.log(err.message);
-
-res.send("Shopify API error");
+res.send(err.message);
 
 }
 
