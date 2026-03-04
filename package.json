@@ -1,7 +1,7 @@
 {
   "name": "nde-ai-server",
   "version": "1.0.0",
-  "description": "NDE AI WhatsApp Server",
+  "description": "NDE AI WhatsApp Sales Assistant",
   "type": "module",
   "main": "server.js",
   "scripts": {
