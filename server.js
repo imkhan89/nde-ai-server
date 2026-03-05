@@ -297,8 +297,7 @@ return{};
 PART DETECTION
 ===================================================== */
 
-const PARTS=[
-const PART_KEYWORDS = [
+const PARTS = [
 
 "headlight",
 "head lamp",
