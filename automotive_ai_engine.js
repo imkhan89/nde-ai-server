@@ -1,12 +1,12 @@
-/* =========================================================
-NDESTORE AUTOMOTIVE AI ENGINE
-Global Vehicle Detection + Product Search
-========================================================= */
+/* =====================================================
+NDESTORE AUTOMOTIVE AI ENGINE v2
+High Accuracy Global Vehicle + Part Detection
+===================================================== */
 
 
-/* =========================================================
+/* =====================================================
 TYPO ENGINE
-========================================================= */
+===================================================== */
 
 const TYPO_FIXES = {
 
@@ -23,9 +23,9 @@ disk:"disc"
 };
 
 
-/* =========================================================
+/* =====================================================
 VEHICLE ALIASES
-========================================================= */
+===================================================== */
 
 const VEHICLE_ALIASES = {
 
@@ -45,96 +45,69 @@ lc:"land cruiser"
 };
 
 
-/* =========================================================
-MODEL → MAKE DATABASE
-========================================================= */
+/* =====================================================
+VEHICLE DATABASE
+(Scalable to 500+ models)
+===================================================== */
 
-const MODEL_TO_MAKE = {
+const VEHICLE_DB = {
 
-/* Toyota */
+toyota:[
+"corolla","camry","yaris","vitz","aqua","prius","hilux","fortuner",
+"land cruiser","prado","raize","passo","rush","probox","premio","mark x"
+],
 
-corolla:"toyota",
-camry:"toyota",
-yaris:"toyota",
-vitz:"toyota",
-aqua:"toyota",
-prius:"toyota",
-hilux:"toyota",
-fortuner:"toyota",
-landcruiser:"toyota",
-"land cruiser":"toyota",
-prado:"toyota",
-raize:"toyota",
-passo:"toyota",
-rush:"toyota",
-probox:"toyota",
-premio:"toyota",
-markx:"toyota",
+honda:[
+"civic","city","accord","vezel","brv","hrv","jazz","fit"
+],
 
-/* Honda */
+suzuki:[
+"alto","mehran","cultus","swift","wagon r","bolan","every","ciaz"
+],
 
-civic:"honda",
-city:"honda",
-accord:"honda",
-vezel:"honda",
-brv:"honda",
-hrv:"honda",
-jazz:"honda",
-fit:"honda",
+daihatsu:[
+"mira","move","cuore","boon","terios"
+],
 
-/* Suzuki */
+nissan:[
+"dayz","note","juke","wingroad","micra"
+],
 
-alto:"suzuki",
-mehran:"suzuki",
-cultus:"suzuki",
-swift:"suzuki",
-"wagon r":"suzuki",
-bolan:"suzuki",
-every:"suzuki",
-ciaz:"suzuki",
+mitsubishi:[
+"lancer","mirage","pajero"
+],
 
-/* Daihatsu */
+hyundai:[
+"tucson","elantra","sonata","santro"
+],
 
-mira:"daihatsu",
-move:"daihatsu",
-cuore:"daihatsu",
-boon:"daihatsu",
-terios:"daihatsu",
-
-/* Nissan */
-
-dayz:"nissan",
-note:"nissan",
-juke:"nissan",
-wingroad:"nissan",
-micra:"nissan",
-
-/* Mitsubishi */
-
-lancer:"mitsubishi",
-mirage:"mitsubishi",
-pajero:"mitsubishi",
-
-/* Hyundai */
-
-tucson:"hyundai",
-elantra:"hyundai",
-sonata:"hyundai",
-santro:"hyundai",
-
-/* Kia */
-
-sportage:"kia",
-picanto:"kia",
-rio:"kia",
-cerato:"kia",
+kia:[
+"sportage","picanto","rio","cerato"
+]
 
 };
 
 
-/* =========================================================
-PART SYNONYM ENGINE (ndestore priority)
-========================================================= */
+/* =====================================================
+BUILD MODEL → MAKE MAP AUTOMATICALLY
+===================================================== */
+
+const MODEL_TO_MAKE = {};
+
+for(const make in VEHICLE_DB){
+
+VEHICLE_DB[make].forEach(model=>{
+
+MODEL_TO_MAKE[model] = make;
+
+});
+
+}
+
+
+/* =====================================================
+PART SYNONYM ENGINE
+===================================================== */
 
 const PART_SYNONYMS = {
 
@@ -155,9 +128,8 @@ const PART_SYNONYMS = {
 "ac filter":"cabin filter",
 "aircon filter":"cabin filter",
 
-"plugs":"spark plug",
 "plug":"spark plug",
-
+"plugs":"spark plug",
 "iridium plug":"spark plug",
 
 "coolant":"radiator coolant",
@@ -177,14 +149,14 @@ const PART_SYNONYMS = {
 "car mat":"floor mat",
 "boot mat":"trunk mat",
 
-"sunshade":"sun shade",
+"sunshade":"sun shade"
 
 };
 
 
-/* =========================================================
-NDESTORE MAIN PART LIST
-========================================================= */
+/* =====================================================
+MAIN PART DATABASE
+===================================================== */
 
 const PARTS = [
 
@@ -234,50 +206,45 @@ const PARTS = [
 ];
 
 
-/* =========================================================
+/* =====================================================
 APPLICATION KEYWORDS
-========================================================= */
+===================================================== */
 
 const APPLICATIONS = [
-
-"front",
-"rear",
-"left",
-"right",
-"upper",
-"lower"
-
+"front","rear","left","right","upper","lower"
 ];
 
 
-/* =========================================================
+/* =====================================================
 TEXT NORMALIZER
-========================================================= */
+===================================================== */
 
 function normalize(text){
 
 let t = text.toLowerCase();
 
-/* Fix typos */
+/* typo fixes */
 
 for(const k in TYPO_FIXES){
+
 t = t.replace(new RegExp(`\\b${k}\\b`,"g"),TYPO_FIXES[k]);
+
 }
 
-/* Fix vehicle aliases */
+/* vehicle aliases */
 
 for(const k in VEHICLE_ALIASES){
-if(t.includes(k)){
-t = t.replace(k,VEHICLE_ALIASES[k]);
-}
+
+t = t.replace(new RegExp(`\\b${k}\\b`,"g"),VEHICLE_ALIASES[k]);
+
 }
 
-/* Fix part synonyms */
+/* part synonyms */
 
 for(const k in PART_SYNONYMS){
-if(t.includes(k)){
-t = t.replace(k,PART_SYNONYMS[k]);
-}
+
+t = t.replace(new RegExp(`\\b${k}\\b`,"g"),PART_SYNONYMS[k]);
+
 }
 
 return t
@@ -288,58 +255,85 @@ return t
 }
 
 
-/* =========================================================
+/* =====================================================
+YEAR DETECTION
+===================================================== */
+
+function detectYear(text){
+
+const match = text.match(/\b(19|20)\d{2}\b/);
+
+return match ? match[0] : "";
+
+}
+
+
+/* =====================================================
 VEHICLE DETECTION
-========================================================= */
+===================================================== */
 
 function detectVehicle(text){
 
-let make="";
-let model="";
+for(const model in MODEL_TO_MAKE){
 
-for(const m in MODEL_TO_MAKE){
+const regex = new RegExp(`\\b${model}\\b`);
 
-if(text.includes(m)){
+if(regex.test(text)){
 
-model=m;
-make=MODEL_TO_MAKE[m];
-break;
+return {
 
-}
+make:MODEL_TO_MAKE[model],
+model
 
-}
-
-return {make,model};
+};
 
 }
 
+}
 
-/* =========================================================
+return {make:"",model:""};
+
+}
+
+
+/* =====================================================
 PART DETECTION
-========================================================= */
+===================================================== */
 
-function detectPart(text){
+const SORTED_PARTS = [...PARTS].sort((a,b)=>b.length-a.length);
 
-for(const p of PARTS){
+function detectParts(text){
 
-if(text.includes(p)) return p;
+let found=[];
+
+for(const p of SORTED_PARTS){
+
+const regex = new RegExp(`\\b${p}\\b`);
+
+if(regex.test(text)){
+
+found.push(p);
 
 }
 
-return "";
+}
+
+return found;
 
 }
 
 
-/* =========================================================
+/* =====================================================
 APPLICATION DETECTION
-========================================================= */
+===================================================== */
 
 function detectApplication(text){
 
 for(const a of APPLICATIONS){
 
-if(text.includes(a)) return a;
+const regex = new RegExp(`\\b${a}\\b`);
+
+if(regex.test(text)) return a;
 
 }
 
@@ -348,23 +342,28 @@ return "";
 }
 
 
-/* =========================================================
+/* =====================================================
 QUERY BUILDER
-========================================================= */
+===================================================== */
 
-function buildQuery(make,model,part,application,message){
+function buildQuery(make,model,year,parts,application,message){
 
 let q=[];
 
 if(make) q.push(make);
 if(model) q.push(model);
-if(part) q.push(part);
+if(year) q.push(year);
+
+if(parts.length) q.push(parts[0]);
+
 if(application) q.push(application);
 
-let query=q.join(" ");
+let query = q.join(" ");
 
-if(query.length<3){
-query=normalize(message);
+if(query.length < 3){
+
+query = normalize(message);
+
 }
 
 return query;
@@ -372,9 +371,9 @@ return query;
 }
 
 
-/* =========================================================
-SEARCH URL
-========================================================= */
+/* =====================================================
+SEARCH URL BUILDER
+===================================================== */
 
 function buildSearchURL(query){
 
@@ -383,9 +382,9 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 }
 
 
-/* =========================================================
+/* =====================================================
 CAPITALIZE HELPER
-========================================================= */
+===================================================== */
 
 function cap(str){
 
@@ -399,9 +398,9 @@ return str
 }
 
 
-/* =========================================================
+/* =====================================================
 MAIN AI ANALYZER
-========================================================= */
+===================================================== */
 
 function analyzeAutomotiveQuery(message){
 
@@ -409,37 +408,39 @@ const clean = normalize(message);
 
 const vehicle = detectVehicle(clean);
 
-const part = detectPart(clean);
+const year = detectYear(clean);
+
+const parts = detectParts(clean);
 
 const application = detectApplication(clean);
 
 const query = buildQuery(
 vehicle.make,
 vehicle.model,
-part,
+year,
+parts,
 application,
 message
 );
 
-const url = buildSearchURL(query);
-
 return {
 
-make: cap(vehicle.make),
-model: cap(vehicle.model),
-part: cap(part),
-application: cap(application),
+make:cap(vehicle.make),
+model:cap(vehicle.model),
+year:year || "Not Specified",
+part:parts.length ? cap(parts[0]) : "Not Specified",
+application:cap(application),
 query,
-url
+url:buildSearchURL(query)
 
 };
 
 }
 
 
-/* =========================================================
+/* =====================================================
 EXPORT
-========================================================= */
+===================================================== */
 
 module.exports = {
 
