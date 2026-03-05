@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:18
 
 WORKDIR /app
 
@@ -8,8 +8,6 @@ RUN npm install
 
 COPY . .
 
-ENV NODE_ENV=production
-
 EXPOSE 3000
 
-CMD ["npm","start"]
+CMD ["node","server.js"]
