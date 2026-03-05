@@ -83,20 +83,121 @@ const GENERATIONS = {
 PART DATABASE
 -------------------------------- */
 
-const PARTS=[
+const PARTS = [
 
-"wiper",
+   const PARTS = [
+
+/* SERVICE PARTS */
+
 "air filter",
 "oil filter",
 "cabin filter",
+"ac filter",
 "spark plug",
-"brake pad",
-"brake disc",
+"engine oil",
+"gear oil",
 "radiator coolant",
+
+/* BRAKING SYSTEM */
+
+"brake pad",
+"brake pads",
+"brake disc",
+"brake rotor",
+"brake shoe",
+"brake caliper",
+"brake master cylinder",
+
+/* SUSPENSION */
+
+"shock absorber",
+"strut",
+"control arm",
+"upper control arm",
+"lower control arm",
+"ball joint",
+"stabilizer link",
+"suspension bush",
+
+/* STEERING */
+
+"tie rod",
+"tie rod end",
+"steering rack",
+"power steering pump",
+
+/* ENGINE COMPONENTS */
+
+"radiator",
 "radiator cap",
+"water pump",
+"thermostat",
+"engine mount",
+"timing belt",
+"serpentine belt",
+
+/* BODY PARTS */
+
+"bumper",
+"front bumper",
+"rear bumper",
+"bumper bracket",
+"bumper reinforcement",
+
+"hood",
+"bonnet",
+"fender",
+"grille",
+
+"door",
+"door handle",
+"door mirror",
+"side mirror",
+
+/* LIGHTING */
+
+"headlight",
+"tail light",
+"fog light",
+"indicator",
+"turn signal",
+"number plate light",
+
+/* GLASS & WIPERS */
+
+"windshield",
+"windshield wiper",
+"wiper",
+"wiper blade",
+"rear wiper",
+
+/* INTERIOR */
+
+"floor mat",
+"trunk mat",
+"dashboard cover",
+"steering cover",
+"sun shade",
+"car top cover",
+
+/* ELECTRICAL */
+
 "horn",
+"battery",
+"fuse",
+"relay",
+"starter motor",
+"alternator",
+
+/* PROTECTION PARTS */
+
 "engine shield",
-"fender shield"
+"fender shield",
+"under cover",
+"mud flap",
+"mud guard"
+
+];
 
 ];
 
