@@ -23,8 +23,11 @@ civc: "civic",
 vipr: "wiper",
 viper: "wiper",
 break: "brake",
+breaks: "brake",
 plug: "spark plug",
-plugs: "spark plug"
+plugs: "spark plug",
+filtr: "filter",
+fiter: "filter"
 };
 
 function normalize(text){
@@ -32,11 +35,11 @@ function normalize(text){
 let t = text.toLowerCase();
 
 Object.keys(SYNONYMS).forEach(k=>{
-t = t.replace(new RegExp(k,"g"), SYNONYMS[k]);
+t = t.replace(new RegExp(`\\b${k}\\b`,"g"), SYNONYMS[k]);
 });
 
 return t
-.replace(/[^\w\s]/g," ")
+.replace(/[^\w\s.]/g," ")
 .replace(/\s+/g," ")
 .trim();
 
@@ -53,19 +56,36 @@ const text = normalize(message);
 const yearMatch = text.match(/\b(19|20)\d{2}\b/);
 const year = yearMatch ? yearMatch[0] : "";
 
+const engineMatch = text.match(/\b\d\.\d\b/);
+const engine = engineMatch ? engineMatch[0] : "";
+
 let make="";
 let model="";
 let part="";
 
-const makes = ["toyota","honda","suzuki","kia","hyundai","mg"];
+const makes = [
+"toyota",
+"honda",
+"suzuki",
+"kia",
+"hyundai",
+"mg"
+];
 
 const models = [
 "corolla",
 "civic",
 "city",
+"yaris",
+"revo",
+"hilux",
+"sportage",
+"tucson",
 "alto",
 "mehran",
-"cultus"
+"cultus",
+"swift",
+"wagon r"
 ];
 
 const parts = [
@@ -75,9 +95,15 @@ const parts = [
 "cabin filter",
 "spark plug",
 "brake pad",
+"brake disc",
+"radiator coolant",
+"radiator cap",
 "car top cover",
 "sun shade",
-"floor mat"
+"floor mat",
+"horn",
+"engine shield",
+"fender shield"
 ];
 
 makes.forEach(m=>{
@@ -92,7 +118,7 @@ parts.forEach(p=>{
 if(text.includes(p)) part=p;
 });
 
-return {make,model,year,part};
+return {make,model,year,engine,part};
 
 }
 
@@ -108,14 +134,16 @@ if(vehicle.make) queryParts.push(vehicle.make);
 if(vehicle.model) queryParts.push(vehicle.model);
 if(vehicle.part) queryParts.push(vehicle.part);
 
-/* IMPORTANT
-Year is NOT added to Shopify search
-because products contain ranges like 2016-2021
+/*
+Year is not added because Shopify products
+contain ranges like 2016-2021
 */
 
 const q = queryParts.join(" ").trim();
 
 if(q.length>3) return q;
+
+/* fallback to cleaned message */
 
 return normalize(message);
 
@@ -155,13 +183,12 @@ const make = capitalize(vehicle.make);
 const model = capitalize(vehicle.model);
 const part = capitalize(vehicle.part);
 
-let vehicleText = `${make} ${model}`.trim();
-
 return `Thank you for sharing an inquiry with us.
 
 Vehicle Make: ${make || "Not specified"}
 Vehicle Model: ${model || "Not specified"}
 Model Year: ${vehicle.year || "Not specified"}
+Engine: ${vehicle.engine || "Not specified"}
 Part: ${part || "Automotive Part"}
 
 Kindly visit the following link to view all compatible options, brands, and prices:
