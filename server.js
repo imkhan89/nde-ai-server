@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 SHOPIFY CONFIG
 ===================================================== */
 
-const SHOPIFY_STORE = "ndestore.myshopify.com";
+const SHOPIFY_STORE = "347657-7d.myshopify.com";
 const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 const SHOPIFY_API = `https://${SHOPIFY_STORE}/admin/api/2023-10`;
 
