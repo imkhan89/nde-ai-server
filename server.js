@@ -4,6 +4,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const axios = require("axios");
 
 const app = express();
 
@@ -11,6 +12,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
+
+/* =====================================================
+SHOPIFY CONFIG
+===================================================== */
+
+const SHOPIFY_STORE = "ndestore.myshopify.com";
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const SHOPIFY_API = `https://${SHOPIFY_STORE}/admin/api/2023-10`;
 
 
 /* =====================================================
@@ -34,19 +43,12 @@ HELPERS
 ===================================================== */
 
 function xmlSafe(str){
-
-return str
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;");
-
+return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 
 function capitalize(s){
-
 if(!s) return "";
 return s.charAt(0).toUpperCase()+s.slice(1);
-
 }
 
 function uid(){
@@ -114,6 +116,70 @@ function detectOrderNumber(message){
 const match = message.match(/\b\d{6,}\b/);
 
 return match ? match[0] : "";
+
+}
+
+
+/* =====================================================
+SHOPIFY ORDER FETCH
+===================================================== */
+
+async function getShopifyOrder(orderNumber){
+
+try{
+
+const res = await axios.get(
+`${SHOPIFY_API}/orders.json`,
+{
+headers:{
+"X-Shopify-Access-Token": SHOPIFY_TOKEN
+},
+params:{
+name:`#${orderNumber}`,
+status:"any"
+}
+}
+);
+
+const orders = res.data.orders;
+
+if(!orders || orders.length===0){
+return null;
+}
+
+const order = orders[0];
+
+let tracking="Not available";
+let courier="Not available";
+let tracking_url="";
+
+if(order.fulfillments && order.fulfillments.length){
+
+const f = order.fulfillments[0];
+
+tracking = f.tracking_number || "Not available";
+courier = f.tracking_company || "Not available";
+tracking_url = f.tracking_url || "";
+
+}
+
+return {
+
+order:order.name,
+payment:order.financial_status,
+fulfillment:order.fulfillment_status || "Unfulfilled",
+courier,
+tracking,
+tracking_url
+
+};
+
+}catch(err){
+
+console.log("Shopify API Error:",err.message);
+return null;
+
+}
 
 }
 
@@ -236,23 +302,52 @@ return results.slice(0,3);
 AI ENGINE
 ===================================================== */
 
-function automotiveAI(message,user){
+async function automotiveAI(message,user){
 
 const session = getSession(user);
 
-/* ORDER NUMBER CHECK */
+/* ORDER NUMBER */
 
 const order = detectOrderNumber(message);
 
 if(session.state==="ORDER_TRACKING" && order){
 
+const data = await getShopifyOrder(order);
+
+if(!data){
+
 return `Thank you for contacting ndestore.com.
 
-Order Number Received: ${order}
+Order #${order} was not found.
 
-Our team is retrieving the tracking details for your order.
+Please verify the order number.`;
 
-You will receive the tracking update shortly.`;
+}
+
+let reply=`Thank you for contacting ndestore.com.
+
+Order Details
+
+Order Number: ${data.order}
+
+Payment Status: ${data.payment}
+
+Fulfillment Status: ${data.fulfillment}
+
+Courier: ${data.courier}
+
+Tracking Number: ${data.tracking}`;
+
+if(data.tracking_url){
+
+reply+=`
+
+Track Shipment:
+${data.tracking_url}`;
+
+}
+
+return reply;
 
 }
 
@@ -291,8 +386,6 @@ Part Requested: ${capitalize(part) || "Not Specified"}
 
 `;
 
-/* SEARCH */
-
 if(query){
 
 const results = searchProducts(query);
@@ -325,12 +418,12 @@ return reply;
 WHATSAPP WEBHOOK
 ===================================================== */
 
-app.post("/whatsapp",(req,res)=>{
+app.post("/whatsapp", async (req,res)=>{
 
 const message = req.body.Body || "";
 const user = req.body.From || uid();
 
-const reply = automotiveAI(message,user);
+const reply = await automotiveAI(message,user);
 
 res.set("Content-Type","text/xml");
 
