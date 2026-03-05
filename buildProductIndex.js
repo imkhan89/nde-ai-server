@@ -23,8 +23,10 @@ async function fetchProducts(){
     try{
 
       const res = await axios.get(API,{
-        headers:{
-          "X-Shopify-Access-Token": TOKEN
+  headers:{
+    "X-Shopify-Access-Token": TOKEN,
+    "Content-Type": "application/json"
+  },
         },
         params:{
           limit:250,
