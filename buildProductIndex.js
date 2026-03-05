@@ -3,7 +3,7 @@ require("dotenv").config();
 const axios = require("axios");
 const fs = require("fs");
 
-const SHOP = process.env.SHOPIFY_STORE_DOMAIN;
+const SHOP = "ndestore.myshopify.com";
 const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 const API = `https://${SHOP}/admin/api/2025-04/products.json`;
