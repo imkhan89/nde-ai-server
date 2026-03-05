@@ -13,203 +13,202 @@ const PORT = process.env.PORT || 3000;
 const SHOP_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const SHOP_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
-let PRODUCTS = [];
-
-/* -----------------------------
+/* --------------------------------
 TYPO + SYNONYM ENGINE
------------------------------ */
+-------------------------------- */
 
 const SYNONYMS = {
-  corola: "corolla",
-  civc: "civic",
-  vipr: "wiper",
-  viper: "wiper",
-  break: "brake",
-  plug: "spark plug",
-  plugs: "spark plug",
-  cover: "car top cover"
+corola: "corolla",
+civc: "civic",
+vipr: "wiper",
+viper: "wiper",
+break: "brake",
+plug: "spark plug",
+plugs: "spark plug"
 };
 
-function normalize(text) {
-  let t = text.toLowerCase();
+function normalize(text){
 
-  Object.keys(SYNONYMS).forEach((k) => {
-    t = t.replace(new RegExp(k, "g"), SYNONYMS[k]);
-  });
+let t = text.toLowerCase();
 
-  return t.replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+Object.keys(SYNONYMS).forEach(k=>{
+t = t.replace(new RegExp(k,"g"), SYNONYMS[k]);
+});
+
+return t
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim();
+
 }
 
-/* -----------------------------
-LOAD SHOPIFY CATALOG
------------------------------ */
-
-async function loadProducts() {
-  try {
-    let since_id = 0;
-
-    while (true) {
-      const res = await axios.get(
-        `https://${SHOP_DOMAIN}/admin/api/2024-01/products.json`,
-        {
-          params: { limit: 250, since_id },
-          headers: { "X-Shopify-Access-Token": SHOP_TOKEN }
-        }
-      );
-
-      const items = res.data.products || [];
-
-      if (!items.length) break;
-
-      since_id = items[items.length - 1].id;
-
-      items.forEach((p) => {
-        PRODUCTS.push({
-          title: (p.title || "").toLowerCase(),
-          handle: p.handle
-        });
-      });
-
-      console.log("Products indexed:", PRODUCTS.length);
-    }
-  } catch (err) {
-    console.log("Catalog load error:", err.message);
-  }
-}
-
-/* -----------------------------
+/* --------------------------------
 VEHICLE + PART DETECTION
------------------------------ */
+-------------------------------- */
 
-function detectVehicle(message) {
-  const text = normalize(message);
+function detectVehicle(message){
 
-  const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-  const year = yearMatch ? yearMatch[0] : "";
+const text = normalize(message);
 
-  let make = "";
-  let model = "";
-  let part = "";
+const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+const year = yearMatch ? yearMatch[0] : "";
 
-  const makes = ["toyota", "honda", "suzuki", "kia", "hyundai", "mg"];
+let make="";
+let model="";
+let part="";
 
-  const models = [
-    "corolla",
-    "civic",
-    "city",
-    "alto",
-    "mehran",
-    "cultus"
-  ];
+const makes = ["toyota","honda","suzuki","kia","hyundai","mg"];
 
-  const parts = [
-    "wiper",
-    "air filter",
-    "oil filter",
-    "cabin filter",
-    "spark plug",
-    "brake pad",
-    "car top cover",
-    "sun shade",
-    "floor mat"
-  ];
+const models = [
+"corolla",
+"civic",
+"city",
+"alto",
+"mehran",
+"cultus"
+];
 
-  makes.forEach((m) => {
-    if (text.includes(m)) make = m;
-  });
+const parts = [
+"wiper",
+"air filter",
+"oil filter",
+"cabin filter",
+"spark plug",
+"brake pad",
+"car top cover",
+"sun shade",
+"floor mat"
+];
 
-  models.forEach((m) => {
-    if (text.includes(m)) model = m;
-  });
+makes.forEach(m=>{
+if(text.includes(m)) make=m;
+});
 
-  parts.forEach((p) => {
-    if (text.includes(p)) part = p;
-  });
+models.forEach(m=>{
+if(text.includes(m)) model=m;
+});
 
-  return { make, model, year, part };
+parts.forEach(p=>{
+if(text.includes(p)) part=p;
+});
+
+return {make,model,year,part};
+
 }
 
-/* -----------------------------
-SEARCH QUERY
------------------------------ */
+/* --------------------------------
+SEARCH QUERY BUILDER
+-------------------------------- */
 
-function buildQuery(vehicle, message) {
-  const q = `${vehicle.part || ""} ${vehicle.make || ""} ${
-    vehicle.model || ""
-  }`.trim();
+function buildQuery(vehicle,message){
 
-  if (q.length > 2) return q;
+let queryParts = [];
 
-  return normalize(message);
+if(vehicle.part) queryParts.push(vehicle.part);
+if(vehicle.make) queryParts.push(vehicle.make);
+if(vehicle.model) queryParts.push(vehicle.model);
+if(vehicle.year) queryParts.push(vehicle.year);
+
+const q = queryParts.join(" ").trim();
+
+if(q.length>3) return q;
+
+return normalize(message);
+
 }
 
-/* -----------------------------
+/* --------------------------------
 SHOPIFY SEARCH LINK
------------------------------ */
+-------------------------------- */
 
-function buildSearchURL(query) {
-  return `https://www.ndestore.com/search?q=${encodeURIComponent(
-    query
-  )}&options%5Bprefix%5D=last`;
+function buildSearchURL(query){
+
+return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&options%5Bprefix%5D=last`;
+
 }
 
-/* -----------------------------
+/* --------------------------------
+FORMAT TEXT
+-------------------------------- */
+
+function capitalize(str){
+
+if(!str) return "";
+
+return str.charAt(0).toUpperCase()+str.slice(1);
+
+}
+
+/* --------------------------------
 WHATSAPP REPLY BUILDER
------------------------------ */
+-------------------------------- */
 
-function buildReply(vehicle, query) {
-  const url = buildSearchURL(query);
+function buildReply(vehicle,query){
 
-  return `Thank you for your inquiry.
+const url = buildSearchURL(query);
 
-Product: ${vehicle.part || "Automotive Part"}
-Vehicle: ${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.year || ""}
+const make = capitalize(vehicle.make);
+const model = capitalize(vehicle.model);
+const part = capitalize(vehicle.part);
 
-View options:
-${url}
+let vehicleText = `${make} ${model}`.trim();
 
-If you require further assistance please let us know.`;
+return `Thank you for sharing an inquiry with us.
+
+Vehicle Make: ${make || "Not specified"}
+Vehicle Model: ${model || "Not specified"}
+Model Year: ${vehicle.year || "Not specified"}
+Part: ${part || "Automotive Part"}
+
+Kindly visit the following website link for details:
+${url}`;
+
 }
 
-/* -----------------------------
+/* --------------------------------
 XML SAFE
------------------------------ */
+-------------------------------- */
 
-function xmlSafe(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+function xmlSafe(text){
+
+return text
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
+
 }
 
-/* -----------------------------
+/* --------------------------------
 WHATSAPP WEBHOOK
------------------------------ */
+-------------------------------- */
 
-app.post("/whatsapp", (req, res) => {
-  const message = (req.body.Body || "").trim();
+app.post("/whatsapp",(req,res)=>{
 
-  const vehicle = detectVehicle(message);
+const message = (req.body.Body || "").trim();
 
-  const query = buildQuery(vehicle, message);
+const vehicle = detectVehicle(message);
 
-  const reply = buildReply(vehicle, query);
+const query = buildQuery(vehicle,message);
 
-  const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+const reply = buildReply(vehicle,query);
+
+const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
 <Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
-  res.set("Content-Type", "text/xml");
-  res.send(twiml);
+res.set("Content-Type","text/xml");
+
+res.send(twiml);
+
 });
 
-/* -----------------------------
+/* --------------------------------
 SERVER START
------------------------------ */
+-------------------------------- */
 
-app.listen(PORT, async () => {
-  console.log("NDE AI Server running:", PORT);
+app.listen(PORT,()=>{
 
-  await loadProducts();
+console.log("NDE AI Server running:",PORT);
+
 });
