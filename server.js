@@ -16,9 +16,9 @@ const SHOP_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 let PRODUCTS = [];
 
-/* =========================================
-LOAD SHOPIFY PRODUCTS
-========================================= */
+/* =========================================================
+LOAD COMPLETE SHOPIFY CATALOG
+========================================================= */
 
 async function loadProducts() {
 
@@ -51,26 +51,40 @@ console.log("Products loaded:", allProducts.length);
 
 }
 
-PRODUCTS = allProducts.map(p => ({
-title: p.title.toLowerCase(),
-handle: p.handle
-}));
+PRODUCTS = allProducts.map(p => {
+
+const description = (p.body_html || "").replace(/<[^>]*>/g,"");
+
+const variants = p.variants || [];
+
+return {
+
+title: (p.title || "").toLowerCase(),
+handle: p.handle,
+description: description.toLowerCase(),
+tags: (p.tags || "").toLowerCase(),
+vendor: (p.vendor || "").toLowerCase(),
+sku: variants.map(v => v.sku || "").join(" ").toLowerCase()
+
+};
+
+});
 
 console.log("Catalog indexed:", PRODUCTS.length);
 
 } catch (err) {
 
-console.log("Catalog error:", err.message);
+console.log("Catalog load error:", err.message);
 
 }
 
 }
 
-/* =========================================
-TEXT HELPERS
-========================================= */
+/* =========================================================
+TEXT UTILITIES
+========================================================= */
 
-function normalize(text) {
+function normalize(text){
 
 return text
 .toLowerCase()
@@ -80,7 +94,7 @@ return text
 
 }
 
-function xmlSafe(text) {
+function xmlSafe(text){
 
 return text
 .replace(/&/g,"&amp;")
@@ -89,7 +103,7 @@ return text
 
 }
 
-function buildSearchURL(query) {
+function buildSearchURL(query){
 
 const encoded = encodeURIComponent(query);
 
@@ -97,89 +111,134 @@ return `https://www.ndestore.com/search?q=${encoded}&options%5Bprefix%5D=last`;
 
 }
 
-/* =========================================
-SIMPLE FUZZY MATCH
-========================================= */
+/* =========================================================
+SMART PRODUCT SEARCH ENGINE
+Search title + description + tags + SKU
+========================================================= */
 
-function fuzzyMatch(message) {
+function searchProducts(message){
 
-const msg = normalize(message);
+const query = normalize(message);
+
+const words = query.split(" ");
 
 let bestScore = 0;
-let bestTitle = msg;
+let bestProduct = null;
 
-for (const p of PRODUCTS) {
+for (const p of PRODUCTS){
 
 let score = 0;
 
-const words = msg.split(" ");
+for (const w of words){
 
-for (const w of words) {
+if (p.title.includes(w)) score += 5;
 
-if (p.title.includes(w)) score++;
+if (p.description.includes(w)) score += 2;
+
+if (p.tags.includes(w)) score += 2;
+
+if (p.vendor.includes(w)) score += 1;
+
+if (p.sku.includes(w)) score += 4;
 
 }
 
-if (score > bestScore) {
+if (score > bestScore){
 
 bestScore = score;
-bestTitle = p.title;
+bestProduct = p;
 
 }
 
 }
 
-return bestTitle;
+return bestProduct;
 
 }
 
-/* =========================================
-AI VEHICLE DETECTION
-========================================= */
+/* =========================================================
+AI CUSTOMER INTENT DETECTION
+========================================================= */
 
-async function detectVehicle(message) {
+async function detectIntent(message){
 
-if (!OPENAI_KEY) return null;
+if (!OPENAI_KEY) return "product";
 
-try {
+try{
 
 const response = await axios.post(
 "https://api.openai.com/v1/chat/completions",
 {
-model: "gpt-4o-mini",
-messages: [
+model:"gpt-4o-mini",
+messages:[
 {
-role: "system",
-content: "Extract vehicle make, model, year and part. Return JSON only."
+role:"system",
+content:"Classify message intent. Return only one word: product, order, support, unclear"
 },
 {
-role: "user",
-content: message
+role:"user",
+content:message
 }
 ],
-max_tokens: 120
+max_tokens:5
 },
 {
-headers: {
-Authorization: `Bearer ${OPENAI_KEY}`
+headers:{
+Authorization:`Bearer ${OPENAI_KEY}`
 }
 }
 );
 
-let text = response.data.choices[0].message.content;
+return response.data.choices[0].message.content.trim().toLowerCase();
 
-text = text.replace(/```json/g,"").replace(/```/g,"").trim();
+}catch{
 
-const obj = JSON.parse(text);
+return "product";
 
-return {
-make: obj.make || "",
-model: obj.model || "",
-year: obj.year || "",
-part: obj.part || ""
-};
+}
 
-} catch {
+}
+
+/* =========================================================
+AI VEHICLE + PART EXTRACTION
+========================================================= */
+
+async function detectVehicle(message){
+
+if (!OPENAI_KEY) return null;
+
+try{
+
+const response = await axios.post(
+"https://api.openai.com/v1/chat/completions",
+{
+model:"gpt-4o-mini",
+messages:[
+{
+role:"system",
+content:"Extract make, model, year and part from message. Return JSON only."
+},
+{
+role:"user",
+content:message
+}
+],
+max_tokens:120
+},
+{
+headers:{
+Authorization:`Bearer ${OPENAI_KEY}`
+}
+}
+);
+
+let text=response.data.choices[0].message.content;
+
+text=text.replace(/```json/g,"").replace(/```/g,"").trim();
+
+return JSON.parse(text);
+
+}catch{
 
 return null;
 
@@ -187,62 +246,120 @@ return null;
 
 }
 
-/* =========================================
-BUILD SEARCH QUERY
-========================================= */
+/* =========================================================
+WHATSAPP WEBHOOK
+========================================================= */
 
-function buildQuery(vehicle,message){
+app.post("/whatsapp", async (req,res)=>{
+
+const message=(req.body.Body || "").trim();
+
+console.log("Customer:",message);
+
+let reply="";
+
+try{
+
+const intent = await detectIntent(message);
+
+/* =========================
+PRODUCT INQUIRY
+========================= */
+
+if (intent==="product"){
+
+const vehicle = await detectVehicle(message);
 
 let query="";
 
 if(vehicle){
 
-query=`${vehicle.part} ${vehicle.make} ${vehicle.model}`.trim();
+query=`${vehicle.part || ""} ${vehicle.make || ""} ${vehicle.model || ""}`.trim();
 
 }
 
 if(!query){
 
-query=fuzzyMatch(message);
+query=message;
 
 }
 
-return normalize(query);
+const result = searchProducts(query);
 
-}
-
-/* =========================================
-WHATSAPP WEBHOOK
-========================================= */
-
-app.post("/whatsapp", async (req,res)=>{
-
-const message=(req.body.Body||"").trim();
-
-console.log("Customer message:",message);
-
-let query="";
-
-try{
-
-const vehicle = await detectVehicle(message);
-
-query = buildQuery(vehicle,message);
-
-}catch{
-
-query = normalize(message);
-
-}
+if(result){
 
 const url = buildSearchURL(query);
 
-const reply =
+reply =
 `Thank you for inquiry with us.
 
 For more information about the requested product kindly visit the following website link:
 
 ${url}`;
+
+}else{
+
+reply =
+`Thank you for contacting us.
+
+To assist you accurately kindly confirm the following details:
+
+Vehicle Make
+Vehicle Model
+Vehicle Year
+Required Part`;
+
+}
+
+}
+
+/* =========================
+ORDER SUPPORT
+========================= */
+
+else if(intent==="order"){
+
+reply =
+`Thank you for contacting us.
+
+Kindly share your order number so we may check the order status and update you accordingly.`;
+
+}
+
+/* =========================
+CUSTOMER SUPPORT
+========================= */
+
+else if(intent==="support"){
+
+reply =
+`Thank you for contacting us.
+
+Kindly share further details regarding your concern so we may assist you accordingly.`;
+
+}
+
+/* =========================
+UNCLEAR MESSAGE
+========================= */
+
+else{
+
+reply =
+`Thank you for contacting us.
+
+Kindly confirm the vehicle model and required part so we may guide you accordingly.`;
+
+}
+
+}catch{
+
+reply =
+`Thank you for contacting us.
+
+Kindly confirm the vehicle model and required part so we may guide you accordingly.`;
+
+}
 
 const twiml =
 `<?xml version="1.0" encoding="UTF-8"?>
@@ -256,13 +373,13 @@ res.send(twiml);
 
 });
 
-/* =========================================
+/* =========================================================
 UTILITY ROUTES
-========================================= */
+========================================================= */
 
 app.get("/",(req,res)=>{
 
-res.send("NDE AI SERVER RUNNING");
+res.send("NDE ENTERPRISE AI SERVER RUNNING");
 
 });
 
@@ -272,9 +389,9 @@ res.json({products:PRODUCTS.length});
 
 });
 
-/* =========================================
+/* =========================================================
 START SERVER
-========================================= */
+========================================================= */
 
 app.listen(PORT, async ()=>{
 
