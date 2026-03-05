@@ -1,110 +1,143 @@
+/*
+NDEstore Vehicle Database
+Complete vehicle list extracted from Shopify menu
+Used for AI vehicle detection for auto parts
+*/
+
 const VEHICLE_DATABASE = {
 
 Toyota: {
 
-Corolla: [
-"Corolla Altis",
-"Corolla Cross"
+Corolla_Altis: [
+"Toyota Corolla 2002-2008",
+"Toyota Corolla 2008-2021",
+"Toyota Altis 1.8 2008-2018",
+"Toyota Altis 1.6 2018-2021",
+"Toyota Altis X 2021-2026",
+"Toyota Corolla Grande 1.8 2008-2021",
+"Toyota Grande X 2021-2026"
 ],
 
 Yaris: [
-"Yaris",
-"Yaris Hatchback",
-"Yaris Cross"
+"Toyota Yaris",
+"Toyota Yaris 2024-2026",
+"Toyota Yaris KSP210 2020-2026",
+"Toyota Yaris Cross"
 ],
 
 Hilux: [
-"Hilux Vigo",
-"Hilux Revo"
+"Toyota Hilux Vigo",
+"Toyota Hilux Revo",
+"Toyota Hilux Rocco"
 ],
 
 Fortuner: [
-"Fortuner",
-"Fortuner GR Sport"
+"Toyota Fortuner",
+"Toyota Fortuner GR-Sport"
 ],
 
 Aqua: [
-"Aqua",
-"Aqua X Urban"
+"Toyota Aqua 2011-2013",
+"Toyota Aqua 2013-2014",
+"Toyota Aqua 2014-2021",
+"Toyota Aqua 2021-2026"
 ],
 
-Vitz: [
-"Vitz 2005-2010",
-"Vitz 2010-2017"
+Vitz_1000: [
+"Toyota Vitz 1000cc 1999-2005",
+"Toyota Vitz 1000cc 2005-2010",
+"Toyota Vitz 1000cc 2010-2014",
+"Toyota Vitz 1000cc 2014-2018"
 ],
 
 Raize: [
-"Raize"
+"Toyota Raize",
+"Toyota Raize Hybrid"
 ],
 
-HiluxSurf: [
-"Hilux Surf 2007-2009"
+Vitz_1300: [
+"Toyota Vitz 1300cc 2005-2010",
+"Toyota Vitz 1300cc 2010-2014",
+"Toyota Vitz 1300cc 2014-2018",
+"Toyota Vitz 1300cc 2018-2024"
 ],
 
-LandCruiser: [
+Hilux_Surf: [
+"Hilux Surf 2007-2009",
+"Hilux Surf 2009-2013"
+],
+
+Land_Cruiser: [
+"Land Cruiser Prado",
+"Land Cruiser 70",
 "Land Cruiser 80",
+"Land Cruiser 90",
 "Land Cruiser 100",
-"Land Cruiser 200",
-"Land Cruiser 300"
-],
-
-LandCruiserPrado: [
-"Prado 120",
-"Prado 150"
+"Land Cruiser 120",
+"Land Cruiser 200"
 ],
 
 Crown: [
-"Crown"
+"Toyota Crown"
 ],
 
 Delta: [
-"Delta"
+"Toyota Delta"
 ],
 
 Prius: [
-"Prius",
-"Prius Alpha",
-"Prius PHV"
+"Toyota Prius 2000-2005",
+"Toyota Prius 2005-2010",
+"Toyota Prius 2010-2015",
+"Toyota Prius 2015-2021",
+"Toyota Prius PHV"
 ],
 
 Passo: [
-"Passo"
+"Toyota Passo 2004-2010",
+"Toyota Passo 2010-2016"
 ],
 
 Platz: [
-"Platz"
+"Toyota Platz 1999-2005"
 ],
 
 Premio: [
-"Premio"
+"Toyota Premio 2001-2007",
+"Toyota Premio 2007-2020"
 ],
 
-AquaHybrid: [
-"Aqua Hybrid"
+Axio: [
+"Toyota Axio 1.3",
+"Toyota Axio 1.5"
 ],
 
 Fielder: [
-"Corolla Fielder"
+"Toyota Fielder"
 ],
 
 C_HR: [
-"C-HR"
+"Toyota C-HR"
 ],
 
-MarkX: [
-"Mark X"
+Mark_X: [
+"Toyota Mark X"
 ],
 
 Probox: [
-"Probox"
+"Toyota Probox"
 ],
 
 Rush: [
-"Rush"
+"Toyota Rush"
 ],
 
 IQ: [
-"IQ"
+"Toyota iQ"
+],
+
+Corolla_Cross: [
+"Toyota Corolla Cross"
 ]
 
 },
@@ -112,113 +145,99 @@ IQ: [
 Honda: {
 
 Accord: [
-"Accord",
-"Accord Euro"
+"Honda Accord",
+"Honda Accord CL9"
 ],
 
 City: [
-"City 1996-2002",
-"City 2003-2008",
-"City 2009-2021"
+"Honda City 1996-2002",
+"Honda City 2003-2008",
+"Honda City 2009-2021"
 ],
 
 Civic: [
-"Civic 1996-2000",
-"Civic 2001-2006",
-"Civic 2007-2012",
-"Civic 2013-2016",
-"Civic 2017-2021"
+"Honda Civic 1996-2000",
+"Honda Civic 2001-2005",
+"Honda Civic 2006-2012",
+"Honda Civic 2013-2016",
+"Honda Civic 2016-2021",
+"Honda Civic 2022-Present"
 ],
 
-BRV: [
-"BR-V"
-],
-
-HRV: [
-"HR-V"
-],
+BRV: ["Honda BRV"],
+HRV: ["Honda HRV"],
 
 Vezel: [
-"Vezel",
-"Vezel Hybrid"
+"Honda Vezel",
+"Honda Vezel Hybrid"
 ],
 
-NSeries: [
-"N Box",
-"N WGN"
+N_Series: [
+"Honda N Box",
+"Honda N WGN"
 ],
 
-Civic_JDM: [
-"Civic JDM"
-],
+Civic_JDM: ["Honda Civic JDM"],
 
-OtherModels: [
-"Fit",
-"Freed",
-"Insight",
-"Jazz",
-"Life",
-"Airwave",
-"CR-Z",
-"Domani",
-"CR-V",
-"Element",
-"Crossroad"
+Other_Models: [
+"Honda Fit",
+"Honda Freed",
+"Honda Insight",
+"Honda Jazz",
+"Honda Life",
+"Honda Amaze",
+"Honda Zest",
+"Honda Element",
+"Honda Freed",
+"Honda Crossroad"
 ]
 
 },
 
 Suzuki: {
 
-Cultus: [
-"Cultus Old Shape",
-"Cultus New Shape"
+Alto_Cultus: [
+"Suzuki Alto 2009-2019",
+"Suzuki Cultus",
+"Suzuki Cultus Old Shape",
+"Suzuki Cultus 2017-2021"
 ],
 
 Swift: [
-"Swift 2004-2010",
-"Swift 2011-2017"
+"Suzuki Swift",
+"Suzuki Swift Sport"
 ],
 
-WagonR: [
-"WagonR"
+Wagon_R: ["Suzuki Wagon R"],
+Mehran: ["Suzuki Mehran"],
+Alto: ["Suzuki Alto"],
+Baleno: ["Suzuki Baleno"],
+Ciaz: ["Suzuki Ciaz"],
+Every: ["Suzuki Every"],
+Hustler: ["Suzuki Hustler"],
+Vitara: ["Suzuki Vitara"],
+Jimny: ["Suzuki Jimny"],
+
+Alto_JDM: [
+"Suzuki Alto Eco",
+"Suzuki Alto Works"
 ],
 
-Every: [
-"Every"
+Liana: [
+"Suzuki Liana 2005-2009"
 ],
 
-Alto: [
-"Alto VX",
-"Alto VXR"
+Wagon_R_JDM: [
+"Suzuki Wagon R 2003-2008",
+"Suzuki Wagon R 2008-2013"
 ],
 
-Bolan: [
-"Bolan"
+Every_Wagon: [
+"Suzuki Every Wagon"
 ],
 
-Ciaz: [
-"Ciaz"
-],
-
-Kizashi: [
-"Kizashi"
-],
-
-Vitara: [
-"Vitara"
-],
-
-WagonR_JDM: [
-"WagonR JDM"
-],
-
-AltoJDM: [
-"Alto JDM"
-],
-
-AltoHybrid: [
-"Alto Hybrid"
+Swift_Sports: [
+"Suzuki Swift Sports"
 ]
 
 },
@@ -226,218 +245,200 @@ AltoHybrid: [
 Hyundai: {
 
 Elantra: [
-"Elantra",
-"Elantra Hybrid"
+"Hyundai Elantra",
+"Hyundai Elantra Hybrid"
 ],
 
 Tucson: [
-"Tucson",
-"Tucson Hybrid"
+"Hyundai Tucson",
+"Hyundai Tucson Hybrid"
 ],
 
-SantaFe: [
-"Santa Fe",
-"Santa Fe Hybrid"
+Santa_Fe: [
+"Hyundai Santa Fe",
+"Hyundai Santa Fe Hybrid"
 ],
 
 Sonata: [
-"Sonata"
+"Hyundai Sonata",
+"Hyundai Sonata N Line"
 ],
 
-Santro: [
-"Santro"
-],
-
-GrandStarex: [
-"Grand Starex"
-]
+Santro: ["Hyundai Santro"],
+Grand_i10: ["Hyundai Grand i10"],
+Accent: ["Hyundai Accent"]
 
 },
 
-Kia: {
+KIA: {
 
 Sportage: [
-"Sportage"
-],
-
-Forte: [
-"Forte"
+"KIA Sportage",
+"KIA Sportage Alpha",
+"KIA Sportage FWD"
 ],
 
 Stonic: [
-"Stonic"
+"KIA Stonic",
+"KIA Stonic EX",
+"KIA Stonic EX Plus"
 ],
 
-Carnival: [
-"Carnival"
-]
+Sorento: ["KIA Sorento"],
+Carnival: ["KIA Grand Carnival"]
 
 },
 
-Daihatsu: [
-"Cuore",
-"Sirion",
-"Move",
-"Boon",
-"Copen",
-"Terios"
-],
+Daihatsu: {
 
-Changan: [
-"Alsvin",
-"Karvaan",
-"Karvaan V7"
-],
+Cuore: ["Daihatsu Cuore"],
+Mira: ["Daihatsu Mira"],
+Mira_ES: ["Daihatsu Mira ES"],
+Move: ["Daihatsu Move"],
+Boon: ["Daihatsu Boon"],
+Charade: ["Daihatsu Charade"],
+Copen: ["Daihatsu Copen"],
+Terios: ["Daihatsu Terios"]
 
-Haval: [
-"Haval H6",
-"Jolion",
-"Haval Truck"
-],
+},
 
-Proton: [
-"Saga",
-"X50"
-],
+Changan: {
 
-MG: [
-"MG HS",
-"MG ZS",
-"MG ZS EV"
-],
+Alsvin: ["Changan Alsvin"],
+Karvaan: ["Changan Karvaan"],
+Oshan_X7: ["Changan Oshan X7"]
+
+},
+
+Haval: {
+
+H6: ["Haval H6"],
+Jolion: ["Haval Jolion"],
+H9: ["Haval H9"]
+
+},
+
+Proton: {
+
+Saga: ["Proton Saga"],
+X70: ["Proton X70"]
+
+},
+
+MG: {
+
+MG_HS: ["MG HS"],
+MG_ZS: ["MG ZS"],
+MG_ZS_EV: ["MG ZS EV"]
+
+},
 
 Nissan: {
 
-Expert: [
-"Expert 2000+"
-],
-
+Sunny: ["Nissan Sunny"],
 Dayz: [
-"Dayz"
+"Nissan Dayz",
+"Nissan Dayz Highway Star"
 ],
 
-Juke: [
-"Juke"
-],
-
-Micra: [
-"Micra"
-],
-
+Juke: ["Nissan Juke"],
+Clipper: ["Nissan Clipper"],
+Moco: ["Nissan Moco"],
 Note: [
-"Note"
+"Nissan Note",
+"Nissan Note E Power"
 ],
 
-Wingroad: [
-"Wingroad"
-],
-
-NotePower: [
-"Note e-Power"
-]
+Wingroad: ["Nissan Wingroad"],
+AD_Van: ["Nissan AD Van"]
 
 },
 
-Mitsubishi: [
-"Lancer",
-"Lancer Evolution",
-"Mirage",
-"Pajero Mini"
-],
+Mitsubishi: {
+
+Lancer: ["Mitsubishi Lancer"],
+EK_Wagon: ["Mitsubishi EK Wagon"],
+Mirage: ["Mitsubishi Mirage"],
+Pajero_Mini: ["Mitsubishi Pajero Mini"]
+
+},
 
 Lexus: [
-"CT200h",
-"ES",
-"LS",
-"NX",
-"RX",
-"GX"
+
+"Lexus CT200h",
+"Lexus ES",
+"Lexus GS",
+"Lexus IS",
+"Lexus LS",
+"Lexus LX",
+"Lexus RX",
+"Lexus UX"
+
 ],
 
-Chevy: [
+Chevrolet: [
+
 "Chevy Joy",
 "Chevy Tracker"
+
 ],
 
 Peugeot: [
-"Peugeot 206"
+
+"Peugeot 2008"
+
 ],
 
 Mercedes: [
-"C Class",
-"E Class",
-"ML Class",
-"S Class"
+
+"Mercedes Benz C Class",
+"Mercedes Benz E Class",
+"Mercedes Benz CLA"
+
 ],
 
 Audi: [
-"A3",
-"A4",
-"A5",
-"A6",
-"Q5",
-"Q7"
+
+"Audi A3",
+"Audi A4",
+"Audi A5",
+"Audi A6",
+"Audi A7",
+"Audi Q3",
+"Audi Q5",
+"Audi Q7"
+
 ],
 
 BMW: [
-"3 Series",
-"5 Series",
-"7 Series",
-"X1",
-"X5"
-],
 
-DFS: [
-"Glory 580",
-"Glory Pro"
-],
+"BMW 3 Series",
+"BMW 5 Series",
+"BMW 7 Series",
+"BMW X1",
+"BMW X3",
+"BMW X5"
 
-FAW: [
-"V2",
-"X40"
-],
-
-Hino: [
-"Hino Trucks"
-],
-
-Mazda: [
-"Mazda 2",
-"Mazda 3"
-],
-
-Ford: [
-"Ford F150"
-],
-
-Jaguar: [
-"XE"
-],
-
-LandRover: [
-"Discovery 4"
-],
-
-Chery: [
-"Tiggo"
-],
-
-JAC: [
-"J6",
-"J7"
-],
-
-Jetour: [
-"Jetour X70"
 ],
 
 BYD: [
-"Atto 3",
-"Seal"
+
+"BYD Atto 3",
+"BYD Seal",
+"BYD Shark"
+
 ],
 
-JMC: [
-"T6"
+JAC: [
+
+"JAC T9"
+
+],
+
+Atlas: [
+
+"Atlas Honda Truck"
+
 ]
 
 };
