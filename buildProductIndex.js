@@ -6,9 +6,7 @@ const fs = require("fs");
 const SHOP = "ndestore.myshopify.com";
 const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
-console.log("TOKEN:", TOKEN);
-
-const API = `https://${SHOP}/admin/api/2024-07/products.json`;
+const API = `https://${SHOP}/admin/api/2023-10/products.json`;
 
 let PRODUCTS = [];
 
