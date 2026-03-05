@@ -3,7 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 
-app.use(express.urlencoded({ extended: false }));
+/* Twilio sends URL encoded data */
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
@@ -78,20 +79,14 @@ VEHICLE ALIASES
 ===================================================== */
 
 const VEHICLE_ALIASES = {
-
 reborn:"civic",
 rebirth:"civic",
-
 gli:"corolla",
 grande:"corolla",
-
 vigo:"hilux",
 revo:"hilux",
-
 wagonr:"wagon r",
-
 lc:"land cruiser"
-
 };
 
 
@@ -100,8 +95,6 @@ MODEL → MAKE DATABASE
 ===================================================== */
 
 const MODEL_TO_MAKE = {
-
-/* Toyota */
 
 corolla:"toyota",
 camry:"toyota",
@@ -113,76 +106,30 @@ hilux:"toyota",
 fortuner:"toyota",
 "land cruiser":"toyota",
 prado:"toyota",
-raize:"toyota",
-passo:"toyota",
-rush:"toyota",
-probox:"toyota",
-premio:"toyota",
-markx:"toyota",
-
-/* Honda */
 
 civic:"honda",
 city:"honda",
 accord:"honda",
-vezel:"honda",
-brv:"honda",
-hrv:"honda",
-fit:"honda",
-jazz:"honda",
-
-/* Suzuki */
 
 alto:"suzuki",
 mehran:"suzuki",
 cultus:"suzuki",
 swift:"suzuki",
 "wagon r":"suzuki",
-bolan:"suzuki",
-every:"suzuki",
-ciaz:"suzuki",
-
-/* Daihatsu */
 
 mira:"daihatsu",
-move:"daihatsu",
-cuore:"daihatsu",
-boon:"daihatsu",
-terios:"daihatsu",
-
-/* Nissan */
 
 dayz:"nissan",
-note:"nissan",
-juke:"nissan",
-wingroad:"nissan",
-micra:"nissan",
-
-/* Mitsubishi */
-
-lancer:"mitsubishi",
-mirage:"mitsubishi",
-pajero:"mitsubishi",
-
-/* Hyundai */
-
-tucson:"hyundai",
-elantra:"hyundai",
-sonata:"hyundai",
-santro:"hyundai",
-
-/* Kia */
 
 sportage:"kia",
-picanto:"kia",
-rio:"kia",
-cerato:"kia"
+
+tucson:"hyundai"
 
 };
 
 
 /* =====================================================
-NDESTORE PART DATABASE
+PART DATABASE
 ===================================================== */
 
 const PARTS = [
@@ -213,8 +160,6 @@ const PARTS = [
 
 "sun shade",
 
-"car top cover",
-
 "bumper",
 "front bumper",
 "rear bumper",
@@ -225,9 +170,6 @@ const PARTS = [
 
 "side mirror",
 
-"emblem",
-"monogram",
-
 "car decal"
 
 ];
@@ -237,39 +179,7 @@ const PARTS = [
 APPLICATION KEYWORDS
 ===================================================== */
 
-const APPLICATIONS = [
-"front",
-"rear",
-"left",
-"right",
-"upper",
-"lower"
-];
-
-
-/* =====================================================
-ORDER KEYWORDS
-===================================================== */
-
-const ORDER_KEYWORDS = [
-"order status",
-"where is my order",
-"track order",
-"delivery status"
-];
-
-
-/* =====================================================
-COMPLAINT KEYWORDS
-===================================================== */
-
-const COMPLAINT_KEYWORDS = [
-"complaint",
-"wrong item",
-"damaged",
-"refund",
-"return"
-];
+const APPLICATIONS = ["front","rear","left","right"];
 
 
 /* =====================================================
@@ -278,27 +188,21 @@ TEXT NORMALIZATION
 
 function normalize(text){
 
-let t = text.toLowerCase();
-
-/* Fix typos */
+let t=(text||"").toLowerCase();
 
 for(const k in TYPO_FIXES){
-t = t.replace(new RegExp(`\\b${k}\\b`,"g"),TYPO_FIXES[k]);
+t=t.replace(new RegExp(`\\b${k}\\b`,"g"),TYPO_FIXES[k]);
 }
-
-/* Fix vehicle aliases */
 
 for(const k in VEHICLE_ALIASES){
 if(t.includes(k)){
-t = t.replace(k,VEHICLE_ALIASES[k]);
+t=t.replace(k,VEHICLE_ALIASES[k]);
 }
 }
-
-/* Fix part synonyms */
 
 for(const k in PART_SYNONYMS){
 if(t.includes(k)){
-t = t.replace(k,PART_SYNONYMS[k]);
+t=t.replace(k,PART_SYNONYMS[k]);
 }
 }
 
@@ -373,27 +277,6 @@ return "";
 
 
 /* =====================================================
-INTENT DETECTION
-===================================================== */
-
-function detectIntent(message){
-
-const text=normalize(message);
-
-for(const k of ORDER_KEYWORDS){
-if(text.includes(k)) return "order";
-}
-
-for(const k of COMPLAINT_KEYWORDS){
-if(text.includes(k)) return "complaint";
-}
-
-return "product";
-
-}
-
-
-/* =====================================================
 QUERY BUILDER
 ===================================================== */
 
@@ -427,17 +310,15 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 
 
 /* =====================================================
-CAPITALIZE HELPER
+XML SAFE
 ===================================================== */
 
-function cap(str){
+function xmlSafe(text){
 
-if(!str) return "Not Specified";
-
-return str
-.split(" ")
-.map(w=>w.charAt(0).toUpperCase()+w.slice(1))
-.join(" ");
+return text
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
 
 }
 
@@ -448,39 +329,9 @@ WHATSAPP WEBHOOK
 
 app.post("/whatsapp",(req,res)=>{
 
+console.log("Incoming message:",req.body);
+
 const message=(req.body.Body || "").trim();
-
-const intent=detectIntent(message);
-
-let reply="";
-
-
-if(intent==="order"){
-
-reply=`Thank you for contacting ndestore.com.
-
-To check your delivery status kindly share your order number.
-
-Our team will review the order and provide an update shortly.`;
-
-}
-
-else if(intent==="complaint"){
-
-reply=`Thank you for contacting ndestore.com.
-
-We are sorry to hear about the issue.
-
-Kindly share:
-
-Order Number
-Complaint Description
-
-Our support team will review the matter and assist you accordingly.`;
-
-}
-
-else{
 
 const text=normalize(message);
 
@@ -494,24 +345,22 @@ const query=buildQuery(vehicle,part,application,message);
 
 const url=buildSearchURL(query);
 
-reply=`Thank you for contacting ndestore.com kindly note the following:
+let reply=`Thank you for contacting ndestore.com kindly note the following:
 
-Make: ${cap(vehicle.make)}
-Model: ${cap(vehicle.model)}
+Make: ${vehicle.make || "Not Specified"}
+Model: ${vehicle.model || "Not Specified"}
 Model Year: Not Specified
-Part Requested: ${cap(part)}
+Part Requested: ${part || "Automotive Part"}
 
 Website Link:
 ${url}
 
 If you would like further assistance share detailed inquiry.`;
 
-}
-
 
 const twiml=`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-<Message>${reply}</Message>
+<Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
 res.set("Content-Type","text/xml");
