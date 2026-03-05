@@ -298,27 +298,54 @@ PART DETECTION
 ===================================================== */
 
 const PARTS=[
+const PART_KEYWORDS = [
+
+"headlight",
+"head lamp",
+"tail light",
+"tail lamp",
+"fog light",
+
+"side mirror",
+"mirror",
+
+"bumper",
+"front bumper",
+"rear bumper",
+
+"grill",
+"grille",
+
+"bonnet",
+"hood",
+
+"fender",
+"mudguard",
+
+"radiator",
+"radiator fan",
 
 "brake pad",
-"disc pad",
-"disc pad set",
-"brake rotor",
+"brake pads",
 "brake disc",
+"brake rotor",
 
 "air filter",
 "oil filter",
 "cabin filter",
+"ac filter",
 
 "spark plug",
+"coil",
 
-"radiator",
-"radiator coolant",
+"shock absorber",
+"suspension",
 
-"wiper blade",
+"door handle",
+"door mirror",
 
-"side mirror",
-
-"bumper"
+"wiper",
+"wiper blade"
 
 ];
 
