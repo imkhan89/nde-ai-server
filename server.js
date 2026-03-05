@@ -21,7 +21,6 @@ const SHOPIFY_STORE = "347657-7d.myshopify.com";
 const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 const SHOPIFY_API = `https://${SHOPIFY_STORE}/admin/api/2023-10`;
 
-
 /* =====================================================
 FILE PATHS
 ===================================================== */
@@ -30,7 +29,6 @@ const INDEX_DIR = path.join(__dirname,"index");
 const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
 const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
 
-
 /* =====================================================
 MEMORY
 ===================================================== */
@@ -38,7 +36,6 @@ MEMORY
 let PRODUCT_INDEX = [];
 let SEARCH_INDEX = {};
 let SESSIONS = {};
-
 
 /* =====================================================
 HELPERS
@@ -56,7 +53,6 @@ return s.charAt(0).toUpperCase()+s.slice(1);
 function uid(){
 return crypto.randomBytes(6).toString("hex");
 }
-
 
 /* =====================================================
 LOAD PRODUCT INDEX
@@ -83,7 +79,6 @@ console.log("Index load error:",e.message);
 }
 
 }
-
 
 /* =====================================================
 LOAD SEARCH INDEX
@@ -114,7 +109,6 @@ console.log("Search index error:",e.message);
 loadProductIndex();
 loadSearchIndex();
 
-
 /* =====================================================
 SESSION
 ===================================================== */
@@ -136,7 +130,6 @@ return SESSIONS[user];
 
 }
 
-
 /* =====================================================
 ORDER NUMBER DETECTION
 ===================================================== */
@@ -148,7 +141,6 @@ const match = message.match(/\d{6,}/);
 return match ? match[0] : "";
 
 }
-
 
 /* =====================================================
 SHOPIFY ORDER FETCH
@@ -213,27 +205,44 @@ return null;
 
 }
 
-
 /* =====================================================
 INTENT DETECTION
 ===================================================== */
 
 function detectIntent(message){
 
-const m = message.toLowerCase();
+const m = message.toLowerCase().trim();
+
+/* GREETINGS */
+
+if(
+m==="hi" ||
+m==="hello" ||
+m==="hey" ||
+m==="salam" ||
+m==="assalamualaikum" ||
+m==="aoa" ||
+m.includes("good morning") ||
+m.includes("good evening")
+){
+return "GREETING";
+}
+
+/* ORDER */
 
 if(m.includes("order") || m.includes("track")){
 return "ORDER_TRACKING";
 }
 
-if(m.includes("delivery")){
+/* DELIVERY */
+
+if(m.includes("delivery") || m.includes("shipping")){
 return "DELIVERY";
 }
 
 return "PRODUCT_SEARCH";
 
 }
-
 
 /* =====================================================
 VEHICLE DETECTION
@@ -284,7 +293,6 @@ return{};
 
 }
 
-
 /* =====================================================
 PART DETECTION
 ===================================================== */
@@ -330,9 +338,8 @@ return "";
 
 }
 
-
 /* =====================================================
-TOKEN SEARCH ENGINE (FAST)
+TOKEN SEARCH ENGINE
 ===================================================== */
 
 function searchProducts(query){
@@ -340,8 +347,6 @@ function searchProducts(query){
 const tokens = query.toLowerCase().split(" ");
 
 let results=[];
-
-/* USE SEARCH INDEX IF AVAILABLE */
 
 if(Object.keys(SEARCH_INDEX).length){
 
@@ -362,8 +367,6 @@ results.push(m);
 }
 
 }else{
-
-/* FALLBACK SCAN */
 
 for(const p of PRODUCT_INDEX){
 
@@ -394,7 +397,6 @@ return results.slice(0,3);
 
 }
 
-
 /* =====================================================
 AI ENGINE
 ===================================================== */
@@ -403,9 +405,9 @@ async function automotiveAI(message,user){
 
 const session = getSession(user);
 
-const order = detectOrderNumber(message);
+/* ORDER NUMBER */
 
-/* ORDER STATUS */
+const order = detectOrderNumber(message);
 
 if(session.state==="ORDER_TRACKING" && order){
 
@@ -448,10 +450,25 @@ return reply;
 
 }
 
-
 /* INTENT */
 
 const intent = detectIntent(message);
+
+/* GREETING RESPONSE */
+
+if(intent==="GREETING"){
+
+return `Thank you for contacting ndestore.com.
+
+Welcome to Pakistan's first AI-powered auto parts search.
+
+Please share your vehicle model and required part.
+
+Example:
+Corolla 2015 brake pads
+Civic 2018 air filter`;
+
+}
 
 if(intent==="ORDER_TRACKING"){
 
@@ -462,7 +479,6 @@ return `Thank you for contacting ndestore.com.
 To check your order status kindly share your order number (e.g., #12345).`;
 
 }
-
 
 /* PRODUCT SEARCH */
 
@@ -511,7 +527,6 @@ return reply;
 
 }
 
-
 /* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
@@ -528,7 +543,6 @@ res.set("Content-Type","text/xml");
 res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 
 });
-
 
 /* =====================================================
 SERVER START
