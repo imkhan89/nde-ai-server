@@ -63,20 +63,22 @@ swift: "suzuki",
 "wagon r": "suzuki",
 
 sportage: "kia",
-
 tucson: "hyundai"
 
 };
 
 /* --------------------------------
-GENERATION DETECTION
+VEHICLE GENERATION DATABASE
 -------------------------------- */
 
 const GENERATIONS = {
 
-"civic reborn": {make:"honda",model:"civic",year:"2006-2012"},
-"civic rebirth": {make:"honda",model:"civic",year:"2013-2016"},
-"civic x": {make:"honda",model:"civic",year:"2017-2021"}
+"civic reborn": { make:"honda", model:"civic", year:"2006-2012" },
+"civic rebirth": { make:"honda", model:"civic", year:"2013-2016" },
+"civic x": { make:"honda", model:"civic", year:"2017-2021" },
+
+"corolla 2014": { make:"toyota", model:"corolla", year:"2014-2017" },
+"corolla 2018": { make:"toyota", model:"corolla", year:"2018-2021" }
 
 };
 
@@ -116,57 +118,47 @@ let make="";
 let model="";
 let part="";
 let year="";
-let engine="";
 
 /* generation detection */
 
 Object.keys(GENERATIONS).forEach(g=>{
 
 if(text.includes(g)){
-
 make = GENERATIONS[g].make;
 model = GENERATIONS[g].model;
 year = GENERATIONS[g].year;
-
 }
 
 });
-
-/* year detection */
-
-const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-if(yearMatch) year = yearMatch[0];
-
-/* engine detection */
-
-const engineMatch = text.match(/\b\d\.\d\b/);
-if(engineMatch) engine = engineMatch[0];
 
 /* model detection */
 
 Object.keys(MODEL_TO_MAKE).forEach(m=>{
 
-if(text.includes(m)) model = m;
+if(text.includes(m)){
+model = m;
+}
 
 });
 
 /* auto detect make */
 
 if(!make && model && MODEL_TO_MAKE[model]){
-
 make = MODEL_TO_MAKE[model];
-
 }
+
+/* year detection */
+
+const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+if(yearMatch) year = yearMatch[0];
 
 /* part detection */
 
 PARTS.forEach(p=>{
-
 if(text.includes(p)) part = p;
-
 });
 
-return {make,model,year,engine,part};
+return {make,model,year,part};
 
 }
 
@@ -199,7 +191,7 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 }
 
 /* --------------------------------
-CAPITALIZE TEXT
+CAPITALIZATION
 -------------------------------- */
 
 function capitalize(str){
@@ -214,27 +206,7 @@ return str
 }
 
 /* --------------------------------
-TECHNICAL QUESTION DETECTION
--------------------------------- */
-
-function detectTechnical(text){
-
-const keywords=[
-"best",
-"recommend",
-"difference",
-"which",
-"quality",
-"original",
-"genuine"
-];
-
-return keywords.some(k=>text.includes(k));
-
-}
-
-/* --------------------------------
-AI LEARNING LOG
+LEARNING LOG
 -------------------------------- */
 
 function learn(query){
@@ -254,7 +226,7 @@ JSON.stringify({query,date:new Date()})+"\n"
 REPLY BUILDER
 -------------------------------- */
 
-function buildReply(vehicle,query,message){
+function buildReply(vehicle,query){
 
 const url = buildSearchURL(query);
 
@@ -262,56 +234,30 @@ const make = capitalize(vehicle.make);
 const model = capitalize(vehicle.model);
 const part = capitalize(vehicle.part);
 
-const text = normalize(message);
-
-/* expert mode */
-
-if(detectTechnical(text)){
-
-return `Thank you for contacting NDE Store.
-
-Our automotive specialists recommend selecting high-quality OEM or premium aftermarket parts for durability and performance.
-
-For ${make || ""} ${model || ""} ${part || "automotive parts"}, please review the available brands and choose according to your preference.
-
-View available options here:
-
-${url}
-
-If you would like a specific recommendation, kindly confirm:
-
-• Vehicle Model Year
-• Engine Size`;
-
-}
-
-/* ask for year if missing */
-
 let yearPrompt="";
 
 if(vehicle.make && vehicle.model && !vehicle.year){
 
-yearPrompt=`
+yearPrompt = `
 
-To help us ensure compatibility, kindly confirm the vehicle model year.
-Example:
-2013
-2016
-2019`;
+To ensure compatibility, please confirm the vehicle model year.`;
 
 }
 
-return `Thank you for sharing an inquiry with us.
+return `Thank you for contacting NDE Store.
 
-Vehicle Make: ${make || "Not Specified"}
-Vehicle Model: ${model || "Not Specified"}
+Vehicle Information Identified:
+
+Make: ${make || "Not Specified"}
+Model: ${model || "Not Specified"}
 Model Year: ${vehicle.year || "Not Specified"}
-Engine: ${vehicle.engine || "Not Specified"}
-Part: ${part || "Automotive Part"}${yearPrompt}
+Part Requested: ${part || "Automotive Part"}
 
-Kindly visit the following link to view compatible options, brands, and prices:
+You may view compatible brands and available options at the following link:
 
-${url}`;
+${url}${yearPrompt}
+
+If you would like assistance selecting the most suitable option, I can connect you with our representative.`;
 
 }
 
@@ -342,7 +288,7 @@ const vehicle = detectVehicle(message);
 
 const query = buildQuery(vehicle,message);
 
-const reply = buildReply(vehicle,query,message);
+const reply = buildReply(vehicle,query);
 
 const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
