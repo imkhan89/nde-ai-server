@@ -2,7 +2,6 @@ require("dotenv").config();
 
 const axios = require("axios");
 const fs = require("fs");
-require("dotenv").config();
 
 const SHOP = "ndestore.myshopify.com";
 const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
@@ -12,7 +11,7 @@ const API = `https://${SHOP}/admin/api/2025-04/products.json`;
 let PRODUCTS = [];
 
 function sleep(ms){
-  return new Promise(r => setTimeout(r, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function fetchProducts(){
@@ -21,28 +20,39 @@ async function fetchProducts(){
 
   while(true){
 
-    const res = await axios.get(API,{
-      headers:{
-        "X-Shopify-Access-Token": TOKEN
-      },
-      params:{
-        limit:250,
-        since_id
-      }
-    });
+    try{
 
-    const products = res.data.products;
+      const res = await axios.get(API,{
+        headers:{
+          "X-Shopify-Access-Token": TOKEN
+        },
+        params:{
+          limit:250,
+          since_id
+        }
+      });
 
-    if(products.length === 0) break;
+      const products = res.data.products;
 
-    PRODUCTS.push(...products);
+      if(!products || products.length === 0) break;
 
-    since_id = products[products.length-1].id;
+      PRODUCTS.push(...products);
 
-    console.log("Loaded:", PRODUCTS.length);
+      since_id = products[products.length-1].id;
 
-    await sleep(300); // avoid Shopify rate limits
+      console.log("Loaded:", PRODUCTS.length);
+
+      await sleep(300);
+
+    }catch(error){
+
+      console.log("API Error:", error.message);
+      await sleep(2000);
+
+    }
+
   }
+
 }
 
 async function run(){
@@ -75,6 +85,7 @@ async function run(){
 
   console.log("Product index created");
   console.log("Total products:", index.length);
+
 }
 
 run();
