@@ -104,9 +104,9 @@ function buildQuery(vehicle,message){
 
 let queryParts = [];
 
-if(vehicle.part) queryParts.push(vehicle.part);
 if(vehicle.make) queryParts.push(vehicle.make);
 if(vehicle.model) queryParts.push(vehicle.model);
+if(vehicle.part) queryParts.push(vehicle.part);
 
 /* IMPORTANT
 Year is NOT added to Shopify search
@@ -127,7 +127,7 @@ SHOPIFY SEARCH LINK
 
 function buildSearchURL(query){
 
-return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&options%5Bprefix%5D=last`;
+return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=product&options%5Bprefix%5D=last`;
 
 }
 
@@ -164,7 +164,8 @@ Vehicle Model: ${model || "Not specified"}
 Model Year: ${vehicle.year || "Not specified"}
 Part: ${part || "Automotive Part"}
 
-Kindly visit the following website link for details:
+Kindly visit the following link to view all compatible options, brands, and prices:
+
 ${url}`;
 
 }
