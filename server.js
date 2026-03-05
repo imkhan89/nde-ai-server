@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const express = require("express");
-const axios = require("axios");
+const fs = require("fs");
 
 const app = express();
 
@@ -9,9 +9,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-
-const SHOP_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
-const SHOP_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 /* --------------------------------
 TYPO + SYNONYM ENGINE
@@ -35,7 +32,7 @@ function normalize(text){
 let t = text.toLowerCase();
 
 Object.keys(SYNONYMS).forEach(k=>{
-t = t.replace(new RegExp(`\\b${k}\\b`,"g"), SYNONYMS[k]);
+t = t.replace(new RegExp(`\\b${k}\\b`, "g"), SYNONYMS[k]);
 });
 
 return t
@@ -46,49 +43,49 @@ return t
 }
 
 /* --------------------------------
-VEHICLE + PART DETECTION
+MODEL → MAKE MAPPING
 -------------------------------- */
 
-function detectVehicle(message){
+const MODEL_TO_MAKE = {
 
-const text = normalize(message);
+corolla: "toyota",
+yaris: "toyota",
+revo: "toyota",
+hilux: "toyota",
 
-const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-const year = yearMatch ? yearMatch[0] : "";
+civic: "honda",
+city: "honda",
 
-const engineMatch = text.match(/\b\d\.\d\b/);
-const engine = engineMatch ? engineMatch[0] : "";
+alto: "suzuki",
+mehran: "suzuki",
+cultus: "suzuki",
+swift: "suzuki",
+"wagon r": "suzuki",
 
-let make="";
-let model="";
-let part="";
+sportage: "kia",
 
-const makes = [
-"toyota",
-"honda",
-"suzuki",
-"kia",
-"hyundai",
-"mg"
-];
+tucson: "hyundai"
 
-const models = [
-"corolla",
-"civic",
-"city",
-"yaris",
-"revo",
-"hilux",
-"sportage",
-"tucson",
-"alto",
-"mehran",
-"cultus",
-"swift",
-"wagon r"
-];
+};
 
-const parts = [
+/* --------------------------------
+GENERATION DETECTION
+-------------------------------- */
+
+const GENERATIONS = {
+
+"civic reborn": {make:"honda",model:"civic",year:"2006-2012"},
+"civic rebirth": {make:"honda",model:"civic",year:"2013-2016"},
+"civic x": {make:"honda",model:"civic",year:"2017-2021"}
+
+};
+
+/* --------------------------------
+PART DATABASE
+-------------------------------- */
+
+const PARTS = [
+
 "wiper",
 "air filter",
 "oil filter",
@@ -104,18 +101,69 @@ const parts = [
 "horn",
 "engine shield",
 "fender shield"
+
 ];
 
-makes.forEach(m=>{
-if(text.includes(m)) make=m;
+/* --------------------------------
+VEHICLE DETECTION
+-------------------------------- */
+
+function detectVehicle(message){
+
+const text = normalize(message);
+
+let make="";
+let model="";
+let part="";
+let year="";
+let engine="";
+
+/* generation detection */
+
+Object.keys(GENERATIONS).forEach(g=>{
+
+if(text.includes(g)){
+
+make = GENERATIONS[g].make;
+model = GENERATIONS[g].model;
+year = GENERATIONS[g].year;
+
+}
+
 });
 
-models.forEach(m=>{
-if(text.includes(m)) model=m;
+/* year detection */
+
+const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+if(yearMatch) year = yearMatch[0];
+
+/* engine detection */
+
+const engineMatch = text.match(/\b\d\.\d\b/);
+if(engineMatch) engine = engineMatch[0];
+
+/* model detection */
+
+Object.keys(MODEL_TO_MAKE).forEach(m=>{
+
+if(text.includes(m)) model = m;
+
 });
 
-parts.forEach(p=>{
-if(text.includes(p)) part=p;
+/* auto detect make */
+
+if(!make && model && MODEL_TO_MAKE[model]){
+
+make = MODEL_TO_MAKE[model];
+
+}
+
+/* part detection */
+
+PARTS.forEach(p=>{
+
+if(text.includes(p)) part = p;
+
 });
 
 return {make,model,year,engine,part};
@@ -128,29 +176,20 @@ SEARCH QUERY BUILDER
 
 function buildQuery(vehicle,message){
 
-let queryParts = [];
+let q=[];
 
-if(vehicle.make) queryParts.push(vehicle.make);
-if(vehicle.model) queryParts.push(vehicle.model);
-if(vehicle.part) queryParts.push(vehicle.part);
+if(vehicle.make) q.push(vehicle.make);
+if(vehicle.model) q.push(vehicle.model);
+if(vehicle.part) q.push(vehicle.part);
 
-/*
-Year is not added because Shopify products
-contain ranges like 2016-2021
-*/
-
-const q = queryParts.join(" ").trim();
-
-if(q.length>3) return q;
-
-/* fallback to cleaned message */
+if(q.length>1) return q.join(" ");
 
 return normalize(message);
 
 }
 
 /* --------------------------------
-SHOPIFY SEARCH LINK
+SHOPIFY SEARCH URL
 -------------------------------- */
 
 function buildSearchURL(query){
@@ -160,22 +199,62 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 }
 
 /* --------------------------------
-FORMAT TEXT
+CAPITALIZE TEXT
 -------------------------------- */
 
 function capitalize(str){
 
 if(!str) return "";
 
-return str.charAt(0).toUpperCase()+str.slice(1);
+return str
+.split(" ")
+.map(w=>w.charAt(0).toUpperCase()+w.slice(1))
+.join(" ");
 
 }
 
 /* --------------------------------
-WHATSAPP REPLY BUILDER
+TECHNICAL QUESTION DETECTION
 -------------------------------- */
 
-function buildReply(vehicle,query){
+function detectTechnical(text){
+
+const keywords=[
+"best",
+"recommend",
+"difference",
+"which",
+"quality",
+"original",
+"genuine"
+];
+
+return keywords.some(k=>text.includes(k));
+
+}
+
+/* --------------------------------
+AI LEARNING LOG
+-------------------------------- */
+
+function learn(query){
+
+try{
+
+fs.appendFileSync(
+"ai_learning_log.json",
+JSON.stringify({query,date:new Date()})+"\n"
+);
+
+}catch(e){}
+
+}
+
+/* --------------------------------
+REPLY BUILDER
+-------------------------------- */
+
+function buildReply(vehicle,query,message){
 
 const url = buildSearchURL(query);
 
@@ -183,15 +262,54 @@ const make = capitalize(vehicle.make);
 const model = capitalize(vehicle.model);
 const part = capitalize(vehicle.part);
 
+const text = normalize(message);
+
+/* expert mode */
+
+if(detectTechnical(text)){
+
+return `Thank you for contacting NDE Store.
+
+Our automotive specialists recommend selecting high-quality OEM or premium aftermarket parts for durability and performance.
+
+For ${make || ""} ${model || ""} ${part || "automotive parts"}, please review the available brands and choose according to your preference.
+
+View available options here:
+
+${url}
+
+If you would like a specific recommendation, kindly confirm:
+
+• Vehicle Model Year
+• Engine Size`;
+
+}
+
+/* ask for year if missing */
+
+let yearPrompt="";
+
+if(vehicle.make && vehicle.model && !vehicle.year){
+
+yearPrompt=`
+
+To help us ensure compatibility, kindly confirm the vehicle model year.
+Example:
+2013
+2016
+2019`;
+
+}
+
 return `Thank you for sharing an inquiry with us.
 
-Vehicle Make: ${make || "Not specified"}
-Vehicle Model: ${model || "Not specified"}
-Model Year: ${vehicle.year || "Not specified"}
-Engine: ${vehicle.engine || "Not specified"}
-Part: ${part || "Automotive Part"}
+Vehicle Make: ${make || "Not Specified"}
+Vehicle Model: ${model || "Not Specified"}
+Model Year: ${vehicle.year || "Not Specified"}
+Engine: ${vehicle.engine || "Not Specified"}
+Part: ${part || "Automotive Part"}${yearPrompt}
 
-Kindly visit the following link to view all compatible options, brands, and prices:
+Kindly visit the following link to view compatible options, brands, and prices:
 
 ${url}`;
 
@@ -218,11 +336,13 @@ app.post("/whatsapp",(req,res)=>{
 
 const message = (req.body.Body || "").trim();
 
+learn(message);
+
 const vehicle = detectVehicle(message);
 
 const query = buildQuery(vehicle,message);
 
-const reply = buildReply(vehicle,query);
+const reply = buildReply(vehicle,query,message);
 
 const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
