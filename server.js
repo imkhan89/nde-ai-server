@@ -4,360 +4,334 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
-
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({extended:false}));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-const OPENAI_KEY = process.env.OPENAI_API_KEY;
 const SHOP_DOMAIN = process.env.SHOPIFY_STORE_DOMAIN;
 const SHOP_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 let PRODUCTS = [];
 
-/* =========================================================
-LOAD COMPLETE SHOPIFY CATALOG
-========================================================= */
+/* ------------------------------------------------
+AUTOMOTIVE GENERATION DATABASE
+------------------------------------------------ */
 
-async function loadProducts() {
-
-try {
-
-console.log("Loading Shopify catalog...");
-
-let since_id = 0;
-let allProducts = [];
-
-while (true) {
-
-const response = await axios.get(
-`https://${SHOP_DOMAIN}/admin/api/2024-01/products.json`,
-{
-params: { limit: 250, since_id },
-headers: { "X-Shopify-Access-Token": SHOP_TOKEN }
-}
-);
-
-const products = response.data.products || [];
-
-if (!products.length) break;
-
-allProducts = allProducts.concat(products);
-
-since_id = products[products.length - 1].id;
-
-console.log("Products loaded:", allProducts.length);
-
-}
-
-PRODUCTS = allProducts.map(p => {
-
-const description = (p.body_html || "").replace(/<[^>]*>/g,"");
-
-const variants = p.variants || [];
-
-return {
-
-title: (p.title || "").toLowerCase(),
-handle: p.handle,
-description: description.toLowerCase(),
-tags: (p.tags || "").toLowerCase(),
-vendor: (p.vendor || "").toLowerCase(),
-sku: variants.map(v => v.sku || "").join(" ").toLowerCase()
-
+const GENERATIONS = {
+"honda civic":[
+{gen:"reborn",start:2006,end:2011},
+{gen:"rebirth",start:2012,end:2015},
+{gen:"civic x",start:2016,end:2021},
+{gen:"civic fe",start:2022,end:2030}
+],
+"toyota corolla":[
+{gen:"e140",start:2008,end:2013},
+{gen:"e170",start:2014,end:2020},
+{gen:"e210",start:2021,end:2030}
+]
 };
 
-});
+/* ------------------------------------------------
+AI SYNONYM + TYPO ENGINE
+------------------------------------------------ */
 
-console.log("Catalog indexed:", PRODUCTS.length);
-
-} catch (err) {
-
-console.log("Catalog load error:", err.message);
-
-}
-
-}
-
-/* =========================================================
-TEXT UTILITIES
-========================================================= */
+const SYNONYMS = {
+"corola":"corolla",
+"civc":"civic",
+"vipr":"wiper",
+"viper":"wiper",
+"break":"brake",
+"car cover":"car top cover",
+"top cover":"car top cover"
+};
 
 function normalize(text){
 
-return text
-.toLowerCase()
-.replace(/[^\w\s]/gi," ")
+let t = text.toLowerCase();
+
+Object.keys(SYNONYMS).forEach(k=>{
+t = t.replace(new RegExp(k,"g"),SYNONYMS[k]);
+});
+
+return t
+.replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
 .trim();
 
 }
 
-function xmlSafe(text){
+/* ------------------------------------------------
+SHOPIFY PRODUCT LOADER (50k SAFE)
+------------------------------------------------ */
 
-return text
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;");
+async function loadProducts(){
+
+let since_id = 0;
+
+while(true){
+
+const res = await axios.get(
+`https://${SHOP_DOMAIN}/admin/api/2024-01/products.json`,
+{
+params:{limit:250,since_id},
+headers:{"X-Shopify-Access-Token":SHOP_TOKEN}
+}
+);
+
+const items = res.data.products || [];
+
+if(!items.length) break;
+
+since_id = items[items.length-1].id;
+
+items.forEach(p=>{
+
+const desc = (p.body_html||"").replace(/<[^>]*>/g,"");
+
+PRODUCTS.push({
+title:(p.title||"").toLowerCase(),
+description:desc.toLowerCase(),
+tags:(p.tags||"").toLowerCase(),
+vendor:(p.vendor||"").toLowerCase(),
+handle:p.handle
+});
+
+});
+
+console.log("Products indexed:",PRODUCTS.length);
 
 }
 
-function buildSearchURL(query){
+}
 
-const encoded = encodeURIComponent(query);
+/* ------------------------------------------------
+VEHICLE INTELLIGENCE
+------------------------------------------------ */
 
-return `https://www.ndestore.com/search?q=${encoded}&options%5Bprefix%5D=last`;
+function detectVehicle(message){
+
+const text = normalize(message);
+
+const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+const year = yearMatch ? parseInt(yearMatch[0]) : null;
+
+let make="",model="",part="";
+
+["toyota","honda","suzuki","kia","hyundai","mg"].forEach(m=>{
+if(text.includes(m)) make=m;
+});
+
+["corolla","civic","city","mehran","alto","cultus"].forEach(m=>{
+if(text.includes(m)) model=m;
+});
+
+[
+"wiper",
+"air filter",
+"oil filter",
+"brake pad",
+"car top cover",
+"sun shade",
+"floor mat"
+].forEach(p=>{
+if(text.includes(p)) part=p;
+});
+
+return {make,model,year,part};
 
 }
 
-/* =========================================================
-SMART PRODUCT SEARCH ENGINE
-Search title + description + tags + SKU
-========================================================= */
+/* ------------------------------------------------
+GENERATION DETECTION
+------------------------------------------------ */
 
-function searchProducts(message){
+function generation(make,model,year){
 
-const query = normalize(message);
+if(!year) return "";
 
-const words = query.split(" ");
+const key = `${make} ${model}`;
+
+const list = GENERATIONS[key];
+
+if(!list) return "";
+
+for(const g of list){
+
+if(year>=g.start && year<=g.end){
+return g.gen;
+}
+
+}
+
+return "";
+
+}
+
+/* ------------------------------------------------
+YEAR RANGE DETECTION FROM TITLE
+------------------------------------------------ */
+
+function yearRangeScore(title,year){
+
+if(!year) return 0;
+
+const ranges = title.match(/(19|20)\d{2}\s*[-–]\s*(19|20)\d{2}/g);
+
+if(!ranges) return 0;
+
+for(const r of ranges){
+
+const y = r.match(/\d{4}/g);
+const start = parseInt(y[0]);
+const end = parseInt(y[1]);
+
+if(year>=start && year<=end){
+return 10;
+}
+
+}
+
+return 0;
+
+}
+
+/* ------------------------------------------------
+SMART PRODUCT MATCH ENGINE
+------------------------------------------------ */
+
+function searchProduct(message){
+
+const vehicle = detectVehicle(message);
+
+const gen = generation(vehicle.make,vehicle.model,vehicle.year);
 
 let bestScore = 0;
 let bestProduct = null;
 
-for (const p of PRODUCTS){
+for(const p of PRODUCTS){
 
 let score = 0;
 
-for (const w of words){
+if(vehicle.make && p.title.includes(vehicle.make)) score+=4;
+if(vehicle.model && p.title.includes(vehicle.model)) score+=4;
+if(vehicle.part && p.title.includes(vehicle.part)) score+=6;
 
-if (p.title.includes(w)) score += 5;
+if(gen && p.title.includes(gen)) score+=5;
 
-if (p.description.includes(w)) score += 2;
+score += yearRangeScore(p.title,vehicle.year);
 
-if (p.tags.includes(w)) score += 2;
+if(vehicle.part && p.description.includes(vehicle.part)) score+=2;
 
-if (p.vendor.includes(w)) score += 1;
-
-if (p.sku.includes(w)) score += 4;
-
-}
-
-if (score > bestScore){
-
+if(score > bestScore){
 bestScore = score;
 bestProduct = p;
-
 }
 
 }
 
-return bestProduct;
+return {vehicle,bestProduct};
 
 }
 
-/* =========================================================
-AI CUSTOMER INTENT DETECTION
-========================================================= */
+/* ------------------------------------------------
+CROSS SELL ENGINE
+------------------------------------------------ */
 
-async function detectIntent(message){
+const CROSS_SELL = {
+"wiper":["windshield cleaner","glass cleaner"],
+"air filter":["cabin filter","oil filter"],
+"car top cover":["sun shade","floor mat"],
+"brake pad":["brake rotor"]
+};
 
-if (!OPENAI_KEY) return "product";
+function crossSell(part){
 
-try{
+const items = CROSS_SELL[part];
 
-const response = await axios.post(
-"https://api.openai.com/v1/chat/completions",
-{
-model:"gpt-4o-mini",
-messages:[
-{
-role:"system",
-content:"Classify message intent. Return only one word: product, order, support, unclear"
-},
-{
-role:"user",
-content:message
-}
-],
-max_tokens:5
-},
-{
-headers:{
-Authorization:`Bearer ${OPENAI_KEY}`
-}
-}
-);
+if(!items) return "";
 
-return response.data.choices[0].message.content.trim().toLowerCase();
-
-}catch{
-
-return "product";
+return items.join(", ");
 
 }
 
-}
+/* ------------------------------------------------
+SEARCH LINK
+------------------------------------------------ */
 
-/* =========================================================
-AI VEHICLE + PART EXTRACTION
-========================================================= */
+function searchURL(query){
 
-async function detectVehicle(message){
-
-if (!OPENAI_KEY) return null;
-
-try{
-
-const response = await axios.post(
-"https://api.openai.com/v1/chat/completions",
-{
-model:"gpt-4o-mini",
-messages:[
-{
-role:"system",
-content:"Extract make, model, year and part from message. Return JSON only."
-},
-{
-role:"user",
-content:message
-}
-],
-max_tokens:120
-},
-{
-headers:{
-Authorization:`Bearer ${OPENAI_KEY}`
-}
-}
-);
-
-let text=response.data.choices[0].message.content;
-
-text=text.replace(/```json/g,"").replace(/```/g,"").trim();
-
-return JSON.parse(text);
-
-}catch{
-
-return null;
+return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&options%5Bprefix%5D=last`;
 
 }
 
+/* ------------------------------------------------
+CONVERSION OPTIMIZED RESPONSE
+------------------------------------------------ */
+
+function replyMessage(vehicle){
+
+const query = `${vehicle.part} ${vehicle.make} ${vehicle.model}`.trim();
+
+const link = searchURL(query);
+
+let msg =
+`Thank you for your inquiry.
+
+Product: ${vehicle.part || "Automotive Part"}
+Vehicle: ${vehicle.make || ""} ${vehicle.model || ""} ${vehicle.year || ""}
+
+View options:
+${link}`;
+
+const related = crossSell(vehicle.part);
+
+if(related){
+msg += `
+
+Related items: ${related}`;
 }
 
-/* =========================================================
+return msg;
+
+}
+
+/* ------------------------------------------------
+XML SAFE
+------------------------------------------------ */
+
+function xmlSafe(t){
+return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+/* ------------------------------------------------
 WHATSAPP WEBHOOK
-========================================================= */
+------------------------------------------------ */
 
-app.post("/whatsapp", async (req,res)=>{
+app.post("/whatsapp",(req,res)=>{
 
-const message=(req.body.Body || "").trim();
+const message = (req.body.Body||"").trim();
 
-console.log("Customer:",message);
+const result = searchProduct(message);
 
-let reply="";
+const v = result.vehicle;
 
-try{
+let reply;
 
-const intent = await detectIntent(message);
-
-/* =========================
-PRODUCT INQUIRY
-========================= */
-
-if (intent==="product"){
-
-const vehicle = await detectVehicle(message);
-
-let query="";
-
-if(vehicle){
-
-query=`${vehicle.part || ""} ${vehicle.make || ""} ${vehicle.model || ""}`.trim();
-
-}
-
-if(!query){
-
-query=message;
-
-}
-
-const result = searchProducts(query);
-
-if(result){
-
-const url = buildSearchURL(query);
-
-reply =
-`Thank you for inquiry with us.
-
-For more information about the requested product kindly visit the following website link:
-
-${url}`;
-
-}else{
+if(!v.part){
 
 reply =
 `Thank you for contacting us.
 
-To assist you accurately kindly confirm the following details:
-
+Please share:
 Vehicle Make
 Vehicle Model
 Vehicle Year
 Required Part`;
 
-}
+}else{
 
-}
-
-/* =========================
-ORDER SUPPORT
-========================= */
-
-else if(intent==="order"){
-
-reply =
-`Thank you for contacting us.
-
-Kindly share your order number so we may check the order status and update you accordingly.`;
-
-}
-
-/* =========================
-CUSTOMER SUPPORT
-========================= */
-
-else if(intent==="support"){
-
-reply =
-`Thank you for contacting us.
-
-Kindly share further details regarding your concern so we may assist you accordingly.`;
-
-}
-
-/* =========================
-UNCLEAR MESSAGE
-========================= */
-
-else{
-
-reply =
-`Thank you for contacting us.
-
-Kindly confirm the vehicle model and required part so we may guide you accordingly.`;
-
-}
-
-}catch{
-
-reply =
-`Thank you for contacting us.
-
-Kindly confirm the vehicle model and required part so we may guide you accordingly.`;
+reply = replyMessage(v);
 
 }
 
@@ -368,34 +342,17 @@ const twiml =
 </Response>`;
 
 res.set("Content-Type","text/xml");
-
 res.send(twiml);
 
 });
 
-/* =========================================================
-UTILITY ROUTES
-========================================================= */
+/* ------------------------------------------------
+SERVER START
+------------------------------------------------ */
 
-app.get("/",(req,res)=>{
+app.listen(PORT,async()=>{
 
-res.send("NDE ENTERPRISE AI SERVER RUNNING");
-
-});
-
-app.get("/catalog-size",(req,res)=>{
-
-res.json({products:PRODUCTS.length});
-
-});
-
-/* =========================================================
-START SERVER
-========================================================= */
-
-app.listen(PORT, async ()=>{
-
-console.log("Server running on port",PORT);
+console.log("NDE Automotive AI running:",PORT);
 
 await loadProducts();
 
