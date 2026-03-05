@@ -1,510 +1,444 @@
 const VEHICLE_DATABASE = {
 
-/* =========================
-TOYOTA
-(Page 1-4)
-========================= */
+Toyota: {
 
-toyota:{
-
-corolla:[
-"corolla 1988-2001",
-"corolla 2002-2008",
-"corolla 2009-2014",
-"corolla 2015-2017",
-"corolla 2018-2023"
+Corolla: [
+"Corolla Altis",
+"Corolla Cross"
 ],
 
-yaris:[
-"yaris 2006-2013",
-"yaris 2014-2020",
-"yaris 2020+"
+Yaris: [
+"Yaris",
+"Yaris Hatchback",
+"Yaris Cross"
 ],
 
-hilux:[
-"hilux vigo",
-"hilux revo"
+Hilux: [
+"Hilux Vigo",
+"Hilux Revo"
 ],
 
-fortuner:[
-"fortuner",
-"fortuner legender"
+Fortuner: [
+"Fortuner",
+"Fortuner GR Sport"
 ],
 
-aqua:[
-"aqua 2012-2014",
-"aqua 2015-2017",
-"aqua 2018-2021"
+Aqua: [
+"Aqua",
+"Aqua X Urban"
 ],
 
-vitz:[
-"vitz 2005-2010",
-"vitz 2011-2016",
-"vitz 2017-2019"
+Vitz: [
+"Vitz 2005-2010",
+"Vitz 2010-2017"
 ],
 
-raize:[
-"raize"
+Raize: [
+"Raize"
 ],
 
-landcruiser:[
-"land cruiser 100",
-"land cruiser 200",
-"land cruiser 300"
+HiluxSurf: [
+"Hilux Surf 2007-2009"
 ],
 
-prado:[
-"prado 120",
-"prado 150"
+LandCruiser: [
+"Land Cruiser 80",
+"Land Cruiser 100",
+"Land Cruiser 200",
+"Land Cruiser 300"
 ],
 
-c_hr:[
-"c-hr"
+LandCruiserPrado: [
+"Prado 120",
+"Prado 150"
 ],
 
-mark_x:[
-"mark x"
+Crown: [
+"Crown"
 ],
 
-probox:[
-"probox"
+Delta: [
+"Delta"
 ],
 
-rush:[
-"rush"
+Prius: [
+"Prius",
+"Prius Alpha",
+"Prius PHV"
 ],
 
-corolla_cross:[
-"corolla cross"
+Passo: [
+"Passo"
+],
+
+Platz: [
+"Platz"
+],
+
+Premio: [
+"Premio"
+],
+
+AquaHybrid: [
+"Aqua Hybrid"
+],
+
+Fielder: [
+"Corolla Fielder"
+],
+
+C_HR: [
+"C-HR"
+],
+
+MarkX: [
+"Mark X"
+],
+
+Probox: [
+"Probox"
+],
+
+Rush: [
+"Rush"
+],
+
+IQ: [
+"IQ"
 ]
 
 },
 
-/* =========================
-HONDA
-(Page 5-6)
-========================= */
+Honda: {
 
-honda:{
-
-accord:[
-"accord 2003-2008",
-"accord 2009-2013"
+Accord: [
+"Accord",
+"Accord Euro"
 ],
 
-city:[
-"city 2003-2008",
-"city 2009-2013",
-"city 2014-2021",
-"city 2022+"
+City: [
+"City 1996-2002",
+"City 2003-2008",
+"City 2009-2021"
 ],
 
-civic:[
-"civic 1996-2000",
-"civic 2001-2005",
-"civic 2006-2012",
-"civic 2013-2016",
-"civic 2017-2021",
-"civic 2022+"
+Civic: [
+"Civic 1996-2000",
+"Civic 2001-2006",
+"Civic 2007-2012",
+"Civic 2013-2016",
+"Civic 2017-2021"
 ],
 
-brv:[
-"brv"
+BRV: [
+"BR-V"
 ],
 
-hrv:[
-"hr-v"
+HRV: [
+"HR-V"
 ],
 
-vezel:[
-"vezel"
+Vezel: [
+"Vezel",
+"Vezel Hybrid"
 ],
 
-n_series:[
-"n box",
-"n one"
+NSeries: [
+"N Box",
+"N WGN"
 ],
 
-civic_x:[
-"civic x"
+Civic_JDM: [
+"Civic JDM"
 ],
 
-fit:[
-"fit"
-],
-
-freed:[
-"freed"
-],
-
-insight:[
-"insight"
-],
-
-jazz:[
-"jazz"
-],
-
-life:[
-"life"
-],
-
-airwave:[
-"airwave"
-],
-
-brio:[
-"brio"
-],
-
-crz:[
-"crz"
-],
-
-element:[
-"element"
-],
-
-freed_spike:[
-"freed spike"
-],
-
-crossroad:[
-"crossroad"
+OtherModels: [
+"Fit",
+"Freed",
+"Insight",
+"Jazz",
+"Life",
+"Airwave",
+"CR-Z",
+"Domani",
+"CR-V",
+"Element",
+"Crossroad"
 ]
 
 },
 
-/* =========================
-SUZUKI
-(Page 6-8)
-========================= */
+Suzuki: {
 
-suzuki:{
-
-cultus:[
-"cultus 2000-2007",
-"cultus 2008-2016",
-"cultus 2017+"
+Cultus: [
+"Cultus Old Shape",
+"Cultus New Shape"
 ],
 
-swift:[
-"swift 2005-2010",
-"swift 2011-2017",
-"swift 2018+"
+Swift: [
+"Swift 2004-2010",
+"Swift 2011-2017"
 ],
 
-wagonr:[
-"wagon r"
+WagonR: [
+"WagonR"
 ],
 
-mehran:[
-"mehran"
+Every: [
+"Every"
 ],
 
-alto:[
-"alto 660",
-"alto 1000",
-"alto 2019+"
+Alto: [
+"Alto VX",
+"Alto VXR"
 ],
 
-every:[
-"every"
+Bolan: [
+"Bolan"
 ],
 
-bolan:[
-"bolan"
+Ciaz: [
+"Ciaz"
 ],
 
-baleno:[
-"baleno"
+Kizashi: [
+"Kizashi"
 ],
 
-vitara:[
-"vitara"
+Vitara: [
+"Vitara"
+],
+
+WagonR_JDM: [
+"WagonR JDM"
+],
+
+AltoJDM: [
+"Alto JDM"
+],
+
+AltoHybrid: [
+"Alto Hybrid"
 ]
 
 },
 
-/* =========================
-HYUNDAI
-(Page 8)
-========================= */
+Hyundai: {
 
-hyundai:{
-
-elantra:[
-"elantra"
+Elantra: [
+"Elantra",
+"Elantra Hybrid"
 ],
 
-tucson:[
-"tucson"
+Tucson: [
+"Tucson",
+"Tucson Hybrid"
 ],
 
-santafe:[
-"santa fe"
+SantaFe: [
+"Santa Fe",
+"Santa Fe Hybrid"
 ],
 
-sonata:[
-"sonata"
+Sonata: [
+"Sonata"
 ],
 
-santro:[
-"santro"
+Santro: [
+"Santro"
 ],
 
-grand_i10:[
-"grand i10"
+GrandStarex: [
+"Grand Starex"
 ]
 
 },
 
-/* =========================
-KIA
-(Page 8-9)
-========================= */
+Kia: {
 
-kia:{
-
-sportage:[
-"sportage"
+Sportage: [
+"Sportage"
 ],
 
-stonic:[
-"stonic"
+Forte: [
+"Forte"
 ],
 
-sorento:[
-"sorento"
+Stonic: [
+"Stonic"
 ],
 
-grand_carnival:[
-"grand carnival"
+Carnival: [
+"Carnival"
 ]
 
 },
 
-/* =========================
-DAIHATSU
-(Page 9)
-========================= */
-
-daihatsu:{
-
-cuore:["cuore"],
-esse:["esse"],
-move:["move"],
-boon:["boon"],
-cast:["cast"],
-copen:["copen"],
-mira:["mira"]
-},
-
-/* =========================
-NISSAN
-(Page 9-10)
-========================= */
-
-nissan:{
-
-dayz:[
-"dayz"
+Daihatsu: [
+"Cuore",
+"Sirion",
+"Move",
+"Boon",
+"Copen",
+"Terios"
 ],
 
-juke:[
-"juke"
+Changan: [
+"Alsvin",
+"Karvaan",
+"Karvaan V7"
 ],
 
-leaf:[
-"leaf"
+Haval: [
+"Haval H6",
+"Jolion",
+"Haval Truck"
 ],
 
-note:[
-"note"
+Proton: [
+"Saga",
+"X50"
 ],
 
-wingroad:[
-"wingroad"
+MG: [
+"MG HS",
+"MG ZS",
+"MG ZS EV"
+],
+
+Nissan: {
+
+Expert: [
+"Expert 2000+"
+],
+
+Dayz: [
+"Dayz"
+],
+
+Juke: [
+"Juke"
+],
+
+Micra: [
+"Micra"
+],
+
+Note: [
+"Note"
+],
+
+Wingroad: [
+"Wingroad"
+],
+
+NotePower: [
+"Note e-Power"
 ]
 
 },
 
-/* =========================
-MITSUBISHI
-(Page 10)
-========================= */
-
-mitsubishi:{
-
-lancer:["lancer"],
-ek_wagon:["ek wagon"],
-ek_custom:["ek custom"]
-},
-
-/* =========================
-LEXUS
-(Page 10-11)
-========================= */
-
-lexus:{
-
-ct:["ct"],
-es:["es"],
-hs:["hs"],
-ls:["ls"],
-rx:["rx"],
-lx:["lx"],
-gx:["gx"]
-},
-
-/* =========================
-EUROPEAN BRANDS
-(Page 11-13)
-========================= */
-
-bmw:{
-
-series_3:["3 series"],
-series_5:["5 series"],
-series_7:["7 series"],
-x1:["x1"],
-x3:["x3"],
-x5:["x5"]
-},
-
-audi:{
-
-a4:["a4"],
-a6:["a6"],
-q5:["q5"],
-q7:["q7"]
-},
-
-mercedes:{
-
-c_class:["c class"],
-e_class:["e class"],
-s_class:["s class"],
-ml_class:["ml class"],
-gl_class:["gl class"]
-},
-
-ford:{
-f150:["f150"],
-focus:["focus"]
-},
-
-peugeot:{
-208:["208"]
-},
-
-land_rover:{
-discovery:["discovery 4"]
-},
-
-changan:{
-alvin:["alvin"],
-karvaan:["karvaan"]
-},
-
-/* =========================
-MOTORCYCLES
-(Page 13)
-========================= */
-
-motorcycles:{
-
-honda:[
-"cd70",
-"cg125",
-"150cc"
+Mitsubishi: [
+"Lancer",
+"Lancer Evolution",
+"Mirage",
+"Pajero Mini"
 ],
 
-yamaha:[
-"ybr125"
+Lexus: [
+"CT200h",
+"ES",
+"LS",
+"NX",
+"RX",
+"GX"
 ],
 
-suzuki:[
-"gd110",
-"gs150"
+Chevy: [
+"Chevy Joy",
+"Chevy Tracker"
+],
+
+Peugeot: [
+"Peugeot 206"
+],
+
+Mercedes: [
+"C Class",
+"E Class",
+"ML Class",
+"S Class"
+],
+
+Audi: [
+"A3",
+"A4",
+"A5",
+"A6",
+"Q5",
+"Q7"
+],
+
+BMW: [
+"3 Series",
+"5 Series",
+"7 Series",
+"X1",
+"X5"
+],
+
+DFS: [
+"Glory 580",
+"Glory Pro"
+],
+
+FAW: [
+"V2",
+"X40"
+],
+
+Hino: [
+"Hino Trucks"
+],
+
+Mazda: [
+"Mazda 2",
+"Mazda 3"
+],
+
+Ford: [
+"Ford F150"
+],
+
+Jaguar: [
+"XE"
+],
+
+LandRover: [
+"Discovery 4"
+],
+
+Chery: [
+"Tiggo"
+],
+
+JAC: [
+"J6",
+"J7"
+],
+
+Jetour: [
+"Jetour X70"
+],
+
+BYD: [
+"Atto 3",
+"Seal"
+],
+
+JMC: [
+"T6"
 ]
-
-},
-
-/* =========================
-DECALS
-(Page 13-14)
-========================= */
-
-decals:{
-
-anime:[
-"anime decals"
-],
-
-funny:[
-"funny stickers"
-],
-
-doctor:[
-"doctor stickers"
-],
-
-hunter:[
-"hunter stickers"
-],
-
-toyota:[
-"toyota stickers"
-],
-
-honda:[
-"honda stickers"
-],
-
-sports:[
-"sports mind stickers"
-],
-
-door_sill:[
-"door sill stickers"
-],
-
-laptop:[
-"laptop stickers"
-],
-
-custom:[
-"custom decals"
-],
-
-jeep:[
-"jeep stickers"
-],
-
-firearm:[
-"firearm stickers"
-],
-
-gtr:[
-"gtr stickers"
-]
-
-},
-
-/* =========================
-ACCESSORIES
-(Page 14)
-========================= */
-
-accessories:{
-
-general:[
-"storage box",
-"tire nozzle cap"
-]
-
-}
 
 };
 
