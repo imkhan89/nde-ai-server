@@ -1,7 +1,6 @@
 require("dotenv").config();
 
 const express = require("express");
-const fs = require("fs");
 
 const app = express();
 
@@ -10,6 +9,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
+
 /* --------------------------------
 TYPO + SYNONYM ENGINE
 -------------------------------- */
@@ -17,10 +17,9 @@ TYPO + SYNONYM ENGINE
 const SYNONYMS = {
 corola:"corolla",
 civc:"civic",
-vipr:"wiper",
-viper:"wiper",
 break:"brake",
 breaks:"brake",
+bumpr:"bumper",
 plug:"spark plug",
 plugs:"spark plug",
 filtr:"filter",
@@ -36,22 +35,23 @@ t = t.replace(new RegExp(`\\b${k}\\b`,"g"),SYNONYMS[k]);
 });
 
 return t
-.replace(/[^\w\s.]/g," ")
+.replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
 .trim();
 
 }
 
+
 /* --------------------------------
 MODEL → MAKE DATABASE
 -------------------------------- */
 
-const MODEL_TO_MAKE = {
+const MODEL_TO_MAKE={
 
 corolla:"toyota",
 yaris:"toyota",
-hilux:"toyota",
 revo:"toyota",
+hilux:"toyota",
 
 civic:"honda",
 city:"honda",
@@ -63,161 +63,126 @@ swift:"suzuki",
 "wagon r":"suzuki",
 
 sportage:"kia",
+
 tucson:"hyundai"
 
 };
+
 
 /* --------------------------------
 VEHICLE GENERATION DATABASE
 -------------------------------- */
 
-const GENERATIONS = {
+const GENERATIONS={
 
-"civic reborn":{make:"honda",model:"civic",year:"2006-2012"},
-"civic rebirth":{make:"honda",model:"civic",year:"2013-2016"},
-"civic x":{make:"honda",model:"civic",year:"2017-2021"}
+civic:{
+rebirth:["2012","2013","2014","2015"],
+reborn:["2016","2017","2018"],
+x:["2019","2020","2021"]
+},
+
+corolla:{
+gli:["2012","2013","2014"],
+grande:["2015","2016","2017","2018"]
+}
 
 };
+
 
 /* --------------------------------
 PART DATABASE
 -------------------------------- */
 
-const PARTS = [
-
-   const PARTS = [
-
-/* SERVICE PARTS */
+const PARTS=[
 
 "air filter",
 "oil filter",
 "cabin filter",
-"ac filter",
 "spark plug",
-"engine oil",
-"gear oil",
-"radiator coolant",
-
-/* BRAKING SYSTEM */
 
 "brake pad",
-"brake pads",
 "brake disc",
 "brake rotor",
 "brake shoe",
-"brake caliper",
-"brake master cylinder",
-
-/* SUSPENSION */
-
-"shock absorber",
-"strut",
-"control arm",
-"upper control arm",
-"lower control arm",
-"ball joint",
-"stabilizer link",
-"suspension bush",
-
-/* STEERING */
-
-"tie rod",
-"tie rod end",
-"steering rack",
-"power steering pump",
-
-/* ENGINE COMPONENTS */
-
-"radiator",
-"radiator cap",
-"water pump",
-"thermostat",
-"engine mount",
-"timing belt",
-"serpentine belt",
-
-/* BODY PARTS */
 
 "bumper",
 "front bumper",
 "rear bumper",
-"bumper bracket",
-"bumper reinforcement",
-
-"hood",
-"bonnet",
-"fender",
-"grille",
-
-"door",
-"door handle",
-"door mirror",
-"side mirror",
-
-/* LIGHTING */
 
 "headlight",
 "tail light",
 "fog light",
-"indicator",
-"turn signal",
-"number plate light",
 
-/* GLASS & WIPERS */
-
-"windshield",
-"windshield wiper",
-"wiper",
-"wiper blade",
-"rear wiper",
-
-/* INTERIOR */
-
-"floor mat",
-"trunk mat",
-"dashboard cover",
-"steering cover",
-"sun shade",
-"car top cover",
-
-/* ELECTRICAL */
+"radiator",
+"radiator cap",
+"radiator coolant",
 
 "horn",
-"battery",
-"fuse",
-"relay",
-"starter motor",
-"alternator",
 
-/* PROTECTION PARTS */
+"wiper",
+"wiper blade",
 
 "engine shield",
 "fender shield",
-"under cover",
-"mud flap",
-"mud guard"
+
+"floor mat",
+"trunk mat",
+
+"sun shade",
+"car top cover"
 
 ];
 
-];
 
 /* --------------------------------
-APPLICATION POSITION
+APPLICATION DETECTION
 -------------------------------- */
 
-const APPLICATION=[
+const APPLICATIONS=[
 
-"left",
-"right",
 "front",
 "rear",
+"left",
+"right",
 "upper",
 "lower"
 
 ];
 
+
 /* --------------------------------
-CAPITALIZE TEXT
+ORDER STATUS KEYWORDS
+-------------------------------- */
+
+const ORDER_KEYWORDS=[
+
+"order status",
+"where is my order",
+"track order",
+"delivery status",
+"order update"
+
+];
+
+
+/* --------------------------------
+COMPLAINT KEYWORDS
+-------------------------------- */
+
+const COMPLAINT_KEYWORDS=[
+
+"complaint",
+"wrong item",
+"damaged",
+"return",
+"refund",
+"issue with order"
+
+];
+
+
+/* --------------------------------
+CAPITALIZE
 -------------------------------- */
 
 function capitalize(str){
@@ -231,85 +196,101 @@ return str
 
 }
 
+
 /* --------------------------------
-DETECT VEHICLE
+VEHICLE DETECTION
 -------------------------------- */
 
 function detectVehicle(message){
 
-const text = normalize(message);
+const text=normalize(message);
+
+const yearMatch=text.match(/\b(19|20)\d{2}\b/);
+const year=yearMatch?yearMatch[0]:"";
 
 let make="";
 let model="";
 let part="";
-let year="";
 let application="";
 
-/* generation detection */
 
-Object.keys(GENERATIONS).forEach(g=>{
+const makes=["toyota","honda","suzuki","kia","hyundai","mg"];
 
-if(text.includes(g)){
-make=GENERATIONS[g].make;
-model=GENERATIONS[g].model;
-year=GENERATIONS[g].year;
-}
+const models=[
+"corolla",
+"civic",
+"city",
+"yaris",
+"revo",
+"hilux",
+"sportage",
+"tucson",
+"alto",
+"mehran",
+"cultus",
+"swift",
+"wagon r"
+];
 
+
+makes.forEach(m=>{
+if(text.includes(m)) make=m;
 });
 
-/* model detection */
-
-Object.keys(MODEL_TO_MAKE).forEach(m=>{
+models.forEach(m=>{
 if(text.includes(m)) model=m;
 });
 
-/* auto make */
-
-if(!make && model && MODEL_TO_MAKE[model]){
-make=MODEL_TO_MAKE[model];
-}
-
-/* year */
-
-const yearMatch=text.match(/\b(19|20)\d{2}\b/);
-if(yearMatch) year=yearMatch[0];
-
-/* part */
 
 PARTS.forEach(p=>{
 if(text.includes(p)) part=p;
 });
 
-/* application */
 
-APPLICATION.forEach(a=>{
+APPLICATIONS.forEach(a=>{
 if(text.includes(a)) application=a;
 });
 
-return {make,model,year,part,application};
+
+if(!make && model && MODEL_TO_MAKE[model]){
+make=MODEL_TO_MAKE[model];
+}
+
+
+return{
+make,
+model,
+year,
+part,
+application
+};
 
 }
 
+
 /* --------------------------------
-SEARCH QUERY
+INTENT DETECTION
 -------------------------------- */
 
-function buildQuery(vehicle,message){
+function detectIntent(message){
 
-let q=[];
+const text=normalize(message);
 
-if(vehicle.make) q.push(vehicle.make);
-if(vehicle.model) q.push(vehicle.model);
-if(vehicle.part) q.push(vehicle.part);
+for(let k of ORDER_KEYWORDS){
+if(text.includes(k)) return "order";
+}
 
-if(q.length>1) return q.join(" ");
+for(let k of COMPLAINT_KEYWORDS){
+if(text.includes(k)) return "complaint";
+}
 
-return normalize(message);
+return "product";
 
 }
 
+
 /* --------------------------------
-SEARCH LINK
+SEARCH URL
 -------------------------------- */
 
 function buildSearchURL(query){
@@ -318,123 +299,96 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 
 }
 
+
 /* --------------------------------
-INTENT DETECTION
+SEARCH QUERY
 -------------------------------- */
 
-function detectIntent(text){
+function buildQuery(vehicle,message){
 
-if(text.includes("order status") ||
-   text.includes("delivery status") ||
-   text.includes("where is my order"))
-return "order";
+let query=[];
 
-if(text.includes("complaint") ||
-   text.includes("problem") ||
-   text.includes("issue"))
-return "complaint";
+if(vehicle.make) query.push(vehicle.make);
+if(vehicle.model) query.push(vehicle.model);
+if(vehicle.part) query.push(vehicle.part);
 
-if(text.includes("feature") ||
-   text.includes("specification") ||
-   text.includes("details"))
-return "product_info";
+const q=query.join(" ");
 
-return "product_search";
+if(q.length>3) return q;
+
+return normalize(message);
 
 }
+
 
 /* --------------------------------
 REPLY BUILDER
 -------------------------------- */
 
-function buildReply(vehicle,query,message){
+function buildReply(vehicle,query){
 
-const text = normalize(message);
-const intent = detectIntent(text);
-const url = buildSearchURL(query);
+const url=buildSearchURL(query);
 
-const make = capitalize(vehicle.make);
-const model = capitalize(vehicle.model);
-const part = capitalize(vehicle.part);
-const application = capitalize(vehicle.application);
+const make=capitalize(vehicle.make);
+const model=capitalize(vehicle.model);
+const part=capitalize(vehicle.part);
+const application=capitalize(vehicle.application);
 
-/* ORDER STATUS */
+let partText=part;
 
-if(intent==="order"){
-
-return `Thank you for contacting ndestore.com.
-
-To check the delivery status of your order, please share your order number.
-
-Our customer service team will assist you with the latest order update.`;
-
-}
-
-/* COMPLAINT */
-
-if(intent==="complaint"){
-
-return `Thank you for contacting ndestore.com.
-
-We regret the inconvenience.
-
-Kindly share the following information so we can assist you:
-
-Order Number
-Complaint Description
-
-Our customer service representative will review the matter and respond shortly.`;
-
-}
-
-/* PRODUCT INFORMATION */
-
-if(intent==="product_info"){
-
-return `Thank you for contacting ndestore.com.
-
-For detailed product information including specifications, compatibility, and features, please visit:
-
-${url}
-
-If you need technical guidance selecting the correct product, please share your vehicle details.`;
-
-}
-
-/* PART SEARCH */
-
-let applicationPrompt="";
-
-if(vehicle.part && !vehicle.application){
-
-applicationPrompt=` 
-
-Kindly confirm the application if applicable (Left / Right / Front / Rear / Upper / Lower).`;
-
-}
-
-let yearPrompt="";
-
-if(vehicle.make && vehicle.model && !vehicle.year){
-
-yearPrompt=` 
-
-Kindly confirm the vehicle model year to ensure compatibility.`;
-
+if(application){
+partText=`${part}, ${application}`;
 }
 
 return `Thank you for contacting ndestore.com kindly note the following:
 
-Make: ${make || "Not Specified"}
-Model: ${model || "Not Specified"}
-Model Year: ${vehicle.year || "Not Specified"}
-Part Requested: ${part || "Automotive Part"}
+Make: ${make||"Not Specified"}
+Model: ${model||"Not Specified"}
+Model Year: ${vehicle.year||"Not Specified"}
+Part Requested: ${partText||"Automotive Part"}
 
-Website Link: ${url}${applicationPrompt}${yearPrompt}
+Website Link:
+${url}
 
 If you would like further assistance share detailed inquiry.`;
 
 }
+
+
+/* --------------------------------
+ORDER STATUS RESPONSE
+-------------------------------- */
+
+function orderReply(){
+
+return `Thank you for contacting ndestore.com.
+
+To check your delivery status kindly share your order number.
+
+Our team will review the order and provide an update shortly.`;
+
+}
+
+
+/* --------------------------------
+COMPLAINT RESPONSE
+-------------------------------- */
+
+function complaintReply(){
+
+return `Thank you for contacting ndestore.com.
+
+We are sorry to hear about the issue.
+
+Kindly share:
+
+Order Number  
+Complaint Description
+
+Our support team will review the matter and assist you accordingly.`;
+
+}
+
 
 /* --------------------------------
 XML SAFE
@@ -449,30 +403,53 @@ return text
 
 }
 
+
 /* --------------------------------
 WHATSAPP WEBHOOK
 -------------------------------- */
 
 app.post("/whatsapp",(req,res)=>{
 
-const message=(req.body.Body || "").trim();
+const message=(req.body.Body||"").trim();
+
+const intent=detectIntent(message);
+
+let reply="";
+
+
+if(intent==="order"){
+
+reply=orderReply();
+
+}
+else if(intent==="complaint"){
+
+reply=complaintReply();
+
+}
+else{
 
 const vehicle=detectVehicle(message);
 
 const query=buildQuery(vehicle,message);
 
-const reply=buildReply(vehicle,query,message);
+reply=buildReply(vehicle,query);
+
+}
+
 
 const twiml=`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
 <Message>${xmlSafe(reply)}</Message>
 </Response>`;
 
+
 res.set("Content-Type","text/xml");
 
 res.send(twiml);
 
 });
+
 
 /* --------------------------------
 SERVER START
