@@ -527,6 +527,10 @@ return reply;
 
 }
 
+app.get("/", (req, res) => {
+  res.send("NDE AI WhatsApp Bot Running");
+});
+
 /* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
