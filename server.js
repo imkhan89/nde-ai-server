@@ -28,6 +28,7 @@ FILE PATHS
 
 const INDEX_DIR = path.join(__dirname,"index");
 const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
+const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
 
 
 /* =====================================================
@@ -35,6 +36,7 @@ MEMORY
 ===================================================== */
 
 let PRODUCT_INDEX = [];
+let SEARCH_INDEX = {};
 let SESSIONS = {};
 
 
@@ -82,7 +84,35 @@ console.log("Index load error:",e.message);
 
 }
 
+
+/* =====================================================
+LOAD SEARCH INDEX
+===================================================== */
+
+function loadSearchIndex(){
+
+try{
+
+if(fs.existsSync(SEARCH_INDEX_FILE)){
+
+SEARCH_INDEX = JSON.parse(
+fs.readFileSync(SEARCH_INDEX_FILE,"utf8")
+);
+
+console.log("Search index loaded");
+
+}
+
+}catch(e){
+
+console.log("Search index error:",e.message);
+
+}
+
+}
+
 loadProductIndex();
+loadSearchIndex();
 
 
 /* =====================================================
@@ -113,7 +143,7 @@ ORDER NUMBER DETECTION
 
 function detectOrderNumber(message){
 
-const match = message.match(/\b\d{6,}\b/);
+const match = message.match(/\d{6,}/);
 
 return match ? match[0] : "";
 
@@ -135,8 +165,8 @@ headers:{
 "X-Shopify-Access-Token": SHOPIFY_TOKEN
 },
 params:{
-name:`#${orderNumber}`,
-status:"any"
+status:"any",
+query:`name:${orderNumber}`
 }
 }
 );
@@ -212,8 +242,19 @@ VEHICLE DETECTION
 const MODEL_MAKE = {
 
 corolla:"toyota",
+camry:"toyota",
+yaris:"toyota",
+
 civic:"honda",
 city:"honda",
+
+elantra:"hyundai",
+tucson:"hyundai",
+sonata:"hyundai",
+
+sportage:"kia",
+picanto:"kia",
+
 alto:"suzuki",
 cultus:"suzuki",
 swift:"suzuki"
@@ -251,18 +292,31 @@ PART DETECTION
 const PARTS=[
 
 "brake pad",
+"disc pad",
+"disc pad set",
+"brake rotor",
+"brake disc",
+
 "air filter",
 "oil filter",
 "cabin filter",
+
 "spark plug",
+
 "radiator",
+"radiator coolant",
+
 "wiper blade",
+
 "side mirror",
+
 "bumper"
 
 ];
 
 function detectPart(text){
+
+text=text.toLowerCase();
 
 for(const p of PARTS){
 
@@ -270,26 +324,69 @@ if(text.includes(p)) return p;
 
 }
 
+if(text.includes("disc pad")) return "brake pad";
+
 return "";
 
 }
 
 
 /* =====================================================
-SEARCH
+TOKEN SEARCH ENGINE (FAST)
 ===================================================== */
 
 function searchProducts(query){
 
-query=query.toLowerCase();
+const tokens = query.toLowerCase().split(" ");
 
 let results=[];
 
+/* USE SEARCH INDEX IF AVAILABLE */
+
+if(Object.keys(SEARCH_INDEX).length){
+
+for(const t of tokens){
+
+const matches = SEARCH_INDEX[t];
+
+if(matches){
+
+for(const m of matches){
+
+results.push(m);
+
+}
+
+}
+
+}
+
+}else{
+
+/* FALLBACK SCAN */
+
 for(const p of PRODUCT_INDEX){
 
-if(p.title.includes(query)){
-results.push(p);
+let score=0;
+
+for(const t of tokens){
+
+if(p.title.includes(t)) score++;
+
 }
+
+if(score>0){
+
+results.push({
+...p,
+score
+});
+
+}
+
+}
+
+results.sort((a,b)=>b.score-a.score);
 
 }
 
@@ -306,9 +403,9 @@ async function automotiveAI(message,user){
 
 const session = getSession(user);
 
-/* ORDER NUMBER */
-
 const order = detectOrderNumber(message);
+
+/* ORDER STATUS */
 
 if(session.state==="ORDER_TRACKING" && order){
 
@@ -351,6 +448,7 @@ return reply;
 
 }
 
+
 /* INTENT */
 
 const intent = detectIntent(message);
@@ -361,7 +459,7 @@ session.state="ORDER_TRACKING";
 
 return `Thank you for contacting ndestore.com.
 
-To check your order status kindly share your order number (e.g., #12345) and we will fetch tracking details for you.`;
+To check your order status kindly share your order number (e.g., #12345).`;
 
 }
 
