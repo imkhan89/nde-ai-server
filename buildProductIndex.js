@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const axios = require("axios");
 const fs = require("fs");
+require("dotenv").config();
 
 const SHOP = "ndestore.myshopify.com";
 const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
