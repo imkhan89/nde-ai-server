@@ -107,7 +107,11 @@ let queryParts = [];
 if(vehicle.part) queryParts.push(vehicle.part);
 if(vehicle.make) queryParts.push(vehicle.make);
 if(vehicle.model) queryParts.push(vehicle.model);
-if(vehicle.year) queryParts.push(vehicle.year);
+
+/* IMPORTANT
+Year is NOT added to Shopify search
+because products contain ranges like 2016-2021
+*/
 
 const q = queryParts.join(" ").trim();
 
