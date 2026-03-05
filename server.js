@@ -213,8 +213,6 @@ function detectIntent(message){
 
 const m = message.toLowerCase().trim();
 
-/* GREETINGS */
-
 if(
 m==="hi" ||
 m==="hello" ||
@@ -228,13 +226,9 @@ m.includes("good evening")
 return "GREETING";
 }
 
-/* ORDER */
-
 if(m.includes("order") || m.includes("track")){
 return "ORDER_TRACKING";
 }
-
-/* DELIVERY */
 
 if(m.includes("delivery") || m.includes("shipping")){
 return "DELIVERY";
@@ -279,10 +273,8 @@ const r = new RegExp(`\\b${model}\\b`);
 if(r.test(text)){
 
 return{
-
 make:MODEL_MAKE[model],
 model
-
 };
 
 }
@@ -304,45 +296,33 @@ const PARTS = [
 "tail light",
 "tail lamp",
 "fog light",
-
 "side mirror",
 "mirror",
-
 "bumper",
 "front bumper",
 "rear bumper",
-
 "grill",
 "grille",
-
 "bonnet",
 "hood",
-
 "fender",
 "mudguard",
-
 "radiator",
 "radiator fan",
-
 "brake pad",
 "brake pads",
 "brake disc",
 "brake rotor",
-
 "air filter",
 "oil filter",
 "cabin filter",
 "ac filter",
-
 "spark plug",
 "coil",
-
 "shock absorber",
 "suspension",
-
 "door handle",
 "door mirror",
-
 "wiper",
 "wiper blade"
 
@@ -359,6 +339,22 @@ if(text.includes(p)) return p;
 }
 
 if(text.includes("disc pad")) return "brake pad";
+
+return "";
+
+}
+
+/* =====================================================
+YEAR DETECTION
+===================================================== */
+
+function detectYear(text){
+
+const match = text.match(/\b(19|20)\d{2}\b/);
+
+if(match){
+return match[0];
+}
 
 return "";
 
@@ -431,8 +427,6 @@ async function automotiveAI(message,user){
 
 const session = getSession(user);
 
-/* ORDER NUMBER */
-
 const order = detectOrderNumber(message);
 
 if(session.state==="ORDER_TRACKING" && order){
@@ -476,11 +470,7 @@ return reply;
 
 }
 
-/* INTENT */
-
 const intent = detectIntent(message);
-
-/* GREETING RESPONSE */
 
 if(intent==="GREETING"){
 
@@ -512,8 +502,9 @@ const text = message.toLowerCase();
 
 const vehicle = detectVehicle(text);
 const part = detectPart(text);
+const year = detectYear(text);
 
-let query = [vehicle.make,vehicle.model,part]
+let query = [vehicle.make,vehicle.model,year,part]
 .filter(Boolean)
 .join(" ");
 
@@ -522,6 +513,7 @@ let reply=`Thank you for contacting ndestore.com.
 Vehicle Identified
 Make: ${capitalize(vehicle.make) || "Not Specified"}
 Model: ${capitalize(vehicle.model) || "Not Specified"}
+Model Year: ${year || "Not Specified"}
 Part Requested: ${capitalize(part) || "Not Specified"}
 
 `;
