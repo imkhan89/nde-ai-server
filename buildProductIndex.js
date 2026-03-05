@@ -8,7 +8,7 @@ const path = require("path");
 CONFIGURATION
 ===================================================== */
 
-const SHOP = "ndestore.myshopify.com";
+const SHOP = "347657-7d.myshopify.com";
 const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 const API = `https://${SHOP}/admin/api/2023-10/products.json`;
