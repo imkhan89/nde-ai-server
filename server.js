@@ -1,7 +1,6 @@
 require("dotenv").config();
 
 const express = require("express");
-
 const app = express();
 
 app.use(express.urlencoded({ extended: false }));
@@ -20,19 +19,19 @@ civc:"civic",
 break:"brake",
 breaks:"brake",
 bumpr:"bumper",
-plug:"spark plug",
 plugs:"spark plug",
+plug:"spark plug",
 filtr:"filter",
 fiter:"filter"
 };
 
 function normalize(text){
 
-let t = text.toLowerCase();
+let t = (text || "").toLowerCase();
 
-Object.keys(SYNONYMS).forEach(k=>{
+for(const k in SYNONYMS){
 t = t.replace(new RegExp(`\\b${k}\\b`,"g"),SYNONYMS[k]);
-});
+}
 
 return t
 .replace(/[^\w\s]/g," ")
@@ -46,7 +45,7 @@ return t
 MODEL → MAKE DATABASE
 -------------------------------- */
 
-const MODEL_TO_MAKE={
+const MODEL_TO_MAKE = {
 
 corolla:"toyota",
 yaris:"toyota",
@@ -70,30 +69,10 @@ tucson:"hyundai"
 
 
 /* --------------------------------
-VEHICLE GENERATION DATABASE
--------------------------------- */
-
-const GENERATIONS={
-
-civic:{
-rebirth:["2012","2013","2014","2015"],
-reborn:["2016","2017","2018"],
-x:["2019","2020","2021"]
-},
-
-corolla:{
-gli:["2012","2013","2014"],
-grande:["2015","2016","2017","2018"]
-}
-
-};
-
-
-/* --------------------------------
 PART DATABASE
 -------------------------------- */
 
-const PARTS=[
+const PARTS = [
 
 "air filter",
 "oil filter",
@@ -105,9 +84,9 @@ const PARTS=[
 "brake rotor",
 "brake shoe",
 
-"bumper",
 "front bumper",
 "rear bumper",
+"bumper",
 
 "headlight",
 "tail light",
@@ -119,8 +98,8 @@ const PARTS=[
 
 "horn",
 
-"wiper",
 "wiper blade",
+"wiper",
 
 "engine shield",
 "fender shield",
@@ -138,7 +117,7 @@ const PARTS=[
 APPLICATION DETECTION
 -------------------------------- */
 
-const APPLICATIONS=[
+const APPLICATIONS = [
 
 "front",
 "rear",
@@ -154,7 +133,7 @@ const APPLICATIONS=[
 ORDER STATUS KEYWORDS
 -------------------------------- */
 
-const ORDER_KEYWORDS=[
+const ORDER_KEYWORDS = [
 
 "order status",
 "where is my order",
@@ -169,7 +148,7 @@ const ORDER_KEYWORDS=[
 COMPLAINT KEYWORDS
 -------------------------------- */
 
-const COMPLAINT_KEYWORDS=[
+const COMPLAINT_KEYWORDS = [
 
 "complaint",
 "wrong item",
@@ -182,7 +161,7 @@ const COMPLAINT_KEYWORDS=[
 
 
 /* --------------------------------
-CAPITALIZE
+CAPITALIZE HELPER
 -------------------------------- */
 
 function capitalize(str){
@@ -203,10 +182,10 @@ VEHICLE DETECTION
 
 function detectVehicle(message){
 
-const text=normalize(message);
+const text = normalize(message);
 
-const yearMatch=text.match(/\b(19|20)\d{2}\b/);
-const year=yearMatch?yearMatch[0]:"";
+const yearMatch = text.match(/\b(19|20)\d{2}\b/);
+const year = yearMatch ? yearMatch[0] : "";
 
 let make="";
 let model="";
@@ -233,27 +212,50 @@ const models=[
 ];
 
 
-makes.forEach(m=>{
-if(text.includes(m)) make=m;
-});
+/* Detect Make */
 
-models.forEach(m=>{
-if(text.includes(m)) model=m;
-});
-
-
-PARTS.forEach(p=>{
-if(text.includes(p)) part=p;
-});
+for(const m of makes){
+if(text.includes(m)){
+make=m;
+break;
+}
+}
 
 
-APPLICATIONS.forEach(a=>{
-if(text.includes(a)) application=a;
-});
+/* Detect Model */
 
+for(const m of models){
+if(text.includes(m)){
+model=m;
+break;
+}
+}
+
+
+/* Detect Part */
+
+for(const p of PARTS){
+if(text.includes(p)){
+part=p;
+break;
+}
+}
+
+
+/* Detect Application */
+
+for(const a of APPLICATIONS){
+if(text.includes(a)){
+application=a;
+break;
+}
+}
+
+
+/* Infer make from model */
 
 if(!make && model && MODEL_TO_MAKE[model]){
-make=MODEL_TO_MAKE[model];
+make = MODEL_TO_MAKE[model];
 }
 
 
@@ -274,13 +276,13 @@ INTENT DETECTION
 
 function detectIntent(message){
 
-const text=normalize(message);
+const text = normalize(message);
 
-for(let k of ORDER_KEYWORDS){
+for(const k of ORDER_KEYWORDS){
 if(text.includes(k)) return "order";
 }
 
-for(let k of COMPLAINT_KEYWORDS){
+for(const k of COMPLAINT_KEYWORDS){
 if(text.includes(k)) return "complaint";
 }
 
@@ -301,12 +303,12 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 
 
 /* --------------------------------
-SEARCH QUERY
+SEARCH QUERY BUILDER
 -------------------------------- */
 
 function buildQuery(vehicle,message){
 
-let query=[];
+const query=[];
 
 if(vehicle.make) query.push(vehicle.make);
 if(vehicle.model) query.push(vehicle.model);
@@ -334,18 +336,18 @@ const model=capitalize(vehicle.model);
 const part=capitalize(vehicle.part);
 const application=capitalize(vehicle.application);
 
-let partText=part;
+let partText = part || "Automotive Part";
 
-if(application){
-partText=`${part}, ${application}`;
+if(application && part){
+partText = `${part}, ${application}`;
 }
 
 return `Thank you for contacting ndestore.com kindly note the following:
 
-Make: ${make||"Not Specified"}
-Model: ${model||"Not Specified"}
-Model Year: ${vehicle.year||"Not Specified"}
-Part Requested: ${partText||"Automotive Part"}
+Make: ${make || "Not Specified"}
+Model: ${model || "Not Specified"}
+Model Year: ${vehicle.year || "Not Specified"}
+Part Requested: ${partText}
 
 Website Link:
 ${url}
@@ -382,7 +384,7 @@ We are sorry to hear about the issue.
 
 Kindly share:
 
-Order Number  
+Order Number
 Complaint Description
 
 Our support team will review the matter and assist you accordingly.`;
@@ -410,7 +412,7 @@ WHATSAPP WEBHOOK
 
 app.post("/whatsapp",(req,res)=>{
 
-const message=(req.body.Body||"").trim();
+const message=(req.body.Body || "").trim();
 
 const intent=detectIntent(message);
 
@@ -445,7 +447,6 @@ const twiml=`<?xml version="1.0" encoding="UTF-8"?>
 
 
 res.set("Content-Type","text/xml");
-
 res.send(twiml);
 
 });
@@ -457,6 +458,6 @@ SERVER START
 
 app.listen(PORT,()=>{
 
-console.log("NDE AI Server running:",PORT);
+console.log("NDE AI Server running on port:",PORT);
 
 });
