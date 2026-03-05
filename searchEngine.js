@@ -1,7 +1,7 @@
 const fs = require("fs");
 
 const INDEX = JSON.parse(
-fs.readFileSync("./data/search_index.json")
+fs.readFileSync("./search_index.json")
 );
 
 function tokenize(text){
