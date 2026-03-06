@@ -4,6 +4,7 @@ const axios = require("axios");
 const crypto = require("crypto");
 
 const app = express();
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -15,117 +16,70 @@ SESSION MEMORY
 
 let SESSIONS = {};
 
-function getSession(user) {
-  if (!SESSIONS[user]) {
-    SESSIONS[user] = { state: "MENU" };
-  }
-  return SESSIONS[user];
+function getSession(user){
+if(!SESSIONS[user]){
+SESSIONS[user]={state:"MENU"};
+}
+return SESSIONS[user];
 }
 
 /* =====================================================
 HELPERS
 ===================================================== */
 
-function uid() {
-  return crypto.randomBytes(6).toString("hex");
+function uid(){
+return crypto.randomBytes(6).toString("hex");
 }
 
-function xmlSafe(str) {
-  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function xmlSafe(str){
+return str
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
 }
 
 function titleCase(str){
-  return str.replace(/\w\S*/g,(txt)=>txt.charAt(0).toUpperCase()+txt.substr(1));
+return str.replace(/\w\S*/g,(txt)=>txt.charAt(0).toUpperCase()+txt.substr(1));
 }
 
 /* =====================================================
-GREETING
+GREETING DETECTION
 ===================================================== */
 
-if(isGreeting(text)){
-session.state="MENU";
-return mainMenu();
+function isGreeting(text){
+
+const greetings=[
+"hi",
+"hello",
+"salam",
+"aoa",
+"assalamualaikum",
+"good morning",
+"good evening"
+];
+
+return greetings.some(g=>text.startsWith(g));
+
 }
 
 /* =====================================================
-MENU
+MAIN MENU
 ===================================================== */
 
-if(session.state==="MENU"){
+function mainMenu(){
 
-if(text==="1"){
-session.state="PART_SEARCH";
-return `Please confirm
+return `Thank you for contacting ndestore.com.
 
-Vehicle Make
-Vehicle Model
-Model Year
-Part Required
+How can we assist you today?
 
-Example
-Honda Civic 2018 Brake Pad`;
-}
+1 Parts Inquiry
+2 Car Accessories
+3 Order Status
+4 Complaints
+5 Decal Stickers
+6 Other
 
-if(text==="2"){
-session.state="PART_SEARCH";
-return `Please confirm
-
-Vehicle Make
-Vehicle Model
-Model Year
-Accessory Required
-
-Example
-Toyota Corolla 2018 Floor Mat`;
-}
-
-if(text==="3"){
-session.state="ORDER";
-return `Please share your order number
-
-Example
-10011421`;
-}
-
-if(text==="4"){
-session.state="COMPLAINT";
-return `Please share
-
-Order Number
-Complaint Details`;
-}
-
-if(text==="5"){
-session.state="DECAL";
-return `Select one of the following options
-
-1 Complete Collection
-2 Army Stickers
-3 Advocate Stickers
-4 Doctor Stickers
-5 Markhor Stickers
-6 Hunter Stickers
-7 Toyota Stickers
-8 Toyota TEQ Stickers
-9 Honda Stickers
-10 Sports Mind Stickers
-11 Door Sill
-12 Laptop Stickers
-13 GR Stickers
-14 Fire Arm Stickers
-15 Custom Decals`;
-}
-
-if(text==="6"){
-session.state="MENU";
-return `Contact us
-
-Whatsapp +92-321-4222294
-Landline +92-423-7724222
-Email info@ndestore.com`;
-}
-
-return mainMenu();
+Reply with 1 2 3 4 5 or 6`;
 
 }
 
@@ -134,20 +88,25 @@ VEHICLE KNOWLEDGE BASE
 ===================================================== */
 
 const VEHICLES = {
-  civic:{make:"Honda",gens:[
-    {range:"2017–2021",start:2017,end:2021},
-    {range:"2013–2016",start:2013,end:2016}
-  ]},
-  corolla:{make:"Toyota",gens:[
-    {range:"2014–2020",start:2014,end:2020},
-    {range:"2009–2013",start:2009,end:2013}
-  ]},
-  cultus:{make:"Suzuki",gens:[
-    {range:"2017–Present",start:2017,end:2030}
-  ]},
-  city:{make:"Honda",gens:[
-    {range:"2014–2021",start:2014,end:2021}
-  ]}
+
+civic:{make:"Honda",gens:[
+{range:"2017–2021",start:2017,end:2021},
+{range:"2013–2016",start:2013,end:2016}
+]},
+
+corolla:{make:"Toyota",gens:[
+{range:"2014–2020",start:2014,end:2020},
+{range:"2009–2013",start:2009,end:2013}
+]},
+
+cultus:{make:"Suzuki",gens:[
+{range:"2017–Present",start:2017,end:2030}
+]},
+
+city:{make:"Honda",gens:[
+{range:"2014–2021",start:2014,end:2021}
+]}
+
 };
 
 /* =====================================================
@@ -155,14 +114,16 @@ PART NORMALIZATION
 ===================================================== */
 
 const PART_MAP={
-  "brake pad":"Brake Pads",
-  "air filter":"Air Filter",
-  "oil filter":"Oil Filter",
-  "cabin filter":"Cabin Filter",
-  "spark plug":"Spark Plug",
-  "radiator":"Radiator",
-  "horn":"Horn",
-  "wiper":"Wiper Blade"
+
+"brake pad":"Brake Pads",
+"air filter":"Air Filter",
+"oil filter":"Oil Filter",
+"cabin filter":"Cabin Filter",
+"spark plug":"Spark Plug",
+"radiator":"Radiator",
+"horn":"Horn",
+"wiper":"Wiper Blade"
+
 };
 
 /* =====================================================
@@ -177,25 +138,34 @@ let generation="";
 let year="";
 
 const yearMatch=text.match(/20\d{2}/);
+
 if(yearMatch) year=parseInt(yearMatch[0]);
 
 for(const v in VEHICLES){
+
 if(text.includes(v)){
+
 model=titleCase(v);
 make=VEHICLES[v].make;
 
 if(year){
+
 for(const g of VEHICLES[v].gens){
+
 if(year>=g.start && year<=g.end){
 generation=g.range;
 }
-}
+
 }
 
 }
+
+}
+
 }
 
 return {make,model,generation};
+
 }
 
 /* =====================================================
@@ -205,12 +175,15 @@ PART DETECTION
 function detectPart(text){
 
 for(const p in PART_MAP){
+
 if(text.includes(p)){
 return PART_MAP[p];
 }
+
 }
 
 return "";
+
 }
 
 /* =====================================================
@@ -219,11 +192,12 @@ SHOPIFY SEARCH URL
 
 function buildSearchURL(make,model,generation,part){
 
-const query=`${make} ${model} ${generation} ${part}`
+const query=`${make} ${model} ${generation || ""} ${part}`
 .replace(/\s+/g,"+")
 .toLowerCase();
 
 return `https://ndestore.com/search?q=${query}`;
+
 }
 
 /* =====================================================
@@ -258,17 +232,20 @@ courier:o.fulfillments?.[0]?.tracking_company || "In Process"
 };
 
 }catch(e){
+
 console.log(e.message);
 return null;
+
 }
 
 }
 
 /* =====================================================
-DECAL LINKS
+DECAL COLLECTION LINKS
 ===================================================== */
 
 const DECALS={
+
 1:"https://www.ndestore.com/collections/stickers-decal",
 2:"https://www.ndestore.com/collections/sticker-decal-army-theme",
 3:"https://www.ndestore.com/collections/legal-professional-lawyer",
@@ -284,6 +261,7 @@ const DECALS={
 13:"https://www.ndestore.com/collections/sticker-decal-toyota-gazoo-racing-gr",
 14:"https://www.ndestore.com/collections/firearm-stickers",
 15:"https://www.ndestore.com/pages/custom-decal-and-sticker"
+
 };
 
 /* =====================================================
@@ -293,80 +271,114 @@ AI ENGINE
 async function automotiveAI(message,user){
 
 const session=getSession(user);
-const text=message.toLowerCase();
+const text=(message || "").toLowerCase().trim();
 
 /* Greeting */
 
 if(isGreeting(text)){
-return `Thank you for contacting ndestore.com.
-
-Please share the following details so we can assist you with the correct auto part:
-
-• Vehicle Make
-• Model Name
-• Model Year
-• Part Required
-
-Our system will identify the correct compatible parts for your vehicle.`;
+session.state="MENU";
+return mainMenu();
 }
 
-/* Menu */
+/* MENU */
 
 if(session.state==="MENU"){
 
-if(text==="1"||text==="2"){
+if(text==="1" || text==="2"){
+
 session.state="PART_SEARCH";
-return `Please share:
-
-Vehicle Make
-Model Name
-Model Year
-Part Required
-
-Example:
-Honda Civic 2018 Brake Pad`;
-}
-
-if(text==="3"){
-session.state="ORDER";
-return `Please share your order number.`;
-}
-
-if(text==="4"){
-session.state="COMPLAINT";
-return `Please share order number and complaint details.`;
-}
-
-if(text==="5"){
-session.state="DECAL";
-return `Select a number between 1–15 for decal collection.`;
-}
-
-if(text==="6"){
-return `Contact us
-
-Whatsapp +92-321-4222294
-Landline +92-423-7724222
-Email info@ndestore.com`;
-}
-
-}
-
-/* Parts Search */
-
-if(session.state==="PART_SEARCH"){
-
-const vehicle=detectVehicle(text);
-const part=detectPart(text);
-
-if(!vehicle.make||!vehicle.model||!part){
 
 return `Please confirm
 
 Vehicle Make
 Vehicle Model
 Model Year
-Part Required`;
+Part Required
+
+Example
+Honda Civic 2018 Brake Pad`;
+
+}
+
+if(text==="3"){
+
+session.state="ORDER";
+
+return `Please share your order number
+
+Example
+10011421`;
+
+}
+
+if(text==="4"){
+
+session.state="COMPLAINT";
+
+return `Please share
+
+Order Number
+Complaint Details`;
+
+}
+
+if(text==="5"){
+
+session.state="DECAL";
+
+return `Select one of the following options
+
+1 Complete Collection
+2 Army Stickers
+3 Advocate Stickers
+4 Doctor Stickers
+5 Markhor Stickers
+6 Hunter Stickers
+7 Toyota Stickers
+8 Toyota TEQ Stickers
+9 Honda Stickers
+10 Sports Mind Stickers
+11 Door Sill
+12 Laptop Stickers
+13 GR Stickers
+14 Fire Arm Stickers
+15 Custom Decals`;
+
+}
+
+if(text==="6"){
+
+return `Contact us
+
+Whatsapp +92-321-4222294
+Landline +92-423-7724222
+Email info@ndestore.com`;
+
+}
+
+return mainMenu();
+
+}
+
+/* PART SEARCH */
+
+if(session.state==="PART_SEARCH"){
+
+const vehicle=detectVehicle(text);
+const part=detectPart(text);
+
+if(!vehicle.make || !vehicle.model || !part){
+
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
+Part Required
+
+Example
+Honda Civic 2018 Brake Pad`;
+
 }
 
 const url=buildSearchURL(vehicle.make,vehicle.model,vehicle.generation,part);
@@ -392,22 +404,23 @@ If you require assistance with compatibility confirmation or installation guidan
 Best Regards
 Customer Support Team
 ndestore.com`;
+
 }
 
-/* Order */
+/* ORDER STATUS */
 
 if(session.state==="ORDER"){
 
-const orderMatch=message.match(/\d{5,}/);
+const orderMatch=text.match(/\d{5,}/);
 
 if(!orderMatch){
-return `Please provide a valid order number.`;
+return `Please provide a valid order number`;
 }
 
 const order=await fetchOrder(orderMatch[0]);
 
 if(!order){
-return `Order not located.`;
+return `Order not located`;
 }
 
 session.state="MENU";
@@ -419,9 +432,10 @@ Status: ${order.status}
 Tracking Details: ${order.tracking}
 
 Courier Company: ${order.courier}`;
+
 }
 
-/* Complaint */
+/* COMPLAINT */
 
 if(session.state==="COMPLAINT"){
 
@@ -429,26 +443,28 @@ const ticket="TKT-"+Math.floor(Math.random()*90000+10000);
 
 session.state="MENU";
 
-return `Complaint registered.
+return `Complaint Registered
 
-Ticket Number: ${ticket}
+Ticket Number ${ticket}
 
-Our representative will contact you shortly with a resolution.
+Our representative shall contact you shortly with a resolution.
 
-We regret any inconvenience caused.`;
+We regret the inconvenience caused.`;
+
 }
 
-/* Decals */
+/* DECALS */
 
 if(session.state==="DECAL"){
 
 if(DECALS[text]){
-return `Kindly visit the following website link:
+return `Kindly visit the following website link
 
 ${DECALS[text]}`;
 }
 
-return `Please select a number between 1 and 15.`;
+return `Please select a number between 1 and 15`;
+
 }
 
 return mainMenu();
@@ -463,8 +479,8 @@ app.post("/whatsapp",async(req,res)=>{
 
 try{
 
-const message=req.body.Body||"";
-const user=req.body.From||uid();
+const message=req.body.Body || "";
+const user=req.body.From || uid();
 
 const reply=await automotiveAI(message,user);
 
