@@ -604,14 +604,24 @@ return mainMenu();
 WHATSAPP WEBHOOK
 ===================================================== */
 
-app.post("/whatsapp",async(req,res)=>{
+app.post("/whatsapp", async (req,res)=>{
 
 try{
 
-const message=req.body.Body || "";
-const user=req.body.From || uid();
+const message = req.body.Body || "";
+const user = req.body.From || uid();
 
-const reply=await automotiveAI(message,user);
+console.log("Incoming message:", message);
+
+let reply = await automotiveAI(message,user);
+
+/* fallback if AI returns empty */
+
+if(!reply || reply.trim() === ""){
+reply = "Please confirm Vehicle Make, Model Year and Part required.\n\nExample:\nHonda Civic 2018 Brake Pad";
+}
+
+console.log("AI reply:", reply);
 
 res.set("Content-Type","text/xml");
 
@@ -619,7 +629,7 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 
 }catch(e){
 
-console.log(e);
+console.log("Webhook error:",e);
 
 res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
 
