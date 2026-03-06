@@ -155,30 +155,44 @@ const PART_MAP={
 VEHICLE DETECTION
 ===================================================== */
 
+/* =====================================================
+VEHICLE DETECTION
+===================================================== */
+
 function detectVehicle(text){
 
-let model="";
-let make="";
-let generation="";
-let year="";
+text = text.toLowerCase();
 
-const yearMatch=text.match(/20\d{2}/);
+let model = "";
+let make = "";
+let generation = "";
+let year = null;
 
-if(yearMatch) year=parseInt(yearMatch[0]);
+/* detect year */
+
+const yearMatch = text.match(/20\d{2}/);
+
+if(yearMatch){
+year = parseInt(yearMatch[0]);
+}
+
+/* detect vehicle */
 
 for(const v in VEHICLES){
 
 if(text.includes(v)){
 
-model=titleCase(v);
-make=VEHICLES[v].make;
+model = titleCase(v);
+make = VEHICLES[v].make;
 
-if(year){
+/* detect generation */
+
+if(year && VEHICLES[v].gens){
 
 for(const g of VEHICLES[v].gens){
 
-if(year>=g.start && year<=g.end){
-generation=g.range;
+if(year >= g.start && year <= g.end){
+generation = g.range;
 }
 
 }
@@ -189,7 +203,11 @@ generation=g.range;
 
 }
 
-return {make,model,generation};
+return {
+make,
+model,
+generation
+};
 
 }
 
