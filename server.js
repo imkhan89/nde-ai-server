@@ -121,22 +121,14 @@ corola:"corolla",
 civc:"civic",
 break:"brake",
 breaks:"brake",
-head light:"headlight",
-airfilter:"air filter"
+
+"head light":"headlight",
+"airfilter":"air filter",
+"oilfilter":"oil filter",
+"break pad":"brake pad",
+"break pads":"brake pads"
 
 };
-
-function normalize(text){
-
-text=text.toLowerCase();
-
-Object.keys(TYPO_FIXES).forEach(t=>{
-text=text.replaceAll(t,TYPO_FIXES[t]);
-});
-
-return text;
-
-}
 
 /* =====================================================
 GREETING DETECTION
