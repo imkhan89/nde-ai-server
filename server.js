@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const { execSync } = require("child_process");
 
 async function buildIndexes(){
@@ -22,7 +24,6 @@ console.error("Index build failed:", err.message);
 
 buildIndexes();
 
-require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 const crypto = require("crypto");
