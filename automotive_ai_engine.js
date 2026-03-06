@@ -1,30 +1,10 @@
+/* =====================================================
+ndestore.com AUTOMOTIVE AI ENGINE (ERROR SAFE)
+Uses external vehicle and part databases
+===================================================== */
+
 const VEHICLE_DB = require("./data/vehicle_database");
 const PARTS = require("./data/part_database");
-
-/* =====================================================
-NDESTORE AUTOMOTIVE AI ENGINE v2
-High Accuracy Global Vehicle + Part Detection
-===================================================== */
-
-
-/* =====================================================
-TYPO ENGINE
-===================================================== */
-
-const TYPO_FIXES = {
-
-corola:"corolla",
-civc:"civic",
-break:"brake",
-breaks:"brake",
-filtr:"filter",
-fiter:"filter",
-miror:"mirror",
-bumpr:"bumper",
-disk:"disc"
-
-};
-
 
 /* =====================================================
 VEHICLE ALIASES
@@ -36,6 +16,7 @@ reborn:"civic",
 rebirth:"civic",
 
 gli:"corolla",
+altis:"corolla",
 grande:"corolla",
 
 vigo:"hilux",
@@ -47,52 +28,52 @@ lc:"land cruiser"
 
 };
 
-
 /* =====================================================
-VEHICLE DATABASE
-(Scalable to 500+ models)
+PART SYNONYMS
 ===================================================== */
 
-const VEHICLE_DB = {
+const PART_SYNONYMS = {
 
-toyota:[
-"corolla","camry","yaris","vitz","aqua","prius","hilux","fortuner",
-"land cruiser","prado","raize","passo","rush","probox","premio","mark x"
-],
+"disc pad":"brake pad",
+"disk pad":"brake pad",
+"break pad":"brake pad",
+"brake pads":"brake pad",
 
-honda:[
-"civic","city","accord","vezel","brv","hrv","jazz","fit"
-],
+"brake disc":"brake rotor",
 
-suzuki:[
-"alto","mehran","cultus","swift","wagon r","bolan","every","ciaz"
-],
+"air cleaner":"air filter",
+"engine air filter":"air filter",
 
-daihatsu:[
-"mira","move","cuore","boon","terios"
-],
+"engine oil filter":"oil filter",
 
-nissan:[
-"dayz","note","juke","wingroad","micra"
-],
+"ac filter":"cabin filter",
+"aircon filter":"cabin filter",
 
-mitsubishi:[
-"lancer","mirage","pajero"
-],
+"plug":"spark plug",
+"plugs":"spark plug",
 
-hyundai:[
-"tucson","elantra","sonata","santro"
-],
+"coolant":"radiator coolant",
 
-kia:[
-"sportage","picanto","rio","cerato"
-]
+"wipers":"wiper blade",
+
+"door mirror":"side mirror",
+"wing mirror":"side mirror",
+
+"head lamp":"headlight",
+"tail lamp":"tail light"
 
 };
 
+/* =====================================================
+APPLICATION KEYWORDS
+===================================================== */
+
+const APPLICATIONS = [
+"front","rear","left","right","upper","lower","driver","passenger"
+];
 
 /* =====================================================
-BUILD MODEL → MAKE MAP AUTOMATICALLY
+BUILD MODEL → MAKE MAP
 ===================================================== */
 
 const MODEL_TO_MAKE = {};
@@ -107,156 +88,42 @@ MODEL_TO_MAKE[model] = make;
 
 }
 
-
-/* =====================================================
-PART SYNONYM ENGINE
-===================================================== */
-
-const PART_SYNONYMS = {
-
-"disc pad":"brake pad",
-"disk pad":"brake pad",
-"break pad":"brake pad",
-"brake pads":"brake pad",
-
-"brake disc":"brake rotor",
-"disc rotor":"brake rotor",
-
-"air cleaner":"air filter",
-"engine air filter":"air filter",
-
-"oil filtr":"oil filter",
-"engine oil filter":"oil filter",
-
-"ac filter":"cabin filter",
-"aircon filter":"cabin filter",
-
-"plug":"spark plug",
-"plugs":"spark plug",
-"iridium plug":"spark plug",
-
-"coolant":"radiator coolant",
-
-"wipers":"wiper blade",
-
-"head lamp":"headlight",
-"tail lamp":"tail light",
-
-"door mirror":"side mirror",
-"wing mirror":"side mirror",
-
-"bonnet":"hood",
-
-"engine cover":"engine shield",
-
-"car mat":"floor mat",
-"boot mat":"trunk mat",
-
-"sunshade":"sun shade"
-
-};
-
-
-/* =====================================================
-MAIN PART DATABASE
-===================================================== */
-
-const PARTS = [
-
-"brake pad",
-"brake rotor",
-"brake shoe",
-
-"air filter",
-"oil filter",
-"cabin filter",
-
-"spark plug",
-
-"radiator",
-"radiator cap",
-"radiator coolant",
-
-"horn",
-
-"wiper blade",
-
-"engine shield",
-"fender shield",
-
-"floor mat",
-"trunk mat",
-
-"sun shade",
-
-"car top cover",
-
-"bumper",
-"front bumper",
-"rear bumper",
-
-"headlight",
-"tail light",
-"fog light",
-
-"side mirror",
-
-"emblem",
-"monogram",
-
-"car decal"
-
-];
-
-
-/* =====================================================
-APPLICATION KEYWORDS
-===================================================== */
-
-const APPLICATIONS = [
-"front","rear","left","right","upper","lower"
-];
-
-
 /* =====================================================
 TEXT NORMALIZER
 ===================================================== */
 
 function normalize(text){
 
+if(!text) return "";
+
 let t = text.toLowerCase();
 
-/* typo fixes */
+t = t.replace(/[^\w\s]/g," ");
+t = t.replace(/\s+/g," ").trim();
 
-for(const k in TYPO_FIXES){
+/* apply vehicle aliases */
 
-t = t.replace(new RegExp(`\\b${k}\\b`,"g"),TYPO_FIXES[k]);
+for(const alias in VEHICLE_ALIASES){
 
-}
+const r = new RegExp(`\\b${alias}\\b`,"g");
 
-/* vehicle aliases */
-
-for(const k in VEHICLE_ALIASES){
-
-t = t.replace(new RegExp(`\\b${k}\\b`,"g"),VEHICLE_ALIASES[k]);
+t = t.replace(r,VEHICLE_ALIASES[alias]);
 
 }
 
-/* part synonyms */
+/* apply part synonyms */
 
-for(const k in PART_SYNONYMS){
+for(const key in PART_SYNONYMS){
 
-t = t.replace(new RegExp(`\\b${k}\\b`,"g"),PART_SYNONYMS[k]);
+const r = new RegExp(`\\b${key}\\b`,"g");
 
-}
-
-return t
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim();
+t = t.replace(r,PART_SYNONYMS[key]);
 
 }
 
+return t;
+
+}
 
 /* =====================================================
 YEAR DETECTION
@@ -270,7 +137,6 @@ return match ? match[0] : "";
 
 }
 
-
 /* =====================================================
 VEHICLE DETECTION
 ===================================================== */
@@ -279,9 +145,9 @@ function detectVehicle(text){
 
 for(const model in MODEL_TO_MAKE){
 
-const regex = new RegExp(`\\b${model}\\b`);
+const r = new RegExp(`\\b${model}\\b`);
 
-if(regex.test(text)){
+if(r.test(text)){
 
 return {
 
@@ -298,25 +164,26 @@ return {make:"",model:""};
 
 }
 
-
 /* =====================================================
 PART DETECTION
 ===================================================== */
-
-const SORTED_PARTS = [...PARTS].sort((a,b)=>b.length-a.length);
 
 function detectParts(text){
 
 let found=[];
 
-for(const p of SORTED_PARTS){
+for(const key in PART_SYNONYMS){
 
-const regex = new RegExp(`\\b${p}\\b`);
+if(text.includes(key)){
+text=text.replace(key,PART_SYNONYMS[key]);
+}
 
-if(regex.test(text)){
+}
 
-found.push(p);
+for(const part of PARTS){
 
+if(text.includes(part)){
+found.push(part);
 }
 
 }
@@ -324,7 +191,6 @@ found.push(p);
 return found;
 
 }
-
 
 /* =====================================================
 APPLICATION DETECTION
@@ -334,16 +200,13 @@ function detectApplication(text){
 
 for(const a of APPLICATIONS){
 
-const regex = new RegExp(`\\b${a}\\b`);
-
-if(regex.test(text)) return a;
+if(text.includes(a)) return a;
 
 }
 
 return "";
 
 }
-
 
 /* =====================================================
 QUERY BUILDER
@@ -361,18 +224,17 @@ if(parts.length) q.push(parts[0]);
 
 if(application) q.push(application);
 
-let query = q.join(" ");
+let query=q.join(" ");
 
-if(query.length < 3){
+if(query.length<3){
 
-query = normalize(message);
+query=normalize(message);
 
 }
 
 return query;
 
 }
-
 
 /* =====================================================
 SEARCH URL BUILDER
@@ -384,9 +246,8 @@ return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=prod
 
 }
 
-
 /* =====================================================
-CAPITALIZE HELPER
+CAPITALIZATION
 ===================================================== */
 
 function cap(str){
@@ -400,24 +261,25 @@ return str
 
 }
 
-
 /* =====================================================
-MAIN AI ANALYZER
+MAIN ANALYZER
 ===================================================== */
 
 function analyzeAutomotiveQuery(message){
 
-const clean = normalize(message);
+try{
 
-const vehicle = detectVehicle(clean);
+const clean=normalize(message);
 
-const year = detectYear(clean);
+const vehicle=detectVehicle(clean);
 
-const parts = detectParts(clean);
+const year=detectYear(clean);
 
-const application = detectApplication(clean);
+const parts=detectParts(clean);
 
-const query = buildQuery(
+const application=detectApplication(clean);
+
+const query=buildQuery(
 vehicle.make,
 vehicle.model,
 year,
@@ -426,7 +288,7 @@ application,
 message
 );
 
-return {
+return{
 
 make:cap(vehicle.make),
 model:cap(vehicle.model),
@@ -438,8 +300,23 @@ url:buildSearchURL(query)
 
 };
 
+}catch(err){
+
+return{
+
+make:"Not Specified",
+model:"Not Specified",
+year:"Not Specified",
+part:"Not Specified",
+application:"Not Specified",
+query:message,
+url:buildSearchURL(message)
+
+};
+
 }
 
+}
 
 /* =====================================================
 EXPORT
