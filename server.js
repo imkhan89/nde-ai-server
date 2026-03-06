@@ -1,29 +1,5 @@
 require("dotenv").config();
 
-const { execSync } = require("child_process");
-
-async function buildIndexes(){
-
-try{
-
-console.log("Building product index...");
-execSync("node buildProductIndex.js", { stdio: "inherit" });
-
-console.log("Building search index...");
-execSync("node buildSearchIndex.js", { stdio: "inherit" });
-
-console.log("Indexes ready");
-
-}catch(err){
-
-console.error("Index build failed:", err.message);
-
-}
-
-}
-
-buildIndexes();
-
 const express = require("express");
 const axios = require("axios");
 const crypto = require("crypto");
@@ -35,8 +11,6 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-const parseQuery = require("./automotive_query_parser");
-
 /* =====================================================
 SESSION MEMORY
 ===================================================== */
@@ -45,7 +19,7 @@ let SESSIONS = {};
 
 function getSession(user){
 if(!SESSIONS[user]){
-SESSIONS[user]={state:"MENU"};
+SESSIONS[user]={state:"NEW"};
 }
 return SESSIONS[user];
 }
@@ -81,19 +55,12 @@ const replacements = {
 
 "ac filter":"cabin filter",
 "a/c filter":"cabin filter",
-"ac cabin filter":"cabin filter",
-
 "airfilter":"air filter",
 "oilfilter":"oil filter",
-
 "break pad":"brake pad",
 "brakepads":"brake pad",
-"brake pads":"brake pad",
-
 "sparkplug":"spark plug",
-
-"wipers":"wiper",
-"wiper blades":"wiper"
+"wipers":"wiper"
 
 };
 
@@ -102,27 +69,6 @@ text = text.replace(r,replacements[r]);
 }
 
 return text;
-
-}
-
-/* =====================================================
-GREETING DETECTION
-===================================================== */
-
-function isGreeting(text){
-
-const greetings=[
-"hi",
-"hello",
-"salam",
-"aoa",
-"assalamualaikum",
-"good morning",
-"good evening"
-];
-
-return greetings.some(g=>text.startsWith(g));
-
 }
 
 /* =====================================================
@@ -143,74 +89,55 @@ How can we assist you today?
 6 Other
 
 Reply with 1 2 3 4 5 or 6`;
-
 }
 
 /* =====================================================
-VEHICLE KNOWLEDGE BASE
+VEHICLE DATABASE
 ===================================================== */
 
 const VEHICLES = {
 
 civic:{make:"Honda",gens:[
-{range:"2017–2021",start:2017,end:2021},
-{range:"2013–2016",start:2013,end:2016}
+{range:"2017-2021",start:2017,end:2021},
+{range:"2013-2016",start:2013,end:2016}
 ]},
 
 corolla:{make:"Toyota",gens:[
-{range:"2014–2020",start:2014,end:2020},
-{range:"2009–2013",start:2009,end:2013}
+{range:"2014-2020",start:2014,end:2020},
+{range:"2009-2013",start:2009,end:2013}
 ]},
 
 cultus:{make:"Suzuki",gens:[
-{range:"2017–Present",start:2017,end:2030}
+{range:"2017-Present",start:2017,end:2030}
 ]},
 
 city:{make:"Honda",gens:[
-{range:"2014–2021",start:2014,end:2021}
+{range:"2014-2021",start:2014,end:2021}
 ]}
 
 };
 
 /* =====================================================
-PART NORMALIZATION
+PART DATABASE
 ===================================================== */
 
 const PART_MAP={
 
-/* SERVICE PARTS */
-
 "brake pad":"Brake Pads",
-"brake pads":"Brake Pads",
 "air filter":"Air Filter",
 "oil filter":"Oil Filter",
 "cabin filter":"Cabin Filter",
 "spark plug":"Spark Plug",
-"radiator":"Radiator",
-"horn":"Horn",
 "wiper":"Wiper Blade",
 
-/* ACCESSORIES */
-
 "floor mat":"Floor Mats",
-"floor mats":"Floor Mats",
-"car mat":"Floor Mats",
 "sun shade":"Sun Shade",
-"sunshade":"Sun Shade",
 "air visor":"Air Visor",
-"door visor":"Air Visor",
 "mud flap":"Mud Flaps",
-"mud flaps":"Mud Flaps",
 "trunk tray":"Trunk Tray",
-"car cover":"Car Cover",
-"seat cover":"Seat Cover",
-"steering cover":"Steering Cover",
-
-/* DECALS */
 
 "sticker":"Sticker",
-"decal":"Decal",
-"sticker decal":"Sticker Decal"
+"decal":"Decal"
 
 };
 
@@ -220,38 +147,28 @@ VEHICLE DETECTION
 
 function detectVehicle(text){
 
-text = text.toLowerCase();
-
-let model = "";
-let make = "";
-let generation = "";
-let year = null;
-
-/* detect year */
+let model="";
+let make="";
+let generation="";
+let year=null;
 
 const yearMatch = text.match(/20\d{2}/);
 
 if(yearMatch){
-year = parseInt(yearMatch[0]);
+year=parseInt(yearMatch[0]);
 }
-
-/* detect vehicle */
 
 for(const v in VEHICLES){
 
 if(text.includes(v)){
 
-model = titleCase(v);
-make = VEHICLES[v].make;
-
-/* detect generation */
-
-if(year && VEHICLES[v].gens){
+model=titleCase(v);
+make=VEHICLES[v].make;
 
 for(const g of VEHICLES[v].gens){
 
-if(year >= g.start && year <= g.end){
-generation = g.range;
+if(year && year>=g.start && year<=g.end){
+generation=g.range;
 }
 
 }
@@ -260,14 +177,7 @@ generation = g.range;
 
 }
 
-}
-
-return {
-make,
-model,
-generation
-};
-
+return {make,model,generation};
 }
 
 /* =====================================================
@@ -275,10 +185,6 @@ PART DETECTION
 ===================================================== */
 
 function detectPart(text){
-
-text = text.toLowerCase();
-
-/* existing part detection */
 
 for(const p in PART_MAP){
 
@@ -288,34 +194,11 @@ return PART_MAP[p];
 
 }
 
-/* fallback flexible detection */
-
-if(text.includes("filter")){
-
-if(text.includes("air")) return "Air Filter";
-if(text.includes("oil")) return "Oil Filter";
-if(text.includes("cabin") || text.includes("ac")) return "Cabin Filter";
-
-}
-
-if(text.includes("brake") && text.includes("pad")){
-return "Brake Pads";
-}
-
-if(text.includes("spark")){
-return "Spark Plug";
-}
-
-if(text.includes("wiper")){
-return "Wiper Blade";
-}
-
 return "";
-
 }
 
 /* =====================================================
-SHOPIFY SEARCH URL
+SHOPIFY SEARCH
 ===================================================== */
 
 function buildSearchURL(make,model,generation,part){
@@ -325,7 +208,6 @@ const query=`${part} ${make} ${model} ${generation || ""}`
 .toLowerCase();
 
 return `https://ndestore.com/search?q=${query}`;
-
 }
 
 /* =====================================================
@@ -355,8 +237,8 @@ const o=res.data.orders[0];
 return{
 id:o.name,
 status:o.fulfillment_status || "Unfulfilled",
-tracking:o.fulfillments?.[0]?.tracking_number || "In Process",
-courier:o.fulfillments?.[0]?.tracking_company || "In Process"
+tracking:o.fulfillments?.[0]?.tracking_number || "Processing",
+courier:o.fulfillments?.[0]?.tracking_company || "Processing"
 };
 
 }catch(e){
@@ -369,81 +251,24 @@ return null;
 }
 
 /* =====================================================
-DECAL COLLECTION LINKS
-===================================================== */
-
-const DECALS={
-
-1:"https://www.ndestore.com/collections/stickers-decal",
-2:"https://www.ndestore.com/collections/sticker-decal-army-theme",
-3:"https://www.ndestore.com/collections/legal-professional-lawyer",
-4:"https://www.ndestore.com/collections/decal-sticker-doctor-medic-hospital-dentist",
-5:"https://www.ndestore.com/collections/markhor-stickers",
-6:"https://www.ndestore.com/collections/hunter-stickers",
-7:"https://www.ndestore.com/collections/toyota-decals",
-8:"https://www.ndestore.com/collections/teq-series-decal-jdm-japan",
-9:"https://www.ndestore.com/collections/honda-stickers",
-10:"https://www.ndestore.com/collections/sports-mind-sticker/SPORTS-MIND-STICKER",
-11:"https://www.ndestore.com/collections/door-paint-sticker-car-protection/DOOR-SILL-STICKER",
-12:"https://www.ndestore.com/collections/sticker-jeep",
-13:"https://www.ndestore.com/collections/sticker-decal-toyota-gazoo-racing-gr",
-14:"https://www.ndestore.com/collections/firearm-stickers",
-15:"https://www.ndestore.com/pages/custom-decal-and-sticker"
-
-};
-
-/* =====================================================
-MENU OPTION HANDLING
-===================================================== */
-
-if(text === "1"){
-return `Please provide your vehicle and part required.
-
-Example:
-Honda Civic 2018 Brake Pad`;
-}
-
-if(text === "2"){
-return `Please tell us which car accessory you need.
-
-Example:
-Toyota Corolla Sun Shade`;
-}
-
-if(text === "3"){
-return `Please provide your order number to check the status.`;
-}
-
-if(text === "4"){
-return `Please describe the complaint and our team will assist you.`;
-}
-
-if(text === "5"){
-return `Please tell us which sticker decal you are looking for.
-
-Example:
-Pakistan Army Sticker`;
-}
-
-if(text === "6"){
-return `Please describe your inquiry and our team will assist you.`;
-}
-
-/* =====================================================
 AI ENGINE
 ===================================================== */
 
 async function automotiveAI(message,user){
 
 const session=getSession(user);
+
 let text=(message || "").toLowerCase().trim();
 text = normalizeText(text);
 
-/* Greeting */
+/* FIRST MESSAGE ALWAYS TRIGGERS GREETING */
 
-if(isGreeting(text)){
+if(session.state==="NEW"){
+
 session.state="MENU";
+
 return mainMenu();
+
 }
 
 /* MENU */
@@ -481,10 +306,7 @@ if(text==="4"){
 
 session.state="COMPLAINT";
 
-return `Please share
-
-Order Number
-Complaint Details`;
+return `Please describe the complaint and include your order number`;
 
 }
 
@@ -492,29 +314,15 @@ if(text==="5"){
 
 session.state="DECAL";
 
-return `Select one of the following options
+return `Visit decal collection
 
-1 Complete Collection
-2 Army Stickers
-3 Advocate Stickers
-4 Doctor Stickers
-5 Markhor Stickers
-6 Hunter Stickers
-7 Toyota Stickers
-8 Toyota TEQ Stickers
-9 Honda Stickers
-10 Sports Mind Stickers
-11 Door Sill
-12 Laptop Stickers
-13 GR Stickers
-14 Fire Arm Stickers
-15 Custom Decals`;
+https://www.ndestore.com/collections/stickers-decal`;
 
 }
 
 if(text==="6"){
 
-return `Contact us
+return `Customer Support
 
 Whatsapp +92-321-4222294
 Landline +92-423-7724222
@@ -553,8 +361,6 @@ session.state="MENU";
 
 return `Thank you for contacting ndestore.com.
 
-Your vehicle details have been identified as follows:
-
 Vehicle Details
 
 Vehicle Make: ${vehicle.make}
@@ -562,10 +368,8 @@ Model Name: ${vehicle.model}
 Model Year: ${vehicle.generation || "Unknown"}
 Part Required: ${part}
 
-Product URL:
+Product URL
 ${url}
-
-If you require assistance with compatibility confirmation or installation guidance, please feel free to let us know.
 
 Best Regards
 Customer Support Team
@@ -595,7 +399,7 @@ return `Order ID: ${order.id}
 
 Status: ${order.status}
 
-Tracking Details: ${order.tracking}
+Tracking Number: ${order.tracking}
 
 Courier Company: ${order.courier}`;
 
@@ -611,25 +415,9 @@ session.state="MENU";
 
 return `Complaint Registered
 
-Ticket Number ${ticket}
+Ticket Number: ${ticket}
 
-Our representative shall contact you shortly with a resolution.
-
-We regret the inconvenience caused.`;
-
-}
-
-/* DECALS */
-
-if(session.state==="DECAL"){
-
-if(DECALS[text]){
-return `Kindly visit the following website link
-
-${DECALS[text]}`;
-}
-
-return `Please select a number between 1 and 15`;
+Our representative will contact you shortly.`;
 
 }
 
@@ -648,17 +436,13 @@ try{
 const message = req.body.Body || "";
 const user = req.body.From || uid();
 
-console.log("Incoming message:", message);
+console.log("Incoming:",message);
 
 let reply = await automotiveAI(message,user);
 
-/* fallback if AI returns empty */
-
-if(!reply || reply.trim() === ""){
-reply = "Please confirm Vehicle Make, Model Year and Part required.\n\nExample:\nHonda Civic 2018 Brake Pad";
+if(!reply || reply.trim()===""){
+reply="Please confirm Vehicle Make Model Year and Part Required.";
 }
-
-console.log("AI reply:", reply);
 
 res.set("Content-Type","text/xml");
 
