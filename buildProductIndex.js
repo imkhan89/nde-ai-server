@@ -8,8 +8,11 @@ const axios = require("axios");
 SHOPIFY CONFIG
 ===================================================== */
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const SHOP = process.env.SHOPIFY_STORE_DOMAIN;
+const TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const VERSION = process.env.SHOPIFY_API_VERSION || "2024-10";
+
+const url = `https://${SHOP}/admin/api/${VERSION}/products.json`;
 
 /* =====================================================
 PATHS
