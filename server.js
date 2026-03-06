@@ -219,10 +219,9 @@ m==="hello" ||
 m==="hey" ||
 m==="salam" ||
 m==="assalamualaikum" ||
-m==="aoa" ||
-m.includes("good morning") ||
-m.includes("good evening")
-){
+m==="aoa"
+)
+{
 return "GREETING";
 }
 
