@@ -8,6 +8,6 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+RUN node buildProductIndex.js && node buildSearchIndex.js
 
 CMD ["node","server.js"]
