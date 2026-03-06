@@ -5,11 +5,18 @@ const axios = require("axios");
 const crypto = require("crypto");
 
 const app = express();
-
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
+
+/* =====================================================
+CONFIG
+===================================================== */
+
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const PUBLIC_STORE = process.env.PUBLIC_STORE_DOMAIN || "www.ndestore.com";
 
 /* =====================================================
 SESSION MEMORY
@@ -17,28 +24,54 @@ SESSION MEMORY
 
 let SESSIONS = {};
 
-function getSession(user) {
-  if (!SESSIONS[user]) {
-    SESSIONS[user] = {
-      state: "MENU"
-    };
-  }
-  return SESSIONS[user];
+function getSession(user){
+
+if(!SESSIONS[user]){
+
+SESSIONS[user]={
+state:"MENU",
+vehicle:null,
+year:null,
+part:null
+};
+
+}
+
+return SESSIONS[user];
+
 }
 
 /* =====================================================
 HELPERS
 ===================================================== */
 
-function uid() {
-  return crypto.randomBytes(6).toString("hex");
+function uid(){
+return crypto.randomBytes(6).toString("hex");
 }
 
-function xmlSafe(str) {
-  return str
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;");
+function xmlSafe(str){
+
+return str
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
+
+}
+
+/* =====================================================
+GREETING DETECTION
+===================================================== */
+
+function isGreeting(text){
+
+const greetings=[
+"hi","hello","hey","salam",
+"assalamualaikum","aoa",
+"good morning","good evening"
+];
+
+return greetings.some(g=>text===g || text.startsWith(g+" "));
+
 }
 
 /* =====================================================
@@ -46,6 +79,7 @@ MENU
 ===================================================== */
 
 function mainMenu(){
+
 return `Thank you for contacting ndestore.com
 
 How can we assist you today?
@@ -58,13 +92,115 @@ How can we assist you today?
 6 Other
 
 Reply with 1 2 3 4 5 or 6`;
+
 }
 
 /* =====================================================
-DECAL COLLECTION LINKS
+AUTOMOTIVE KNOWLEDGE BASE
 ===================================================== */
 
-const DECAL_LINKS = {
+const VEHICLES=[
+"corolla","civic","city","cultus",
+"alto","mehran","yaris","swift",
+"revo","hilux","prius"
+];
+
+const PARTS=[
+"brake pad","air filter","oil filter",
+"cabin filter","spark plug",
+"radiator","horn","wiper",
+"headlight","fuel pump",
+"alternator","fan belt",
+"clutch plate"
+];
+
+/* =====================================================
+EXTRACT VEHICLE + PART
+===================================================== */
+
+function extractVehicle(text){
+
+let model="";
+let year="";
+let part="";
+
+const yearMatch=text.match(/20\d{2}/);
+if(yearMatch) year=yearMatch[0];
+
+VEHICLES.forEach(v=>{
+if(text.includes(v)) model=v;
+});
+
+PARTS.forEach(p=>{
+if(text.includes(p)) part=p;
+});
+
+return {model,year,part};
+
+}
+
+/* =====================================================
+SEARCH PRODUCTS
+===================================================== */
+
+function searchProducts(model,year,part){
+
+const handle=`${part.replace(" ","-")}-${model}`;
+
+return [
+{
+title:`${model} ${year} ${part}`,
+handle:handle
+}
+];
+
+}
+
+/* =====================================================
+ORDER LOOKUP
+===================================================== */
+
+async function fetchOrder(order){
+
+try{
+
+const url=`https://${SHOPIFY_STORE}/admin/api/2023-10/orders.json`;
+
+const res=await axios.get(url,{
+headers:{
+"X-Shopify-Access-Token":SHOPIFY_TOKEN
+},
+params:{
+status:"any",
+query:`name:${order}`
+}
+});
+
+if(!res.data.orders.length) return null;
+
+const o=res.data.orders[0];
+
+return{
+id:o.name,
+status:o.fulfillment_status || "Unfulfilled",
+tracking:o.fulfillments?.[0]?.tracking_number || "In Process",
+courier:o.fulfillments?.[0]?.tracking_company || "In Process"
+};
+
+}catch(e){
+
+console.log("Shopify error:",e.message);
+return null;
+
+}
+
+}
+
+/* =====================================================
+DECAL LINKS
+===================================================== */
+
+const DECAL_LINKS={
 1:"https://www.ndestore.com/collections/stickers-decal",
 2:"https://www.ndestore.com/collections/sticker-decal-army-theme",
 3:"https://www.ndestore.com/collections/legal-professional-lawyer",
@@ -83,67 +219,30 @@ const DECAL_LINKS = {
 };
 
 /* =====================================================
-ORDER LOOKUP
+AI ENGINE
 ===================================================== */
 
-async function fetchOrder(order){
+async function automotiveAI(message,user){
 
-try{
+const session=getSession(user);
 
-const url=`https://${process.env.SHOPIFY_STORE}/admin/api/2023-10/orders.json`;
+const text=message.toLowerCase().trim();
 
-const res=await axios.get(url,{
-headers:{
-"X-Shopify-Access-Token":process.env.SHOPIFY_ADMIN_API_TOKEN
-},
-params:{
-status:"any",
-query:`name:${order}`
-}
-});
+/* GREETING */
 
-if(!res.data.orders.length) return null;
-
-const o=res.data.orders[0];
-
-return{
-order:o.name,
-status:o.fulfillment_status || "Unfulfilled",
-tracking:o.fulfillments?.[0]?.tracking_number || "In Process",
-courier:o.fulfillments?.[0]?.tracking_company || "In Process"
-};
-
-}catch(e){
-
-console.log("Shopify error:",e.message);
-return null;
-
-}
-
-}
-
-/* =====================================================
-MAIN AI LOGIC
-===================================================== */
-
-async function automotiveAI(message, user) {
-
-const session = getSession(user);
-
-const text = message.toLowerCase().trim();
-
-/* =====================================================
-STEP 1 — GREETING / MENU
-===================================================== */
-
-if (session.state === "MENU") {
-
-if (text.match(/hi|hello|salam|aoa|hey/)) {
+if(isGreeting(text)){
+session.state="MENU";
 return mainMenu();
 }
 
-if (text === "1") {
-session.state = "PART_REQUEST";
+/* MENU */
+
+if(session.state==="MENU"){
+
+if(text==="1" || text==="2"){
+
+session.state="PART_REQUEST";
+
 return `Please confirm
 
 Vehicle Make
@@ -153,63 +252,36 @@ Part Required
 
 Example
 Honda Civic 2017 Brake Pad`;
+
 }
 
-if (text === "2") {
-session.state = "PART_REQUEST";
-return `Please confirm
+if(text==="3"){
 
-Vehicle Make
-Vehicle Model
-Model Year
-Accessory Required
+session.state="ORDER";
 
-Example
-Toyota Corolla 2018 Floor Mat`;
+return `Please share your order number`;
+
 }
 
-if (text === "3") {
-session.state = "ORDER_LOOKUP";
-return `Please share your order number
+if(text==="4"){
 
-Example
-10011421`;
+session.state="COMPLAINT";
+
+return `Please share order number and complaint`;
+
 }
 
-if (text === "4") {
-session.state = "COMPLAINT";
-return `Please share
+if(text==="5"){
 
-Order Number
-Complaint Details`;
+session.state="DECAL";
+
+return `Select a number between 1 and 15 for decal collection`;
+
 }
 
-if (text === "5") {
-session.state = "DECALS";
-return `Select one of the following options
+if(text==="6"){
 
-1 Complete Collection
-2 Army Stickers
-3 Advocate Stickers
-4 Doctor Stickers
-5 Markhor Stickers
-6 Hunter Stickers
-7 Toyota Stickers
-8 Toyota TEQ Stickers
-9 Honda Stickers
-10 Sports Mind Stickers
-11 Door Sill
-12 Laptop Stickers
-13 GR Stickers
-14 Fire Arm Stickers
-15 Custom Decals`;
-}
-
-if (text === "6") {
-
-session.state = "END";
-
-return `Contact us at
+return `Contact us
 
 Whatsapp +92-321-4222294
 Landline +92-423-7724222
@@ -221,96 +293,39 @@ return mainMenu();
 
 }
 
-/* =====================================================
-STEP 2 — PART / ACCESSORY SEARCH
-===================================================== */
+/* PART SEARCH */
 
-if (session.state === "PART_REQUEST") {
+if(session.state==="PART_REQUEST"){
 
-const vehicles = [
-"corolla","civic","city","cultus",
-"alto","mehran","yaris","swift",
-"revo","hilux"
-];
+const data=extractVehicle(text);
 
-const parts = [
-"brake pad","air filter","oil filter",
-"cabin filter","spark plug",
-"radiator","horn","wiper",
-"headlight","floor mat"
-];
-
-let model = "";
-let year = "";
-let part = "";
-
-const yearMatch = text.match(/20\d{2}/);
-if (yearMatch) year = yearMatch[0];
-
-vehicles.forEach(v=>{
-if(text.includes(v)) model=v;
-});
-
-parts.forEach(p=>{
-if(text.includes(p)) part=p;
-});
-
-if(!model || !part){
+if(!data.model || !data.part){
 
 return `Please confirm
 
 Vehicle Make
 Vehicle Model
 Model Year
-Part Required
-
-Example
-Honda Civic 2017 Brake Pad`;
+Part Required`;
 
 }
 
-/* SAFE SEARCH */
+const results=searchProducts(data.model,data.year,data.part);
 
-let results=[];
-
-try{
-
-if(typeof searchProducts === "function"){
-
-results = searchProducts(`${model} ${year} ${part}`) || [];
-
-}
-
-}catch(e){
-
-console.log("Search error:",e.message);
-
-}
-
-/* RESULTS */
-
-if(results.length){
-
-const list = results.map(p=>{
-
-let url="";
-
-if(p.handle){
-url=`https://www.ndestore.com/products/${p.handle}`;
-}
+const list=results.map(p=>{
 
 return `Option
 ${p.title}
-${url}`;
+https://${PUBLIC_STORE}/products/${p.handle}`;
 
 }).join("\n\n");
 
 session.state="END";
 
 return `Vehicle Identified
-Model ${model}
-Year ${year}
-Part ${part}
+Model ${data.model}
+Year ${data.year}
+Part ${data.part}
 
 Matching Products
 
@@ -323,208 +338,7 @@ No`;
 
 }
 
-return `No matching products found.
-
-Please confirm
-
-Vehicle Make
-Vehicle Model
-Model Year
-Part Required
-
-Example
-Honda Civic 2017 Brake Pad`;
-
-}
-
-/* =====================================================
-STEP 3 — ORDER LOOKUP
-===================================================== */
-
-if(session.state==="ORDER_LOOKUP"){
-
-const orderMatch = message.match(/\d{5,}/);
-
-if(!orderMatch){
-return `Please provide a valid order number`;
-}
-
-const orderData = await fetchOrder(orderMatch[0]);
-
-if(!orderData){
-return `Order not located. Kindly verify order number`;
-}
-
-session.state="END";
-
-return `Order ID ${orderData.order}
-
-Status ${orderData.status}
-
-Tracking Details ${orderData.tracking || "In Process"}
-
-Courier ${orderData.courier || "In Process"}`;
-
-}
-
-/* =====================================================
-STEP 4 — COMPLAINT
-===================================================== */
-
-if(session.state==="COMPLAINT"){
-
-const ticket="TKT-"+Math.floor(Math.random()*90000+10000);
-
-session.state="END";
-
-return `Complaint Registered
-
-Ticket Number ${ticket}
-
-Our representative shall contact you shortly with a resolution.
-
-We regret the inconvenience caused.`;
-
-}
-
-/* =====================================================
-STEP 5 — DECAL COLLECTION
-===================================================== */
-
-if(session.state==="DECALS"){
-
-if(DECAL_LINKS[text]){
-
-session.state="END";
-
-return `Kindly visit the following website link
-
-${DECAL_LINKS[text]}`;
-
-}
-
-return `Please select a number between 1 and 15`;
-
-}
-
-/* =====================================================
-DEFAULT
-===================================================== */
-
-return mainMenu();
-
-}
-
-/* =====================================================
-PART SEARCH FLOW
-===================================================== */
-
-if(session.state==="PART_REQUEST"){
-
-/* extract vehicle and part */
-
-let make="";
-let model="";
-let year="";
-let part="";
-
-const text=message.toLowerCase();
-
-/* detect year */
-
-const yearMatch=text.match(/20\d{2}/);
-if(yearMatch) year=yearMatch[0];
-
-/* detect vehicle */
-
-const vehicles=[
-"corolla","civic","city","cultus","alto",
-"mehran","yaris","swift","revo","hilux"
-];
-
-vehicles.forEach(v=>{
-if(text.includes(v)) model=v;
-});
-
-/* detect part */
-
-const parts=[
-"brake pad","air filter","oil filter",
-"cabin filter","spark plug","horn",
-"radiator","wiper","headlight"
-];
-
-parts.forEach(p=>{
-if(text.includes(p)) part=p;
-});
-
-if(!model || !part){
-
-return `Please confirm
-
-Vehicle Make
-Vehicle Model
-Model Year
-Part Required
-
-Example
-Honda Civic 2017 Brake Pad`;
-
-}
-
-/* search */
-
-const query=`${model} ${year} ${part}`;
-
-const results=searchProducts(query);
-
-if(results.length){
-
-const list=results.map(p=>{
-
-const url=`https://www.ndestore.com/products/${p.handle}`;
-
-return `Option
-${p.title}
-${url}`;
-
-}).join("\n\n");
-
-return `Vehicle Identified
-Model ${model}
-Year ${year}
-Part ${part}
-
-Matching Products
-
-${list}
-
-Connect with a live agent
-
-Yes
-No`;
-
-}
-
-/* fallback */
-
-return `No matching products found.
-
-Please confirm
-
-Vehicle Make
-Vehicle Model
-Model Year
-Part Required
-
-Example
-Honda Civic 2017 Brake Pad`;
-
-}
-
-/* =====================================================
-ORDER FLOW
-===================================================== */
+/* ORDER */
 
 if(session.state==="ORDER"){
 
@@ -534,25 +348,25 @@ if(!orderMatch){
 return `Please provide a valid order number`;
 }
 
-const orderData=await fetchOrder(orderMatch[0]);
+const order=await fetchOrder(orderMatch[0]);
 
-if(!orderData){
-return `Order not located. Kindly verify order number`;
+if(!order){
+return `Order not located`;
 }
 
-return `Order ID ${orderData.order}
+session.state="END";
 
-Status ${orderData.status}
+return `Order ID ${order.id}
 
-Tracking Details ${orderData.tracking}
+Status ${order.status}
 
-Courier ${orderData.courier}`;
+Tracking ${order.tracking}
+
+Courier ${order.courier}`;
 
 }
 
-/* =====================================================
-COMPLAINT FLOW
-===================================================== */
+/* COMPLAINT */
 
 if(session.state==="COMPLAINT"){
 
@@ -562,35 +376,27 @@ session.state="END";
 
 return `Complaint Registered
 
-Ticket Number ${ticket}
+Ticket ${ticket}
 
-Our representative will contact you shortly with a resolution.
-
-We regret the inconvenience caused.`;
+Our representative will contact you shortly`;
 
 }
 
-/* =====================================================
-DECAL FLOW
-===================================================== */
+/* DECALS */
 
-if(session.state==="DECALS"){
+if(session.state==="DECAL"){
 
 if(DECAL_LINKS[text]){
 
-return `Kindly visit the following website link
+return `Kindly visit
 
 ${DECAL_LINKS[text]}`;
 
 }
 
-return `Please select a number between 1 and 15`;
+return `Please choose number between 1 and 15`;
 
 }
-
-/* =====================================================
-DEFAULT FALLBACK
-===================================================== */
 
 return mainMenu();
 
@@ -615,6 +421,8 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 
 }catch(e){
 
+console.log(e);
+
 res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
 
 }
@@ -626,7 +434,7 @@ SERVER
 ===================================================== */
 
 app.get("/",(req,res)=>{
-res.send("ndestore AI Running");
+res.send("ndestore AI Engine Running");
 });
 
 app.listen(PORT,()=>{
