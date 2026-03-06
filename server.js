@@ -42,31 +42,91 @@ function titleCase(str){
 GREETING
 ===================================================== */
 
-function isGreeting(text){
-  const greetings=[
-    "hi","hello","salam","aoa",
-    "assalamualaikum","good morning","good evening"
-  ];
-  return greetings.some(g=>text.startsWith(g));
+if(isGreeting(text)){
+session.state="MENU";
+return mainMenu();
 }
 
 /* =====================================================
 MENU
 ===================================================== */
 
-function mainMenu(){
-return `Thank you for contacting ndestore.com.
+if(session.state==="MENU"){
 
-How can we assist you today?
+if(text==="1"){
+session.state="PART_SEARCH";
+return `Please confirm
 
-1 Parts Inquiry
-2 Car Accessories
-3 Order Status
-4 Complaints
-5 Decal Stickers
-6 Other
+Vehicle Make
+Vehicle Model
+Model Year
+Part Required
 
-Reply with 1 2 3 4 5 or 6`;
+Example
+Honda Civic 2018 Brake Pad`;
+}
+
+if(text==="2"){
+session.state="PART_SEARCH";
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
+Accessory Required
+
+Example
+Toyota Corolla 2018 Floor Mat`;
+}
+
+if(text==="3"){
+session.state="ORDER";
+return `Please share your order number
+
+Example
+10011421`;
+}
+
+if(text==="4"){
+session.state="COMPLAINT";
+return `Please share
+
+Order Number
+Complaint Details`;
+}
+
+if(text==="5"){
+session.state="DECAL";
+return `Select one of the following options
+
+1 Complete Collection
+2 Army Stickers
+3 Advocate Stickers
+4 Doctor Stickers
+5 Markhor Stickers
+6 Hunter Stickers
+7 Toyota Stickers
+8 Toyota TEQ Stickers
+9 Honda Stickers
+10 Sports Mind Stickers
+11 Door Sill
+12 Laptop Stickers
+13 GR Stickers
+14 Fire Arm Stickers
+15 Custom Decals`;
+}
+
+if(text==="6"){
+session.state="MENU";
+return `Contact us
+
+Whatsapp +92-321-4222294
+Landline +92-423-7724222
+Email info@ndestore.com`;
+}
+
+return mainMenu();
+
 }
 
 /* =====================================================
@@ -321,7 +381,7 @@ Vehicle Details
 
 Vehicle Make: ${vehicle.make}
 Model Name: ${vehicle.model}
-Model Year: ${vehicle.generation}
+Model Year: ${vehicle.generation || "Unknown"}
 Part Required: ${part}
 
 Product URL:
