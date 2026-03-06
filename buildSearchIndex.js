@@ -11,9 +11,8 @@ const INDEX_DIR = path.join(__dirname,"index");
 const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
 const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
 
-
 /* =====================================================
-LOAD PRODUCT INDEX
+CHECK PRODUCT INDEX
 ===================================================== */
 
 if(!fs.existsSync(PRODUCT_INDEX_FILE)){
@@ -23,10 +22,25 @@ process.exit(1);
 
 }
 
-const products = JSON.parse(
+/* =====================================================
+LOAD PRODUCTS
+===================================================== */
+
+let products = [];
+
+try{
+
+products = JSON.parse(
 fs.readFileSync(PRODUCT_INDEX_FILE,"utf8")
 );
 
+}catch(err){
+
+console.log("ERROR: Unable to read product_index.json");
+console.log(err.message);
+process.exit(1);
+
+}
 
 /* =====================================================
 TOKENIZER
@@ -45,9 +59,8 @@ return text
 
 }
 
-
 /* =====================================================
-BUILD SEARCH INDEX
+SEARCH INDEX BUILDER
 ===================================================== */
 
 let SEARCH_INDEX = {};
@@ -71,7 +84,7 @@ if(!SEARCH_INDEX[token]){
 SEARCH_INDEX[token] = [];
 }
 
-/* store minimal product data for speed */
+/* minimal product payload for speed */
 
 SEARCH_INDEX[token].push({
 
@@ -87,20 +100,23 @@ type: product.type
 
 }
 
-
 /* =====================================================
-SAVE SEARCH INDEX
+CREATE INDEX DIRECTORY
 ===================================================== */
 
 if(!fs.existsSync(INDEX_DIR)){
 fs.mkdirSync(INDEX_DIR);
 }
 
-fs.writeFileSync(
+/* =====================================================
+SAVE SEARCH INDEX
+===================================================== */
 
+try{
+
+fs.writeFileSync(
 SEARCH_INDEX_FILE,
 JSON.stringify(SEARCH_INDEX,null,2)
-
 );
 
 console.log("=================================");
@@ -108,3 +124,10 @@ console.log("Search index successfully created");
 console.log("Products indexed:", products.length);
 console.log("Saved to: index/search_index.json");
 console.log("=================================");
+
+}catch(err){
+
+console.log("ERROR: Unable to write search index");
+console.log(err.message);
+
+}
