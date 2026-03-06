@@ -214,14 +214,13 @@ function detectIntent(message){
 const m = message.toLowerCase().trim();
 
 if(
-m==="hi" ||
-m==="hello" ||
-m==="hey" ||
-m==="salam" ||
-m==="assalamualaikum" ||
-m==="aoa"
-)
-{
+m.startsWith("hi") ||
+m.startsWith("hello") ||
+m.startsWith("hey") ||
+m.includes("salam") ||
+m.includes("assalam") ||
+m.includes("aoa")
+){
 return "GREETING";
 }
 
