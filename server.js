@@ -320,7 +320,7 @@ SHOPIFY SEARCH URL
 
 function buildSearchURL(make,model,generation,part){
 
-const query=`${make} ${model} ${generation || ""} ${part}`
+const query=`${part} ${make} ${model} ${generation || ""}`
 .replace(/\s+/g,"+")
 .toLowerCase();
 
