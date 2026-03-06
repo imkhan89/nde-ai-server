@@ -70,6 +70,42 @@ return str.replace(/\w\S*/g,(txt)=>txt.charAt(0).toUpperCase()+txt.substr(1));
 }
 
 /* =====================================================
+TEXT NORMALIZATION
+===================================================== */
+
+function normalizeText(text){
+
+text = text.toLowerCase();
+
+const replacements = {
+
+"ac filter":"cabin filter",
+"a/c filter":"cabin filter",
+"ac cabin filter":"cabin filter",
+
+"airfilter":"air filter",
+"oilfilter":"oil filter",
+
+"break pad":"brake pad",
+"brakepads":"brake pad",
+"brake pads":"brake pad",
+
+"sparkplug":"spark plug",
+
+"wipers":"wiper",
+"wiper blades":"wiper"
+
+};
+
+for(const r in replacements){
+text = text.replace(r,replacements[r]);
+}
+
+return text;
+
+}
+
+/* =====================================================
 GREETING DETECTION
 ===================================================== */
 
@@ -240,12 +276,38 @@ PART DETECTION
 
 function detectPart(text){
 
+text = text.toLowerCase();
+
+/* existing part detection */
+
 for(const p in PART_MAP){
 
 if(text.includes(p)){
 return PART_MAP[p];
 }
 
+}
+
+/* fallback flexible detection */
+
+if(text.includes("filter")){
+
+if(text.includes("air")) return "Air Filter";
+if(text.includes("oil")) return "Oil Filter";
+if(text.includes("cabin") || text.includes("ac")) return "Cabin Filter";
+
+}
+
+if(text.includes("brake") && text.includes("pad")){
+return "Brake Pads";
+}
+
+if(text.includes("spark")){
+return "Spark Plug";
+}
+
+if(text.includes("wiper")){
+return "Wiper Blade";
 }
 
 return "";
@@ -274,7 +336,7 @@ async function fetchOrder(order){
 
 try{
 
-const url=`https://${process.env.SHOPIFY_STORE}/admin/api/2023-10/orders.json`;
+const url=`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-10/orders.json`;
 
 const res=await axios.get(url,{
 headers:{
@@ -337,7 +399,8 @@ AI ENGINE
 async function automotiveAI(message,user){
 
 const session=getSession(user);
-const text=(message || "").toLowerCase().trim();
+let text=(message || "").toLowerCase().trim();
+text = normalizeText(text);
 
 /* Greeting */
 
