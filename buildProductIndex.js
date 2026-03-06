@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 /* =====================================================
-CONFIGURATION
+SHOPIFY CONFIG
 ===================================================== */
 
 const SHOP = "347657-7d.myshopify.com";
@@ -13,17 +13,26 @@ const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 const API = `https://${SHOP}/admin/api/2023-10/products.json`;
 
-let PRODUCTS = [];
+/* =====================================================
+FILES
+===================================================== */
 
+const INDEX_DIR = path.join(__dirname,"index");
+const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
 
 /* =====================================================
-SLEEP HELPER
+MEMORY
+===================================================== */
+
+let PRODUCTS = [];
+
+/* =====================================================
+SLEEP
 ===================================================== */
 
 function sleep(ms){
 return new Promise(resolve => setTimeout(resolve, ms));
 }
-
 
 /* =====================================================
 FETCH PRODUCTS FROM SHOPIFY
@@ -61,7 +70,7 @@ PRODUCTS.push(...products);
 
 since_id = products[products.length - 1].id;
 
-console.log("Loaded products:", PRODUCTS.length);
+console.log("Products Loaded:", PRODUCTS.length);
 
 await sleep(500);
 
@@ -77,6 +86,22 @@ await sleep(2000);
 
 }
 
+/* =====================================================
+TOKENIZER
+===================================================== */
+
+function tokenize(text){
+
+if(!text) return [];
+
+return text
+.toString()
+.toLowerCase()
+.replace(/[^a-z0-9 ]/g," ")
+.split(/\s+/)
+.filter(word => word.length > 2);
+
+}
 
 /* =====================================================
 BUILD PRODUCT INDEX
@@ -84,44 +109,61 @@ BUILD PRODUCT INDEX
 
 function buildIndex(){
 
-return PRODUCTS.map(product => ({
+return PRODUCTS.map(product => {
+
+const title = product.title ? product.title.toLowerCase() : "";
+
+const tags = product.tags
+? product.tags.split(",").map(t => t.trim().toLowerCase())
+: [];
+
+const tokens = tokenize(title + " " + tags.join(" "));
+
+return {
 
 id: product.id,
-
-title: product.title ? product.title.toLowerCase() : "",
-
+title: title,
 handle: product.handle,
-
 vendor: product.vendor || "",
-
 type: product.product_type || "",
-
-tags: product.tags
-? product.tags.split(",").map(tag => tag.trim().toLowerCase())
-: [],
+tags: tags,
+tokens: tokens,
 
 image: product.image ? product.image.src : "",
 
 variants: product.variants.map(v => ({
 
 id: v.id,
-
 title: v.title,
-
 sku: v.sku,
-
 price: parseFloat(v.price),
-
 inventory_quantity: v.inventory_quantity,
-
 available: v.available
 
 }))
 
-}));
+};
+
+});
 
 }
 
+/* =====================================================
+SAVE INDEX
+===================================================== */
+
+function saveIndex(index){
+
+if(!fs.existsSync(INDEX_DIR)){
+fs.mkdirSync(INDEX_DIR);
+}
+
+fs.writeFileSync(
+PRODUCT_INDEX_FILE,
+JSON.stringify(index,null,2)
+);
+
+}
 
 /* =====================================================
 MAIN EXECUTION
@@ -132,7 +174,6 @@ async function run(){
 if(!TOKEN){
 
 console.log("ERROR: Missing SHOPIFY_ADMIN_API_TOKEN in .env file");
-
 process.exit(1);
 
 }
@@ -141,21 +182,11 @@ console.log("Downloading Shopify product catalog...");
 
 await fetchProducts();
 
+console.log("Building product index...");
+
 const index = buildIndex();
 
-const indexDir = path.join(__dirname,"index");
-
-if(!fs.existsSync(indexDir)){
-fs.mkdirSync(indexDir);
-}
-
-fs.writeFileSync(
-
-path.join(indexDir,"product_index.json"),
-
-JSON.stringify(index,null,2)
-
-);
+saveIndex(index);
 
 console.log("=================================");
 console.log("Product index successfully built");
