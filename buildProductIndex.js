@@ -2,6 +2,14 @@ require("dotenv").config();
 
 const fs = require("fs");
 const path = require("path");
+const axios = require("axios");
+
+/* =====================================================
+SHOPIFY CONFIG
+===================================================== */
+
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
 /* =====================================================
 PATHS
@@ -21,35 +29,56 @@ fs.mkdirSync(INDEX_DIR,{recursive:true});
 }
 
 /* =====================================================
-LOAD PRODUCTS FROM SHOPIFY EXPORT OR JSON
+FETCH PRODUCTS FROM SHOPIFY
 ===================================================== */
 
+async function fetchProducts(){
+
 let products=[];
+let pageInfo=null;
 
-/*
-Replace this section with your actual product data source.
-Example below assumes a local products.json file.
-*/
+try{
 
-const PRODUCTS_FILE = path.join(ROOT,"products.json");
+do{
 
-if(!fs.existsSync(PRODUCTS_FILE)){
+let url=`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`;
 
-console.error("ERROR: products.json not found.");
+if(pageInfo){
+url+=`&page_info=${pageInfo}`;
+}
+
+const res = await axios.get(url,{
+headers:{
+"X-Shopify-Access-Token":SHOPIFY_TOKEN
+}
+});
+
+products.push(...res.data.products);
+
+/* pagination */
+
+const link=res.headers.link;
+
+if(link && link.includes("rel=\"next\"")){
+
+const match = link.match(/page_info=([^&>]+)/);
+
+pageInfo = match ? match[1] : null;
+
+}else{
+pageInfo=null;
+}
+
+}while(pageInfo);
+
+}catch(e){
+
+console.error("Shopify API error:",e.message);
 process.exit(1);
 
 }
 
-try{
-
-products = JSON.parse(
-fs.readFileSync(PRODUCTS_FILE,"utf8")
-);
-
-}catch(e){
-
-console.error("ERROR loading products.json");
-process.exit(1);
+return products;
 
 }
 
@@ -57,32 +86,42 @@ process.exit(1);
 BUILD PRODUCT INDEX
 ===================================================== */
 
-const PRODUCT_INDEX = products.map(p => {
+async function build(){
 
-return {
+console.log("Fetching Shopify products...");
 
-id: p.id,
-title: p.title || "",
-handle: p.handle || "",
-vendor: p.vendor || "",
-type: p.product_type || "",
-tags: p.tags || []
+const products = await fetchProducts();
+
+const PRODUCT_INDEX = [];
+
+for(const p of products){
+
+const payload={
+
+id:p.id,
+title:p.title || "",
+handle:p.handle || "",
+vendor:p.vendor || "",
+type:p.product_type || "",
+tags:p.tags ? p.tags.split(",") : []
 
 };
 
-});
+PRODUCT_INDEX.push(payload);
 
-/* =====================================================
-SAVE PRODUCT INDEX
-===================================================== */
+}
+
+/* save file */
 
 fs.writeFileSync(
-
 PRODUCT_INDEX_FILE,
 JSON.stringify(PRODUCT_INDEX,null,2)
-
 );
 
 console.log("Product index built successfully.");
 console.log("Products indexed:",PRODUCT_INDEX.length);
 console.log("Index file:",PRODUCT_INDEX_FILE);
+
+}
+
+build();
