@@ -29,45 +29,41 @@ INDEX FILES
 
 const INDEX_DIR = path.join(__dirname,"index");
 const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
-const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
 
 /* =====================================================
 MEMORY
 ===================================================== */
 
 let PRODUCT_INDEX = [];
-let SEARCH_INDEX = {};
 let SESSIONS = {};
 
 /* =====================================================
-SAFE LOAD
+LOAD PRODUCT INDEX
 ===================================================== */
 
-function safeLoad(file){
+function loadProductIndex(){
 
 try{
 
-if(fs.existsSync(file)){
+if(fs.existsSync(PRODUCT_INDEX_FILE)){
 
-return JSON.parse(fs.readFileSync(file,"utf8"));
+PRODUCT_INDEX = JSON.parse(
+fs.readFileSync(PRODUCT_INDEX_FILE,"utf8")
+);
 
-}
-
-}catch(e){
-
-console.log("Index load error:",e.message);
+console.log("Products Loaded:",PRODUCT_INDEX.length);
 
 }
 
-return [];
+}catch(err){
+
+console.log("Index Load Error:",err.message);
 
 }
 
-PRODUCT_INDEX = safeLoad(PRODUCT_INDEX_FILE);
-SEARCH_INDEX = safeLoad(SEARCH_INDEX_FILE);
+}
 
-console.log("Product Index:",PRODUCT_INDEX.length);
-console.log("Search Index Tokens:",Object.keys(SEARCH_INDEX).length);
+loadProductIndex();
 
 /* =====================================================
 HELPERS
@@ -228,7 +224,7 @@ return null;
 }
 
 /* =====================================================
-TOKEN SEARCH
+PRODUCT SEARCH
 ===================================================== */
 
 function searchProducts(query){
@@ -464,7 +460,7 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 });
 
 /* =====================================================
-START SERVER
+SERVER START
 ===================================================== */
 
 app.listen(PORT,()=>{
