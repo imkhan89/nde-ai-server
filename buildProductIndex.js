@@ -12,76 +12,65 @@ const SHOP = process.env.SHOPIFY_STORE_DOMAIN;
 const TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 const VERSION = process.env.SHOPIFY_API_VERSION || "2024-10";
 
-const url = `https://${SHOP}/admin/api/${VERSION}/products.json`;
-
 /* =====================================================
 PATHS
 ===================================================== */
 
 const ROOT = __dirname;
+const INDEX_DIR = path.join(ROOT, "index");
+const PRODUCT_INDEX_FILE = path.join(INDEX_DIR, "product_index.json");
 
-const INDEX_DIR = path.join(ROOT,"index");
-const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
-
-/* =====================================================
-ENSURE INDEX DIRECTORY
-===================================================== */
-
-if(!fs.existsSync(INDEX_DIR)){
-fs.mkdirSync(INDEX_DIR,{recursive:true});
+if (!fs.existsSync(INDEX_DIR)) {
+    fs.mkdirSync(INDEX_DIR, { recursive: true });
 }
 
 /* =====================================================
 FETCH PRODUCTS FROM SHOPIFY
 ===================================================== */
 
-async function fetchProducts(){
+async function fetchProducts() {
 
-let products=[];
-let pageInfo=null;
+    let products = [];
+    let url = `https://${SHOP}/admin/api/${VERSION}/products.json?limit=250`;
 
-try{
+    try {
 
-do{
+        while (url) {
 
-let url=`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`;
+            const res = await axios.get(url, {
+                headers: {
+                    "X-Shopify-Access-Token": TOKEN
+                }
+            });
 
-if(pageInfo){
-url+=`&page_info=${pageInfo}`;
-}
+            products.push(...res.data.products);
 
-const res = await axios.get(url,{
-headers:{
-"X-Shopify-Access-Token":SHOPIFY_TOKEN
-}
-});
+            console.log(`Fetched ${products.length} products`);
 
-products.push(...res.data.products);
+            const link = res.headers.link;
 
-/* pagination */
+            if (link && link.includes('rel="next"')) {
 
-const link=res.headers.link;
+                const match = link.match(/<([^>]+)>; rel="next"/);
 
-if(link && link.includes("rel=\"next\"")){
+                url = match ? match[1] : null;
 
-const match = link.match(/page_info=([^&>]+)/);
+            } else {
 
-pageInfo = match ? match[1] : null;
+                url = null;
 
-}else{
-pageInfo=null;
-}
+            }
 
-}while(pageInfo);
+        }
 
-}catch(e){
+    } catch (e) {
 
-console.error("Shopify API error:",e.message);
-process.exit(1);
+        console.error("Shopify API error:", e.message);
+        process.exit(1);
 
-}
+    }
 
-return products;
+    return products;
 
 }
 
@@ -89,41 +78,44 @@ return products;
 BUILD PRODUCT INDEX
 ===================================================== */
 
-async function build(){
+async function build() {
 
-console.log("Fetching Shopify products...");
+    console.log("Fetching Shopify products...");
 
-const products = await fetchProducts();
+    const products = await fetchProducts();
 
-const PRODUCT_INDEX = [];
+    const PRODUCT_INDEX = [];
 
-for(const p of products){
+    for (const p of products) {
 
-const payload={
+        const payload = {
 
-id:p.id,
-title:p.title || "",
-handle:p.handle || "",
-vendor:p.vendor || "",
-type:p.product_type || "",
-tags:p.tags ? p.tags.split(",") : []
+            id: p.id,
+            title: p.title || "",
+            handle: p.handle || "",
+            vendor: p.vendor || "",
+            type: p.product_type || "",
+            tags: p.tags ? p.tags.split(",") : [],
+            variants: p.variants.map(v => ({
+                id: v.id,
+                price: v.price,
+                sku: v.sku
+            }))
 
-};
+        };
 
-PRODUCT_INDEX.push(payload);
+        PRODUCT_INDEX.push(payload);
 
-}
+    }
 
-/* save file */
+    fs.writeFileSync(
+        PRODUCT_INDEX_FILE,
+        JSON.stringify(PRODUCT_INDEX, null, 2)
+    );
 
-fs.writeFileSync(
-PRODUCT_INDEX_FILE,
-JSON.stringify(PRODUCT_INDEX,null,2)
-);
-
-console.log("Product index built successfully.");
-console.log("Products indexed:",PRODUCT_INDEX.length);
-console.log("Index file:",PRODUCT_INDEX_FILE);
+    console.log("Product index built successfully.");
+    console.log("Products indexed:", PRODUCT_INDEX.length);
+    console.log("Index file:", PRODUCT_INDEX_FILE);
 
 }
 
