@@ -31,6 +31,7 @@ const INDEX_DIR = path.join(__dirname,"index");
 
 const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
 const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
+const FITMENT_INDEX_FILE = path.join(INDEX_DIR,"fitment_index.json");
 
 /* =====================================================
 MEMORY
@@ -38,62 +39,39 @@ MEMORY
 
 let PRODUCT_INDEX = [];
 let SEARCH_INDEX = {};
+let FITMENT_INDEX = {};
 let SESSIONS = {};
 
 /* =====================================================
-LOAD PRODUCT INDEX
+LOAD INDEXES
 ===================================================== */
 
-function loadProductIndex(){
+function loadIndexes(){
 
 try{
 
-if(fs.existsSync(PRODUCT_INDEX_FILE)){
+if(fs.existsSync(PRODUCT_INDEX_FILE))
+PRODUCT_INDEX = JSON.parse(fs.readFileSync(PRODUCT_INDEX_FILE,"utf8"));
 
-PRODUCT_INDEX = JSON.parse(
-fs.readFileSync(PRODUCT_INDEX_FILE,"utf8")
-);
+if(fs.existsSync(SEARCH_INDEX_FILE))
+SEARCH_INDEX = JSON.parse(fs.readFileSync(SEARCH_INDEX_FILE,"utf8"));
 
-console.log("Products Loaded:",PRODUCT_INDEX.length);
+if(fs.existsSync(FITMENT_INDEX_FILE))
+FITMENT_INDEX = JSON.parse(fs.readFileSync(FITMENT_INDEX_FILE,"utf8"));
 
-}
-
-}catch(err){
-
-console.log("Product Index Load Error:",err.message);
-
-}
-
-}
-
-/* =====================================================
-LOAD SEARCH INDEX
-===================================================== */
-
-function loadSearchIndex(){
-
-try{
-
-if(fs.existsSync(SEARCH_INDEX_FILE)){
-
-SEARCH_INDEX = JSON.parse(
-fs.readFileSync(SEARCH_INDEX_FILE,"utf8")
-);
-
-console.log("Search Tokens Loaded:",Object.keys(SEARCH_INDEX).length);
-
-}
+console.log("Products:",PRODUCT_INDEX.length);
+console.log("Search Tokens:",Object.keys(SEARCH_INDEX).length);
+console.log("Fitment Records:",Object.keys(FITMENT_INDEX).length);
 
 }catch(err){
 
-console.log("Search Index Load Error:",err.message);
+console.log("Index Load Error:",err.message);
 
 }
 
 }
 
-loadProductIndex();
-loadSearchIndex();
+loadIndexes();
 
 /* =====================================================
 HELPERS
@@ -111,7 +89,7 @@ return str
 }
 
 /* =====================================================
-SESSION
+SESSION MANAGER
 ===================================================== */
 
 function getSession(user){
@@ -121,8 +99,9 @@ if(!SESSIONS[user]){
 SESSIONS[user]={
 
 state:"IDLE",
-language:"EN",
-customerType:"UNKNOWN"
+vehicle:null,
+year:null,
+part:null
 
 };
 
@@ -133,39 +112,164 @@ return SESSIONS[user];
 }
 
 /* =====================================================
-LANGUAGE DETECTION
+TYPO + NORMALIZATION
 ===================================================== */
 
-function detectLanguage(text){
+const TYPO_FIXES = {
 
-text = text.toLowerCase();
+corola:"corolla",
+civc:"civic",
+break:"brake",
+breaks:"brake",
+head light:"headlight",
+airfilter:"air filter"
 
-if(
-text.includes("hai") ||
-text.includes("kya") ||
-text.includes("kar") ||
-text.includes("bhai")
-){
-return "UR";
-}
+};
 
-return "EN";
+function normalize(text){
+
+text=text.toLowerCase();
+
+Object.keys(TYPO_FIXES).forEach(t=>{
+text=text.replaceAll(t,TYPO_FIXES[t]);
+});
+
+return text;
 
 }
 
 /* =====================================================
-CUSTOMER TYPE
+GREETING DETECTION
 ===================================================== */
 
-function detectCustomer(phone){
+function isGreeting(text){
 
-if(!phone) return "UNKNOWN";
+const greetings=[
+"hi","hello","hey","salam","assalamualaikum",
+"aoa","good morning","good evening"
+];
 
-if(phone.startsWith("whatsapp:+92") || phone.startsWith("+92")){
-return "DOMESTIC";
+return greetings.some(g=>text===g || text.startsWith(g+" "));
+
 }
 
-return "INTERNATIONAL";
+/* =====================================================
+PARTS SYNONYM ENGINE
+===================================================== */
+
+const PART_SYNONYMS={
+
+"brake pad":["pads","pad","disc pad","disc pads"],
+"air filter":["engine filter"],
+"cabin filter":["ac filter"]
+
+};
+
+function normalizePart(part){
+
+if(!part) return part;
+
+part=part.toLowerCase();
+
+for(const p in PART_SYNONYMS){
+
+if(PART_SYNONYMS[p].includes(part))
+return p;
+
+}
+
+return part;
+
+}
+
+/* =====================================================
+FITMENT INTELLIGENCE
+===================================================== */
+
+function checkFitment(vehicle,year,part){
+
+if(!vehicle || !part) return true;
+
+const key = `${vehicle}_${part}`.toLowerCase();
+
+const data = FITMENT_INDEX[key];
+
+if(!data) return true;
+
+if(data.years && year){
+
+return data.years.includes(parseInt(year));
+
+}
+
+return true;
+
+}
+
+/* =====================================================
+SMART SEARCH ENGINE
+===================================================== */
+
+function searchProducts(query){
+
+query=query.toLowerCase();
+
+const tokens=query
+.replace(/[^a-z0-9 ]/g," ")
+.split(/\s+/)
+.filter(t=>t.length>2);
+
+let scores={};
+
+for(const token of tokens){
+
+const matches=SEARCH_INDEX[token];
+
+if(!matches) continue;
+
+for(const m of matches){
+
+if(!scores[m.id]){
+
+scores[m.id]={product:m,score:0};
+
+}
+
+scores[m.id].score+=2;
+
+}
+
+}
+
+/* fallback search */
+
+if(Object.keys(scores).length===0){
+
+for(const p of PRODUCT_INDEX){
+
+let score=0;
+
+for(const token of tokens){
+
+if(p.title.toLowerCase().includes(token))
+score++;
+
+}
+
+if(score){
+
+scores[p.id]={product:p,score};
+
+}
+
+}
+
+}
+
+return Object.values(scores)
+.sort((a,b)=>b.score-a.score)
+.map(r=>r.product)
+.slice(0,5);
 
 }
 
@@ -208,28 +312,11 @@ if(!orders || orders.length===0) return null;
 
 const o=orders[0];
 
-let tracking="Not Available";
-let courier="Not Available";
-let url="";
-
-if(o.fulfillments && o.fulfillments.length){
-
-const f=o.fulfillments[0];
-
-tracking=f.tracking_number || tracking;
-courier=f.tracking_company || courier;
-url=f.tracking_url || "";
-
-}
-
 return{
 
 order:o.name,
 payment:o.financial_status,
-status:o.fulfillment_status || "Unfulfilled",
-courier,
-tracking,
-url
+status:o.fulfillment_status || "Unfulfilled"
 
 };
 
@@ -243,115 +330,6 @@ return null;
 }
 
 /* =====================================================
-WORLD CLASS SEARCH ENGINE
-===================================================== */
-
-function searchProducts(query){
-
-query = query.toLowerCase();
-
-const tokens = query
-.replace(/[^a-z0-9 ]/g," ")
-.split(/\s+/)
-.filter(t=>t.length>2);
-
-let scores={};
-
-for(const token of tokens){
-
-const matches = SEARCH_INDEX[token];
-
-if(!matches) continue;
-
-for(const m of matches){
-
-if(!scores[m.id]){
-
-scores[m.id]={
-
-score:0,
-product:m
-
-};
-
-}
-
-scores[m.id].score++;
-
-}
-
-}
-
-const ranked = Object.values(scores)
-.sort((a,b)=>b.score-a.score)
-.map(r=>r.product)
-.slice(0,5);
-
-return ranked;
-
-}
-
-/* =====================================================
-CUSTOM DECAL FLOW
-===================================================== */
-
-function handleDecal(session){
-
-if(session.state==="DECAL_DETAILS"){
-
-session.state="IDLE";
-
-return `Thank you for providing the details.
-
-Our concerned representative will review the design and dimensions and will contact you shortly with pricing, order confirmation and delivery coordination.
-
-Best Regards
-ndestore.com`;
-
-}
-
-session.state="DECAL_DETAILS";
-
-return `For customized decals and sticker orders kindly share:
-
-Design Image
-Required Dimensions (Preferably in inches)
-
-After sharing the above kindly provide:
-
-Consignee Name
-Delivery Address
-Contact Number
-Email Address`;
-
-}
-
-/* =====================================================
-PRODUCT RESPONSE
-===================================================== */
-
-function buildProductReply(data){
-
-return `Thank you for contacting ndestore.com.
-
-Vehicle Identified
-Make: ${data.make}
-Model: ${data.model}
-Generation: ${data.generation}
-Model Year: ${data.year}
-Part Requested: ${data.part}
-
-Website Link
-${data.url}
-
-If further assistance is required kindly share additional details.
-
-Best Regards
-ndestore.com Customer Support`;
-
-}
-
-/* =====================================================
 MAIN AI ENGINE
 ===================================================== */
 
@@ -361,42 +339,23 @@ try{
 
 const session=getSession(user);
 
-session.language=detectLanguage(message);
-session.customerType=detectCustomer(user);
+let text=normalize(message);
 
-const text=message.toLowerCase();
+/* GREETING */
 
-/* CUSTOM DECALS */
-
-if(
-text.includes("decal") ||
-text.includes("sticker") ||
-text.includes("custom")
-){
-
-return handleDecal(session);
-
-}
-
-/* INTERNATIONAL ADDRESS */
-
-if(session.customerType==="INTERNATIONAL"){
-
-if(session.state!=="ADDRESS_CONFIRMED"){
-
-session.state="ADDRESS_REQUESTED";
+if(isGreeting(text)){
 
 return `Thank you for contacting ndestore.com.
 
-Kindly share your delivery address including:
+Kindly share:
 
-Country
-City
-Postal Code
+Vehicle Make
+Vehicle Model
+Model Year
+Part Required
 
-This will allow us to confirm international delivery availability and shipping charges.`;
-
-}
+Example:
+Toyota Corolla 2015 Brake Pad`;
 
 }
 
@@ -410,82 +369,77 @@ const data=await fetchOrder(order);
 
 if(!data){
 
-return `Thank you for contacting ndestore.com.
+return `Order #${order} was not located.
 
-Order #${order} was not located.
-
-Kindly verify the order number and resend.`;
+Kindly verify the order number.`;
 
 }
 
-let reply=`Thank you for contacting ndestore.com.
+return `Order ${data.order}
 
-Order Details
-
-Order Number: ${data.order}
 Payment Status: ${data.payment}
-Fulfillment Status: ${data.status}
-Courier: ${data.courier}
-Tracking Number: ${data.tracking}`;
-
-if(data.url){
-
-reply+=`\nTrack Shipment:\n${data.url}`;
-
-}
-
-return reply;
+Fulfillment Status: ${data.status}`;
 
 }
 
 /* AUTOMOTIVE QUERY ANALYSIS */
 
-const data=analyzeAutomotiveQuery(message);
+const data=analyzeAutomotiveQuery(text);
 
-/* SEARCH PRODUCTS */
+/* CONTEXT MEMORY */
 
-const results = searchProducts(data.query);
+if(data.make) session.vehicle=data.make;
+if(data.year) session.year=data.year;
+if(data.part) session.part=data.part;
+
+session.part=normalizePart(session.part);
+
+/* FITMENT CHECK */
+
+if(!checkFitment(session.vehicle,session.year,session.part)){
+
+return `The requested part does not appear compatible with the selected vehicle.
+
+Kindly verify vehicle details.`;
+
+}
+
+/* SEARCH */
+
+const query=`${session.vehicle||""} ${session.year||""} ${session.part||""}`;
+
+const results=searchProducts(query);
 
 if(results.length){
 
-let list = results
+let list=results
 .map(p=>`• ${p.title}`)
 .join("\n");
 
-return `Thank you for contacting ndestore.com.
-
-Vehicle Identified
-Make: ${data.make}
-Model: ${data.model}
-Generation: ${data.generation}
-Model Year: ${data.year}
-Part Requested: ${data.part}
+return `Vehicle Identified
+Make: ${session.vehicle}
+Year: ${session.year}
+Part: ${session.part}
 
 Matching Products
 ${list}
-
-Search Link
-${data.url}
 
 Best Regards
 ndestore.com`;
 
 }
 
-return buildProductReply(data);
+return `No matching products found.
+
+Kindly provide additional details.`;
 
 }catch(err){
 
 console.log("AI Error:",err.message);
 
-return `Thank you for contacting ndestore.com.
+return `We are experiencing a temporary technical issue.
 
-We are currently experiencing a temporary technical issue.
-
-Kindly try again shortly.
-
-Best Regards
-ndestore.com`;
+Kindly try again shortly.`;
 
 }
 
@@ -524,6 +478,6 @@ SERVER START
 
 app.listen(PORT,()=>{
 
-console.log("ndestore.com Automotive AI Server Running on Port",PORT);
+console.log("Automotive AI Server Running on Port",PORT);
 
 });
