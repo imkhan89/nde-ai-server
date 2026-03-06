@@ -364,41 +364,47 @@ TOKEN SEARCH ENGINE
 
 function searchProducts(query){
 
-const tokens = query.toLowerCase().split(" ");
+query = query.toLowerCase();
 
-let results=[];
-
-if(Object.keys(SEARCH_INDEX).length){
-
-for(const t of tokens){
-
-const matches = SEARCH_INDEX[t];
-
-if(matches){
-
-for(const m of matches){
-
-results.push(m);
-
-}
-
-}
-
-}
-
-}else{
+let results = [];
 
 for(const p of PRODUCT_INDEX){
 
-let score=0;
+const title = p.title.toLowerCase();
+
+let score = 0;
+
+/* exact query match */
+
+if(title.includes(query)){
+score += 5;
+}
+
+/* token scoring */
+
+const tokens = query.split(" ");
 
 for(const t of tokens){
 
-if(p.title.includes(t)) score++;
+if(title.includes(t)){
+score += 1;
+}
 
 }
 
-if(score>0){
+/* boost part match */
+
+if(
+query.includes("headlight") && title.includes("headlight") ||
+query.includes("mirror") && title.includes("mirror") ||
+query.includes("bumper") && title.includes("bumper") ||
+query.includes("filter") && title.includes("filter") ||
+query.includes("brake") && title.includes("brake")
+){
+score += 3;
+}
+
+if(score > 0){
 
 results.push({
 ...p,
@@ -410,8 +416,6 @@ score
 }
 
 results.sort((a,b)=>b.score-a.score);
-
-}
 
 return results.slice(0,3);
 
