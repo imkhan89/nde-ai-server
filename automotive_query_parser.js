@@ -88,8 +88,16 @@ function detectModel(query,make){
 
 function detectPart(query){
 
-  for(const part of PARTS){
-    if(query.includes(part)) return part;
+  for(const part of parts){
+    if(query.includes(part)){
+      return part;
+    }
+  }
+
+  const fuzzy = fuzzyMatchPart(query);
+
+  if(fuzzy){
+    return fuzzy;
   }
 
   return null;
