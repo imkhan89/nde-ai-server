@@ -182,10 +182,6 @@ const PART_MAP={
 VEHICLE DETECTION
 ===================================================== */
 
-/* =====================================================
-VEHICLE DETECTION
-===================================================== */
-
 function detectVehicle(text){
 
 text = text.toLowerCase();
