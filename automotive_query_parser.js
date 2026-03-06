@@ -1,3 +1,5 @@
+const fuzzyMatchPart = require("./fuzzy_parts_engine");
+
 /* ======================================================
 AUTOMOTIVE QUERY PARSER
 Converts messy customer queries into structured search
