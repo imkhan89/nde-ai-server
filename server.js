@@ -392,6 +392,45 @@ const DECALS={
 
 };
 
+const text = (message || "").trim().toLowerCase();
+
+/* =====================================================
+MENU OPTION HANDLING
+===================================================== */
+
+if(text === "1"){
+return `Please provide your vehicle and part required.
+
+Example:
+Honda Civic 2018 Brake Pad`;
+}
+
+if(text === "2"){
+return `Please tell us which car accessory you need.
+
+Example:
+Toyota Corolla Sun Shade`;
+}
+
+if(text === "3"){
+return `Please provide your order number to check the status.`;
+}
+
+if(text === "4"){
+return `Please describe the complaint and our team will assist you.`;
+}
+
+if(text === "5"){
+return `Please tell us which sticker decal you are looking for.
+
+Example:
+Pakistan Army Sticker`;
+}
+
+if(text === "6"){
+return `Please describe your inquiry and our team will assist you.`;
+}
+
 /* =====================================================
 AI ENGINE
 ===================================================== */
