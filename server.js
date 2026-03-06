@@ -115,14 +115,39 @@ PART NORMALIZATION
 
 const PART_MAP={
 
+/* SERVICE PARTS */
+
 "brake pad":"Brake Pads",
+"brake pads":"Brake Pads",
 "air filter":"Air Filter",
 "oil filter":"Oil Filter",
 "cabin filter":"Cabin Filter",
 "spark plug":"Spark Plug",
 "radiator":"Radiator",
 "horn":"Horn",
-"wiper":"Wiper Blade"
+"wiper":"Wiper Blade",
+
+/* ACCESSORIES */
+
+"floor mat":"Floor Mats",
+"floor mats":"Floor Mats",
+"car mat":"Floor Mats",
+"sun shade":"Sun Shade",
+"sunshade":"Sun Shade",
+"air visor":"Air Visor",
+"door visor":"Air Visor",
+"mud flap":"Mud Flaps",
+"mud flaps":"Mud Flaps",
+"trunk tray":"Trunk Tray",
+"car cover":"Car Cover",
+"seat cover":"Seat Cover",
+"steering cover":"Steering Cover",
+
+/* DECALS */
+
+"sticker":"Sticker",
+"decal":"Decal",
+"sticker decal":"Sticker Decal"
 
 };
 
