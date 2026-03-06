@@ -1,3 +1,27 @@
+const { execSync } = require("child_process");
+
+async function buildIndexes(){
+
+try{
+
+console.log("Building product index...");
+execSync("node buildProductIndex.js", { stdio: "inherit" });
+
+console.log("Building search index...");
+execSync("node buildSearchIndex.js", { stdio: "inherit" });
+
+console.log("Indexes ready");
+
+}catch(err){
+
+console.error("Index build failed:", err.message);
+
+}
+
+}
+
+buildIndexes();
+
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
