@@ -1,32 +1,11 @@
 /* =====================================================
-ndestore.com AUTOMOTIVE AI ENGINE (ERROR SAFE)
-Uses external vehicle and part databases
+ndestore.com AUTOMOTIVE AI ENGINE
+Vehicle + Generation Detection
 ===================================================== */
 
 const VEHICLE_DB = require("./data/vehicle_database");
 const PARTS = require("./data/part_database");
-
-/* =====================================================
-VEHICLE ALIASES
-===================================================== */
-
-const VEHICLE_ALIASES = {
-
-reborn:"civic",
-rebirth:"civic",
-
-gli:"corolla",
-altis:"corolla",
-grande:"corolla",
-
-vigo:"hilux",
-revo:"hilux",
-
-wagonr:"wagon r",
-
-lc:"land cruiser"
-
-};
+const GENERATIONS = require("./data/vehicle_generations");
 
 /* =====================================================
 PART SYNONYMS
@@ -73,7 +52,7 @@ const APPLICATIONS = [
 ];
 
 /* =====================================================
-BUILD MODEL → MAKE MAP
+MODEL → MAKE MAP
 ===================================================== */
 
 const MODEL_TO_MAKE = {};
@@ -101,16 +80,6 @@ let t = text.toLowerCase();
 t = t.replace(/[^\w\s]/g," ");
 t = t.replace(/\s+/g," ").trim();
 
-/* apply vehicle aliases */
-
-for(const alias in VEHICLE_ALIASES){
-
-const r = new RegExp(`\\b${alias}\\b`,"g");
-
-t = t.replace(r,VEHICLE_ALIASES[alias]);
-
-}
-
 /* apply part synonyms */
 
 for(const key in PART_SYNONYMS){
@@ -133,7 +102,7 @@ function detectYear(text){
 
 const match = text.match(/\b(19|20)\d{2}\b/);
 
-return match ? match[0] : "";
+return match ? parseInt(match[0]) : null;
 
 }
 
@@ -165,20 +134,63 @@ return {make:"",model:""};
 }
 
 /* =====================================================
+GENERATION DETECTION
+===================================================== */
+
+function detectGeneration(make,model,year,text){
+
+for(const g of GENERATIONS){
+
+if(g.make!==make) continue;
+if(g.model!==model) continue;
+
+/* detect by alias */
+
+if(g.aliases){
+
+for(const a of g.aliases){
+
+if(text.includes(a)){
+
+return {
+
+generation:g.generation,
+years:g.years
+
+};
+
+}
+
+}
+
+}
+
+/* detect by year */
+
+if(year && g.years.includes(year)){
+
+return {
+
+generation:g.generation,
+years:g.years
+
+};
+
+}
+
+}
+
+return null;
+
+}
+
+/* =====================================================
 PART DETECTION
 ===================================================== */
 
 function detectParts(text){
 
 let found=[];
-
-for(const key in PART_SYNONYMS){
-
-if(text.includes(key)){
-text=text.replace(key,PART_SYNONYMS[key]);
-}
-
-}
 
 for(const part of PARTS){
 
@@ -212,32 +224,21 @@ return "";
 QUERY BUILDER
 ===================================================== */
 
-function buildQuery(make,model,year,parts,application,message){
+function buildQuery(make,model,year,part){
 
 let q=[];
 
 if(make) q.push(make);
 if(model) q.push(model);
 if(year) q.push(year);
+if(part) q.push(part);
 
-if(parts.length) q.push(parts[0]);
-
-if(application) q.push(application);
-
-let query=q.join(" ");
-
-if(query.length<3){
-
-query=normalize(message);
-
-}
-
-return query;
+return q.join(" ");
 
 }
 
 /* =====================================================
-SEARCH URL BUILDER
+SEARCH URL
 ===================================================== */
 
 function buildSearchURL(query){
@@ -269,43 +270,58 @@ function analyzeAutomotiveQuery(message){
 
 try{
 
-const clean=normalize(message);
+const clean = normalize(message);
 
-const vehicle=detectVehicle(clean);
+const vehicle = detectVehicle(clean);
 
-const year=detectYear(clean);
+const year = detectYear(clean);
 
-const parts=detectParts(clean);
-
-const application=detectApplication(clean);
-
-const query=buildQuery(
+const generation = detectGeneration(
 vehicle.make,
 vehicle.model,
 year,
-parts,
-application,
-message
+clean
 );
 
-return{
+const parts = detectParts(clean);
+
+const application = detectApplication(clean);
+
+const part = parts.length ? parts[0] : "";
+
+const query = buildQuery(
+vehicle.make,
+vehicle.model,
+year,
+part
+);
+
+return {
 
 make:cap(vehicle.make),
 model:cap(vehicle.model),
-year:year || "Not Specified",
-part:parts.length ? cap(parts[0]) : "Not Specified",
+
+generation: generation ? generation.generation : "Not Specified",
+
+year: year || "Not Specified",
+
+part: part ? cap(part) : "Not Specified",
+
 application:cap(application),
+
 query,
-url:buildSearchURL(query)
+
+url: buildSearchURL(query)
 
 };
 
 }catch(err){
 
-return{
+return {
 
 make:"Not Specified",
 model:"Not Specified",
+generation:"Not Specified",
 year:"Not Specified",
 part:"Not Specified",
 application:"Not Specified",
