@@ -1,3 +1,6 @@
+const VEHICLE_DB = require("./data/vehicle_database");
+const PARTS = require("./data/part_database");
+
 /* =====================================================
 NDESTORE AUTOMOTIVE AI ENGINE v2
 High Accuracy Global Vehicle + Part Detection
