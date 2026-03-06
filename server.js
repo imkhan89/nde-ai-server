@@ -222,19 +222,104 @@ PART SEARCH FLOW
 
 if(session.state==="PART_REQUEST"){
 
-session.state="END";
+/* extract vehicle and part */
 
-return `Vehicle Make:
-Vehicle Model:
-Model Year:
+let make="";
+let model="";
+let year="";
+let part="";
+
+const text=message.toLowerCase();
+
+/* detect year */
+
+const yearMatch=text.match(/20\d{2}/);
+if(yearMatch) year=yearMatch[0];
+
+/* detect vehicle */
+
+const vehicles=[
+"corolla","civic","city","cultus","alto",
+"mehran","yaris","swift","revo","hilux"
+];
+
+vehicles.forEach(v=>{
+if(text.includes(v)) model=v;
+});
+
+/* detect part */
+
+const parts=[
+"brake pad","air filter","oil filter",
+"cabin filter","spark plug","horn",
+"radiator","wiper","headlight"
+];
+
+parts.forEach(p=>{
+if(text.includes(p)) part=p;
+});
+
+if(!model || !part){
+
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
 Part Required
 
-Website URL
+Example
+Honda Civic 2017 Brake Pad`;
 
-If you want to connect with a live agent let us know
+}
 
-Yes (Connect with the live agent)
-No (Finish chat)`;
+/* search */
+
+const query=`${model} ${year} ${part}`;
+
+const results=searchProducts(query);
+
+if(results.length){
+
+const list=results.map(p=>{
+
+const url=`https://www.ndestore.com/products/${p.handle}`;
+
+return `Option
+${p.title}
+${url}`;
+
+}).join("\n\n");
+
+return `Vehicle Identified
+Model ${model}
+Year ${year}
+Part ${part}
+
+Matching Products
+
+${list}
+
+Connect with a live agent
+
+Yes
+No`;
+
+}
+
+/* fallback */
+
+return `No matching products found.
+
+Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
+Part Required
+
+Example
+Honda Civic 2017 Brake Pad`;
 
 }
 
