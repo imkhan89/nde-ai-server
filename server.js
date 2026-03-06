@@ -1,76 +1,30 @@
 require("dotenv").config();
 
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
 const axios = require("axios");
 const crypto = require("crypto");
 
-let analyzeAutomotiveQuery = null;
-
-try {
-  analyzeAutomotiveQuery =
-    require("./automotive_ai_engine").analyzeAutomotiveQuery;
-} catch (e) {
-  console.log("Automotive AI engine not detected. Using internal parser.");
-}
-
 const app = express();
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
 /* =====================================================
-SHOPIFY CONFIG
+SESSION MEMORY
 ===================================================== */
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const SHOPIFY_API = `https://${SHOPIFY_STORE}/admin/api/2023-10`;
-
-/* =====================================================
-INDEX FILES
-===================================================== */
-
-const INDEX_DIR = path.join(__dirname, "index");
-
-const PRODUCT_INDEX_FILE = path.join(INDEX_DIR, "product_index.json");
-const SEARCH_INDEX_FILE = path.join(INDEX_DIR, "search_index.json");
-const FITMENT_INDEX_FILE = path.join(INDEX_DIR, "fitment_index.json");
-
-/* =====================================================
-MEMORY
-===================================================== */
-
-let PRODUCT_INDEX = [];
-let SEARCH_INDEX = {};
-let FITMENT_INDEX = {};
 let SESSIONS = {};
 
-/* =====================================================
-LOAD INDEXES
-===================================================== */
-
-function loadIndexes() {
-  try {
-    if (fs.existsSync(PRODUCT_INDEX_FILE))
-      PRODUCT_INDEX = JSON.parse(fs.readFileSync(PRODUCT_INDEX_FILE, "utf8"));
-
-    if (fs.existsSync(SEARCH_INDEX_FILE))
-      SEARCH_INDEX = JSON.parse(fs.readFileSync(SEARCH_INDEX_FILE, "utf8"));
-
-    if (fs.existsSync(FITMENT_INDEX_FILE))
-      FITMENT_INDEX = JSON.parse(fs.readFileSync(FITMENT_INDEX_FILE, "utf8"));
-
-    console.log("Products Loaded:", PRODUCT_INDEX.length);
-    console.log("Search Tokens:", Object.keys(SEARCH_INDEX).length);
-  } catch (err) {
-    console.log("Index Load Error:", err.message);
+function getSession(user) {
+  if (!SESSIONS[user]) {
+    SESSIONS[user] = {
+      state: "MENU"
+    };
   }
+  return SESSIONS[user];
 }
-
-loadIndexes();
 
 /* =====================================================
 HELPERS
@@ -82,76 +36,17 @@ function uid() {
 
 function xmlSafe(str) {
   return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
 
 /* =====================================================
-SESSION MANAGER
+MENU
 ===================================================== */
 
-function getSession(user) {
-  if (!SESSIONS[user]) {
-    SESSIONS[user] = {
-      vehicle: null,
-      year: null,
-      part: null,
-      state: "IDLE",
-    };
-  }
-  return SESSIONS[user];
-}
-
-/* =====================================================
-TYPO NORMALIZATION
-===================================================== */
-
-const TYPO_FIXES = {
-  corola: "corolla",
-  civc: "civic",
-  break: "brake",
-  breaks: "brake",
-  airfilter: "air filter",
-  oilfilter: "oil filter",
-  "head light": "headlight",
-};
-
-function normalize(text) {
-  text = text.toLowerCase();
-
-  Object.keys(TYPO_FIXES).forEach((t) => {
-    text = text.replaceAll(t, TYPO_FIXES[t]);
-  });
-
-  return text;
-}
-
-/* =====================================================
-GREETING DETECTION
-===================================================== */
-
-function isGreeting(text) {
-  const greetings = [
-    "hi",
-    "hello",
-    "hey",
-    "salam",
-    "assalamualaikum",
-    "aoa",
-    "good morning",
-    "good evening",
-  ];
-
-  return greetings.some((g) => text === g || text.startsWith(g + " "));
-}
-
-/* =====================================================
-MAIN MENU
-===================================================== */
-
-function mainMenu() {
-  return `Thank you for contacting ndestore.com
+function mainMenu(){
+return `Thank you for contacting ndestore.com
 
 How can we assist you today?
 
@@ -162,312 +57,294 @@ How can we assist you today?
 5 Decal Stickers
 6 Other
 
-Reply with 1, 2, 3, 4, 5 or 6`;
+Reply with 1 2 3 4 5 or 6`;
 }
 
 /* =====================================================
-INTENT DETECTION
+DECAL COLLECTION LINKS
 ===================================================== */
 
-function detectIntent(text) {
-  if (isGreeting(text)) return "GREETING";
-
-  if (text === "1" || text.includes("parts")) return "PARTS";
-
-  if (text === "2" || text.includes("accessories")) return "ACCESSORIES";
-
-  if (text === "3" || text.includes("order")) return "ORDER";
-
-  if (text === "4" || text.includes("complaint")) return "COMPLAINT";
-
-  if (text === "5" || text.includes("decal") || text.includes("sticker"))
-    return "DECAL";
-
-  if (text === "6" || text.includes("other")) return "OTHER";
-
-  if (/\d{5,}/.test(text)) return "ORDER_NUMBER";
-
-  return "AUTOMOTIVE_QUERY";
-}
-
-/* =====================================================
-VEHICLE EXTRACTION
-===================================================== */
-
-const VEHICLES = [
-  "corolla",
-  "civic",
-  "city",
-  "cultus",
-  "alto",
-  "mehran",
-  "yaris",
-  "swift",
-  "prius",
-  "revo",
-  "hilux",
-];
-
-const PARTS = [
-  "brake pad",
-  "air filter",
-  "oil filter",
-  "cabin filter",
-  "spark plug",
-  "radiator",
-  "horn",
-  "wiper",
-  "headlight",
-];
-
-function extractVehiclePart(text) {
-  let vehicle = "";
-  let year = "";
-  let part = "";
-
-  const tokens = text.split(/\s+/);
-
-  for (const t of tokens) {
-    if (/20\d{2}/.test(t)) year = t;
-    if (VEHICLES.includes(t)) vehicle = t;
-  }
-
-  for (const p of PARTS) {
-    if (text.includes(p)) {
-      part = p;
-      break;
-    }
-  }
-
-  return { vehicle, year, part };
-}
-
-/* =====================================================
-FITMENT CHECK
-===================================================== */
-
-function checkFitment(vehicle, year, part) {
-  if (!vehicle || !part) return true;
-
-  const key = `${vehicle}_${part}`.toLowerCase();
-
-  const data = FITMENT_INDEX[key];
-
-  if (!data) return true;
-
-  if (year && data.years)
-    return data.years.includes(parseInt(year));
-
-  return true;
-}
-
-/* =====================================================
-SEARCH ENGINE
-===================================================== */
-
-function searchProducts(query) {
-  query = query.toLowerCase();
-
-  const tokens = query
-    .replace(/[^a-z0-9 ]/g, " ")
-    .split(/\s+/)
-    .filter((t) => t.length > 2);
-
-  let scores = {};
-
-  for (const token of tokens) {
-    const matches = SEARCH_INDEX[token];
-
-    if (!matches) continue;
-
-    for (const m of matches) {
-      if (!scores[m.id]) scores[m.id] = { product: m, score: 0 };
-
-      scores[m.id].score += 3;
-    }
-  }
-
-  if (Object.keys(scores).length === 0) {
-    for (const p of PRODUCT_INDEX) {
-      let score = 0;
-
-      for (const t of tokens) {
-        if (p.title.toLowerCase().includes(t)) score++;
-      }
-
-      if (score) scores[p.id] = { product: p, score };
-    }
-  }
-
-  return Object.values(scores)
-    .sort((a, b) => b.score - a.score)
-    .map((r) => r.product)
-    .slice(0, 5);
-}
+const DECAL_LINKS = {
+1:"https://www.ndestore.com/collections/stickers-decal",
+2:"https://www.ndestore.com/collections/sticker-decal-army-theme",
+3:"https://www.ndestore.com/collections/legal-professional-lawyer",
+4:"https://www.ndestore.com/collections/decal-sticker-doctor-medic-hospital-dentist",
+5:"https://www.ndestore.com/collections/markhor-stickers",
+6:"https://www.ndestore.com/collections/hunter-stickers",
+7:"https://www.ndestore.com/collections/toyota-decals",
+8:"https://www.ndestore.com/collections/teq-series-decal-jdm-japan",
+9:"https://www.ndestore.com/collections/honda-stickers",
+10:"https://www.ndestore.com/collections/sports-mind-sticker/SPORTS-MIND-STICKER",
+11:"https://www.ndestore.com/collections/door-paint-sticker-car-protection/DOOR-SILL-STICKER",
+12:"https://www.ndestore.com/collections/sticker-jeep",
+13:"https://www.ndestore.com/collections/sticker-decal-toyota-gazoo-racing-gr",
+14:"https://www.ndestore.com/collections/firearm-stickers",
+15:"https://www.ndestore.com/pages/custom-decal-and-sticker"
+};
 
 /* =====================================================
 ORDER LOOKUP
 ===================================================== */
 
-async function fetchOrder(order) {
-  try {
-    const res = await axios.get(`${SHOPIFY_API}/orders.json`, {
-      headers: {
-        "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-      },
-      params: {
-        status: "any",
-        query: `name:${order}`,
-      },
-    });
+async function fetchOrder(order){
 
-    const orders = res.data.orders;
+try{
 
-    if (!orders.length) return null;
+const url=`https://${process.env.SHOPIFY_STORE}/admin/api/2023-10/orders.json`;
 
-    const o = orders[0];
+const res=await axios.get(url,{
+headers:{
+"X-Shopify-Access-Token":process.env.SHOPIFY_ADMIN_API_TOKEN
+},
+params:{
+status:"any",
+query:`name:${order}`
+}
+});
 
-    return {
-      order: o.name,
-      payment: o.financial_status,
-      status: o.fulfillment_status || "Unfulfilled",
-    };
-  } catch (e) {
-    console.log("Shopify error:", e.message);
-    return null;
-  }
+if(!res.data.orders.length) return null;
+
+const o=res.data.orders[0];
+
+return{
+order:o.name,
+status:o.fulfillment_status || "Unfulfilled",
+tracking:o.fulfillments?.[0]?.tracking_number || "In Process",
+courier:o.fulfillments?.[0]?.tracking_company || "In Process"
+};
+
+}catch(e){
+
+console.log("Shopify error:",e.message);
+return null;
+
+}
+
 }
 
 /* =====================================================
-MAIN AI ENGINE
+MAIN AI LOGIC
 ===================================================== */
 
-async function automotiveAI(message, user) {
-  const session = getSession(user);
+async function automotiveAI(message,user){
 
-  let text = normalize(message);
+const session=getSession(user);
 
-  const intent = detectIntent(text);
+const text=message.toLowerCase().trim();
 
-/* greeting */
+/* GREETING */
 
-  if (intent === "GREETING") {
-    session.state = "MENU";
-    return mainMenu();
-  }
+if(session.state==="MENU"){
 
-/* order lookup */
+if(text.match(/hi|hello|salam|aoa|hey/)){
+return mainMenu();
+}
 
-  const orderMatch = message.match(/\d{5,}/);
+/* OPTION 1 */
 
-  if (orderMatch) {
-    const orderData = await fetchOrder(orderMatch[0]);
-
-    if (!orderData)
-      return `Order not located. Kindly verify order number`;
-
-    return `Order Number: ${orderData.order}
-
-Payment Status: ${orderData.payment}
-Fulfillment Status: ${orderData.status}`;
-  }
-
-/* automotive extraction */
-
-  let data = {};
-
-  if (analyzeAutomotiveQuery) {
-    data = analyzeAutomotiveQuery(text);
-  }
-
-  const backup = extractVehiclePart(text);
-
-  if (!data.make && backup.vehicle) data.make = backup.vehicle;
-  if (!data.year && backup.year) data.year = backup.year;
-  if (!data.part && backup.part) data.part = backup.part;
-
-  if (data.make) session.vehicle = data.make;
-  if (data.year) session.year = data.year;
-  if (data.part) session.part = data.part;
-
-/* fitment */
-
-  if (!checkFitment(session.vehicle, session.year, session.part)) {
-    return `The requested part does not appear compatible with the selected vehicle`;
-  }
-
-/* search */
-
-  const query = `${session.vehicle || ""} ${session.year || ""} ${session.part || ""}`;
-
-  const results = searchProducts(query);
-
-  if (results.length) {
-    const list = results
-      .map((p) => {
-        const url = p.handle
-          ? `https://${process.env.PUBLIC_STORE_DOMAIN}/products/${p.handle}`
-          : "";
-
-        return `• ${p.title}
-${url}`;
-      })
-      .join("\n");
-
-    return `Vehicle Identified
-Make: ${session.vehicle}
-Year: ${session.year}
-Part: ${session.part}
-
-Matching Products
-${list}
-
-Best Regards
-ndestore.com`;
-  }
-
-  return `No matching products found.
-
-Please confirm:
+if(text==="1"){
+session.state="PART_REQUEST";
+return `Please confirm
 
 Vehicle Make
 Vehicle Model
 Model Year
+Part Required`;
+}
+
+/* OPTION 2 */
+
+if(text==="2"){
+session.state="PART_REQUEST";
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
+Accessory Required`;
+}
+
+/* OPTION 3 */
+
+if(text==="3"){
+session.state="ORDER";
+return `Please share your Order Number`;
+}
+
+/* OPTION 4 */
+
+if(text==="4"){
+session.state="COMPLAINT";
+return `Please share
+
+Order Number
+Complaint Details`;
+}
+
+/* OPTION 5 */
+
+if(text==="5"){
+session.state="DECALS";
+return `Select one of the following options
+
+1 Complete Collection
+2 Army Stickers
+3 Advocate Stickers
+4 Doctor Stickers
+5 Markhor Stickers
+6 Hunter Stickers
+7 Toyota Stickers
+8 Toyota TEQ Stickers
+9 Honda Stickers
+10 Sports Mind Stickers
+11 Door Sill
+12 Laptop Stickers
+13 GR Stickers
+14 Fire Arm Stickers
+15 Custom Decals`;
+}
+
+/* OPTION 6 */
+
+if(text==="6"){
+return `Contact us at
+
+Whatsapp +92-321-4222294
+Landline +92-423-7724222
+Email info@ndestore.com`;
+}
+
+}
+
+/* =====================================================
+PART SEARCH FLOW
+===================================================== */
+
+if(session.state==="PART_REQUEST"){
+
+session.state="END";
+
+return `Vehicle Make:
+Vehicle Model:
+Model Year:
 Part Required
 
-Example
-Honda Civic 2017 Brake Pad`;
+Website URL
+
+If you want to connect with a live agent let us know
+
+Yes (Connect with the live agent)
+No (Finish chat)`;
+
+}
+
+/* =====================================================
+ORDER FLOW
+===================================================== */
+
+if(session.state==="ORDER"){
+
+const orderMatch=message.match(/\d{5,}/);
+
+if(!orderMatch){
+return `Please provide a valid order number`;
+}
+
+const orderData=await fetchOrder(orderMatch[0]);
+
+if(!orderData){
+return `Order not located. Kindly verify order number`;
+}
+
+return `Order ID ${orderData.order}
+
+Status ${orderData.status}
+
+Tracking Details ${orderData.tracking}
+
+Courier ${orderData.courier}`;
+
+}
+
+/* =====================================================
+COMPLAINT FLOW
+===================================================== */
+
+if(session.state==="COMPLAINT"){
+
+const ticket="TKT-"+Math.floor(Math.random()*90000+10000);
+
+session.state="END";
+
+return `Complaint Registered
+
+Ticket Number ${ticket}
+
+Our representative will contact you shortly with a resolution.
+
+We regret the inconvenience caused.`;
+
+}
+
+/* =====================================================
+DECAL FLOW
+===================================================== */
+
+if(session.state==="DECALS"){
+
+if(DECAL_LINKS[text]){
+
+return `Kindly visit the following website link
+
+${DECAL_LINKS[text]}`;
+
+}
+
+return `Please select a number between 1 and 15`;
+
+}
+
+/* =====================================================
+DEFAULT FALLBACK
+===================================================== */
+
+return mainMenu();
+
 }
 
 /* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
 
-app.post("/whatsapp", async (req, res) => {
-  try {
-    const message = req.body.Body || "";
-    const user = req.body.From || uid();
+app.post("/whatsapp",async(req,res)=>{
 
-    const reply = await automotiveAI(message, user);
+try{
 
-    res.set("Content-Type", "text/xml");
+const message=req.body.Body || "";
+const user=req.body.From || uid();
 
-    res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
-  } catch (err) {
-    console.log("Webhook Error:", err.message);
+const reply=await automotiveAI(message,user);
 
-    res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
-  }
+res.set("Content-Type","text/xml");
+
+res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
+
+}catch(e){
+
+res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
+
+}
+
 });
 
 /* =====================================================
-SERVER START
+SERVER
 ===================================================== */
 
-app.get("/", (req, res) => {
-  res.send("ndestore AI Engine Running");
+app.get("/",(req,res)=>{
+res.send("ndestore AI Running");
 });
 
-app.listen(PORT, () => {
-  console.log("AI Server Running on Port", PORT);
+app.listen(PORT,()=>{
+console.log("Server running on port",PORT);
 });
