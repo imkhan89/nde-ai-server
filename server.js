@@ -126,65 +126,66 @@ return null;
 MAIN AI LOGIC
 ===================================================== */
 
-async function automotiveAI(message,user){
+async function automotiveAI(message, user) {
 
-const session=getSession(user);
+const session = getSession(user);
 
-const text=message.toLowerCase().trim();
+const text = message.toLowerCase().trim();
 
-/* GREETING */
+/* =====================================================
+STEP 1 — GREETING / MENU
+===================================================== */
 
-if(session.state==="MENU"){
+if (session.state === "MENU") {
 
-if(text.match(/hi|hello|salam|aoa|hey/)){
+if (text.match(/hi|hello|salam|aoa|hey/)) {
 return mainMenu();
 }
 
-/* OPTION 1 */
-
-if(text==="1"){
-session.state="PART_REQUEST";
+if (text === "1") {
+session.state = "PART_REQUEST";
 return `Please confirm
 
 Vehicle Make
 Vehicle Model
 Model Year
-Part Required`;
+Part Required
+
+Example
+Honda Civic 2017 Brake Pad`;
 }
 
-/* OPTION 2 */
-
-if(text==="2"){
-session.state="PART_REQUEST";
+if (text === "2") {
+session.state = "PART_REQUEST";
 return `Please confirm
 
 Vehicle Make
 Vehicle Model
 Model Year
-Accessory Required`;
+Accessory Required
+
+Example
+Toyota Corolla 2018 Floor Mat`;
 }
 
-/* OPTION 3 */
+if (text === "3") {
+session.state = "ORDER_LOOKUP";
+return `Please share your order number
 
-if(text==="3"){
-session.state="ORDER";
-return `Please share your Order Number`;
+Example
+10011421`;
 }
 
-/* OPTION 4 */
-
-if(text==="4"){
-session.state="COMPLAINT";
+if (text === "4") {
+session.state = "COMPLAINT";
 return `Please share
 
 Order Number
 Complaint Details`;
 }
 
-/* OPTION 5 */
-
-if(text==="5"){
-session.state="DECALS";
+if (text === "5") {
+session.state = "DECALS";
 return `Select one of the following options
 
 1 Complete Collection
@@ -204,15 +205,213 @@ return `Select one of the following options
 15 Custom Decals`;
 }
 
-/* OPTION 6 */
+if (text === "6") {
 
-if(text==="6"){
+session.state = "END";
+
 return `Contact us at
 
 Whatsapp +92-321-4222294
 Landline +92-423-7724222
 Email info@ndestore.com`;
+
 }
+
+return mainMenu();
+
+}
+
+/* =====================================================
+STEP 2 — PART / ACCESSORY SEARCH
+===================================================== */
+
+if (session.state === "PART_REQUEST") {
+
+const vehicles = [
+"corolla","civic","city","cultus",
+"alto","mehran","yaris","swift",
+"revo","hilux"
+];
+
+const parts = [
+"brake pad","air filter","oil filter",
+"cabin filter","spark plug",
+"radiator","horn","wiper",
+"headlight","floor mat"
+];
+
+let model = "";
+let year = "";
+let part = "";
+
+const yearMatch = text.match(/20\d{2}/);
+if (yearMatch) year = yearMatch[0];
+
+vehicles.forEach(v=>{
+if(text.includes(v)) model=v;
+});
+
+parts.forEach(p=>{
+if(text.includes(p)) part=p;
+});
+
+if(!model || !part){
+
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
+Part Required
+
+Example
+Honda Civic 2017 Brake Pad`;
+
+}
+
+/* SAFE SEARCH */
+
+let results=[];
+
+try{
+
+if(typeof searchProducts === "function"){
+
+results = searchProducts(`${model} ${year} ${part}`) || [];
+
+}
+
+}catch(e){
+
+console.log("Search error:",e.message);
+
+}
+
+/* RESULTS */
+
+if(results.length){
+
+const list = results.map(p=>{
+
+let url="";
+
+if(p.handle){
+url=`https://www.ndestore.com/products/${p.handle}`;
+}
+
+return `Option
+${p.title}
+${url}`;
+
+}).join("\n\n");
+
+session.state="END";
+
+return `Vehicle Identified
+Model ${model}
+Year ${year}
+Part ${part}
+
+Matching Products
+
+${list}
+
+If you want to connect with a live agent let us know
+
+Yes
+No`;
+
+}
+
+return `No matching products found.
+
+Please confirm
+
+Vehicle Make
+Vehicle Model
+Model Year
+Part Required
+
+Example
+Honda Civic 2017 Brake Pad`;
+
+}
+
+/* =====================================================
+STEP 3 — ORDER LOOKUP
+===================================================== */
+
+if(session.state==="ORDER_LOOKUP"){
+
+const orderMatch = message.match(/\d{5,}/);
+
+if(!orderMatch){
+return `Please provide a valid order number`;
+}
+
+const orderData = await fetchOrder(orderMatch[0]);
+
+if(!orderData){
+return `Order not located. Kindly verify order number`;
+}
+
+session.state="END";
+
+return `Order ID ${orderData.order}
+
+Status ${orderData.status}
+
+Tracking Details ${orderData.tracking || "In Process"}
+
+Courier ${orderData.courier || "In Process"}`;
+
+}
+
+/* =====================================================
+STEP 4 — COMPLAINT
+===================================================== */
+
+if(session.state==="COMPLAINT"){
+
+const ticket="TKT-"+Math.floor(Math.random()*90000+10000);
+
+session.state="END";
+
+return `Complaint Registered
+
+Ticket Number ${ticket}
+
+Our representative shall contact you shortly with a resolution.
+
+We regret the inconvenience caused.`;
+
+}
+
+/* =====================================================
+STEP 5 — DECAL COLLECTION
+===================================================== */
+
+if(session.state==="DECALS"){
+
+if(DECAL_LINKS[text]){
+
+session.state="END";
+
+return `Kindly visit the following website link
+
+${DECAL_LINKS[text]}`;
+
+}
+
+return `Please select a number between 1 and 15`;
+
+}
+
+/* =====================================================
+DEFAULT
+===================================================== */
+
+return mainMenu();
 
 }
 
