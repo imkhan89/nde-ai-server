@@ -24,12 +24,12 @@ const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 const SHOPIFY_API = `https://${SHOPIFY_STORE}/admin/api/2023-10`;
 
 /* =====================================================
-FILES
+INDEX FILES
 ===================================================== */
 
-const INDEX_DIR = path.join(__dirname, "index");
-const PRODUCT_INDEX_FILE = path.join(INDEX_DIR, "product_index.json");
-const SEARCH_INDEX_FILE = path.join(INDEX_DIR, "search_index.json");
+const INDEX_DIR = path.join(__dirname,"index");
+const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
+const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
 
 /* =====================================================
 MEMORY
@@ -40,7 +40,7 @@ let SEARCH_INDEX = {};
 let SESSIONS = {};
 
 /* =====================================================
-SAFE LOAD INDEX
+SAFE LOAD
 ===================================================== */
 
 function safeLoad(file){
@@ -53,9 +53,9 @@ return JSON.parse(fs.readFileSync(file,"utf8"));
 
 }
 
-}catch(err){
+}catch(e){
 
-console.log("Index Load Error:",err.message);
+console.log("Index load error:",e.message);
 
 }
 
@@ -67,7 +67,7 @@ PRODUCT_INDEX = safeLoad(PRODUCT_INDEX_FILE);
 SEARCH_INDEX = safeLoad(SEARCH_INDEX_FILE);
 
 console.log("Product Index:",PRODUCT_INDEX.length);
-console.log("Search Tokens:",Object.keys(SEARCH_INDEX).length);
+console.log("Search Index Tokens:",Object.keys(SEARCH_INDEX).length);
 
 /* =====================================================
 HELPERS
@@ -123,7 +123,7 @@ LANGUAGE DETECTION
 
 function detectLanguage(text){
 
-text=text.toLowerCase();
+text = text.toLowerCase();
 
 if(
 text.includes("hai") ||
@@ -228,16 +228,16 @@ return null;
 }
 
 /* =====================================================
-TOKEN SEARCH ENGINE
+TOKEN SEARCH
 ===================================================== */
 
 function searchProducts(query){
 
 query=query.toLowerCase();
 
-const tokens=query.split(" ");
-
 let results=[];
+
+const tokens=query.split(" ");
 
 for(const p of PRODUCT_INDEX){
 
@@ -293,7 +293,7 @@ return `For customized decals and sticker orders kindly share:
 Design Image
 Required Dimensions (Preferably in inches)
 
-After receiving the above kindly provide:
+After sharing the above kindly provide:
 
 Consignee Name
 Delivery Address
@@ -303,7 +303,7 @@ Email Address`;
 }
 
 /* =====================================================
-PROFESSIONAL RESPONSE
+PRODUCT RESPONSE
 ===================================================== */
 
 function buildProductReply(data){
@@ -353,7 +353,7 @@ return handleDecal(session);
 
 }
 
-/* INTERNATIONAL CUSTOMER */
+/* INTERNATIONAL ADDRESS */
 
 if(session.customerType==="INTERNATIONAL"){
 
@@ -369,7 +369,7 @@ Country
 City
 Postal Code
 
-This will allow us to confirm international delivery and shipping charges.`;
+This will allow us to confirm international delivery availability and shipping charges.`;
 
 }
 
@@ -442,7 +442,7 @@ ROOT
 
 app.get("/",(req,res)=>{
 
-res.send("ndestore.com Automotive AI Server Running");
+res.send("ndestore.com Automotive AI Running");
 
 });
 
@@ -464,7 +464,7 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 });
 
 /* =====================================================
-SERVER START
+START SERVER
 ===================================================== */
 
 app.listen(PORT,()=>{
