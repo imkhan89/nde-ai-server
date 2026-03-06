@@ -1,199 +1,450 @@
-require("dotenv").config();
-
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
-
 /* =====================================================
-SHOPIFY CONFIG
+ndestore.com GLOBAL AUTOMOTIVE AI ENGINE v4
+Expanded Automotive Intelligence Engine
+Broad Typo Handling
+Large Vehicle Recognition
+Advanced Part Recognition
+Error Safe
 ===================================================== */
 
-const SHOP = "347657-7d.myshopify.com";
-const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-
-const API = `https://${SHOP}/admin/api/2023-10/products.json`;
-
 /* =====================================================
-FILES
+ADVANCED TEXT NORMALIZER
 ===================================================== */
 
-const INDEX_DIR = path.join(__dirname,"index");
-const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
+function normalize(text){
 
-/* =====================================================
-MEMORY
-===================================================== */
+if(!text) return "";
 
-let PRODUCTS = [];
+let t = text.toLowerCase();
 
-/* =====================================================
-SLEEP
-===================================================== */
+/* remove punctuation */
 
-function sleep(ms){
-return new Promise(resolve => setTimeout(resolve, ms));
-}
+t = t.replace(/[^\w\s]/g," ");
 
-/* =====================================================
-FETCH PRODUCTS FROM SHOPIFY
-===================================================== */
+/* collapse spaces */
 
-async function fetchProducts(){
+t = t.replace(/\s+/g," ").trim();
 
-let since_id = 0;
+/* common typo normalization */
 
-while(true){
+t = t
+.replace(/corola/g,"corolla")
+.replace(/civc/g,"civic")
+.replace(/break/g,"brake")
+.replace(/miror/g,"mirror")
+.replace(/bumpr/g,"bumper")
+.replace(/filtr/g,"filter")
+.replace(/fiter/g,"filter")
+.replace(/disk/g,"disc");
 
-try{
+/* normalize synonyms */
 
-const res = await axios.get(API,{
+t = t
+.replace(/disc pad/g,"brake pad")
+.replace(/disk pad/g,"brake pad")
+.replace(/brake pads/g,"brake pad")
+.replace(/air cleaner/g,"air filter")
+.replace(/engine air filter/g,"air filter")
+.replace(/ac filter/g,"cabin filter")
+.replace(/aircon filter/g,"cabin filter")
+.replace(/door mirror/g,"side mirror")
+.replace(/wing mirror/g,"side mirror")
+.replace(/head lamp/g,"headlight")
+.replace(/tail lamp/g,"tail light");
 
-headers:{
-"X-Shopify-Access-Token": TOKEN,
-"Content-Type": "application/json"
-},
-
-params:{
-limit:250,
-since_id: since_id
-}
-
-});
-
-const products = res.data.products;
-
-if(!products || products.length === 0){
-break;
-}
-
-PRODUCTS.push(...products);
-
-since_id = products[products.length - 1].id;
-
-console.log("Products Loaded:", PRODUCTS.length);
-
-await sleep(500);
-
-}catch(error){
-
-console.log("Shopify API Error:", error.message);
-
-await sleep(2000);
-
-}
-
-}
+return t;
 
 }
 
 /* =====================================================
-TOKENIZER
+GLOBAL VEHICLE DATABASE
 ===================================================== */
 
-function tokenize(text){
+const VEHICLE_DB = {
 
-if(!text) return [];
+toyota:[
+"corolla","camry","yaris","vitz","aqua","prius","hilux","fortuner",
+"land cruiser","prado","raize","rush","premio","mark x","chr"
+],
 
-return text
-.toString()
-.toLowerCase()
-.replace(/[^a-z0-9 ]/g," ")
-.split(/\s+/)
-.filter(word => word.length > 2);
+honda:[
+"civic","city","accord","vezel","brv","hrv","jazz","fit","crv"
+],
 
-}
+suzuki:[
+"alto","mehran","cultus","swift","wagon r","bolan","every","ciaz"
+],
 
-/* =====================================================
-BUILD PRODUCT INDEX
-===================================================== */
+hyundai:[
+"elantra","sonata","tucson","santa fe","santro","accent"
+],
 
-function buildIndex(){
+kia:[
+"sportage","picanto","rio","cerato","sorento"
+],
 
-return PRODUCTS.map(product => {
+nissan:[
+"note","juke","micra","sunny","xtrail"
+],
 
-const title = product.title ? product.title.toLowerCase() : "";
+mitsubishi:[
+"lancer","mirage","pajero","outlander"
+],
 
-const tags = product.tags
-? product.tags.split(",").map(t => t.trim().toLowerCase())
-: [];
+daihatsu:[
+"mira","move","boon","terios"
+],
 
-const tokens = tokenize(title + " " + tags.join(" "));
+bmw:[
+"3 series","5 series","7 series","x1","x3","x5"
+],
 
-return {
+mercedes:[
+"c class","e class","s class","gla","glc","gle"
+],
 
-id: product.id,
-title: title,
-handle: product.handle,
-vendor: product.vendor || "",
-type: product.product_type || "",
-tags: tags,
-tokens: tokens,
-
-image: product.image ? product.image.src : "",
-
-variants: product.variants.map(v => ({
-
-id: v.id,
-title: v.title,
-sku: v.sku,
-price: parseFloat(v.price),
-inventory_quantity: v.inventory_quantity,
-available: v.available
-
-}))
+audi:[
+"a3","a4","a5","a6","q3","q5"
+]
 
 };
 
+/* =====================================================
+MODEL → MAKE MAP
+===================================================== */
+
+const MODEL_TO_MAKE = {};
+
+for(const make in VEHICLE_DB){
+
+VEHICLE_DB[make].forEach(model=>{
+
+MODEL_TO_MAKE[model] = make;
+
 });
 
 }
 
 /* =====================================================
-SAVE INDEX
+VEHICLE ALIASES
 ===================================================== */
 
-function saveIndex(index){
+const VEHICLE_ALIASES = {
 
-if(!fs.existsSync(INDEX_DIR)){
-fs.mkdirSync(INDEX_DIR);
-}
+reborn:"civic",
+rebirth:"civic",
 
-fs.writeFileSync(
-PRODUCT_INDEX_FILE,
-JSON.stringify(index,null,2)
-);
+gli:"corolla",
+altis:"corolla",
+grande:"corolla",
+
+vigo:"hilux",
+revo:"hilux",
+
+wagonr:"wagon r",
+
+lc:"land cruiser"
+
+};
+
+/* =====================================================
+AUTOMOTIVE PART DATABASE
+===================================================== */
+
+const PARTS = [
+
+"brake pad",
+"brake rotor",
+"brake disc",
+"brake shoe",
+
+"air filter",
+"oil filter",
+"cabin filter",
+
+"spark plug",
+"ignition coil",
+
+"radiator",
+"radiator cap",
+"radiator fan",
+"radiator coolant",
+
+"alternator",
+"starter motor",
+"fuel pump",
+
+"wiper blade",
+
+"engine shield",
+"fender shield",
+
+"floor mat",
+"trunk mat",
+
+"sun shade",
+"car top cover",
+
+"front bumper",
+"rear bumper",
+"bumper",
+
+"headlight",
+"tail light",
+"fog light",
+
+"side mirror",
+
+"emblem",
+"monogram",
+
+"car decal"
+
+];
+
+/* =====================================================
+PART SYNONYMS
+===================================================== */
+
+const PART_SYNONYMS = {
+
+"disc pad":"brake pad",
+"disk pad":"brake pad",
+"break pad":"brake pad",
+
+"brake discs":"brake rotor",
+
+"air cleaner":"air filter",
+"engine air filter":"air filter",
+
+"engine oil filter":"oil filter",
+
+"ac filter":"cabin filter",
+
+"plug":"spark plug",
+"plugs":"spark plug",
+
+"coolant":"radiator coolant",
+
+"wipers":"wiper blade",
+
+"bonnet":"hood"
+
+};
+
+/* =====================================================
+APPLICATION KEYWORDS
+===================================================== */
+
+const APPLICATIONS = [
+"front","rear","left","right","upper","lower","driver","passenger"
+];
+
+/* =====================================================
+YEAR DETECTION
+===================================================== */
+
+function detectYear(text){
+
+const match = text.match(/\b(19|20)\d{2}\b/);
+
+return match ? match[0] : "";
 
 }
 
 /* =====================================================
-MAIN EXECUTION
+VEHICLE DETECTION
 ===================================================== */
 
-async function run(){
+function detectVehicle(text){
 
-if(!TOKEN){
+for(const alias in VEHICLE_ALIASES){
 
-console.log("ERROR: Missing SHOPIFY_ADMIN_API_TOKEN in .env file");
-process.exit(1);
+if(text.includes(alias)){
+text = text.replace(alias,VEHICLE_ALIASES[alias]);
+}
 
 }
 
-console.log("Downloading Shopify product catalog...");
+for(const model in MODEL_TO_MAKE){
 
-await fetchProducts();
+if(text.includes(model)){
 
-console.log("Building product index...");
+return {
 
-const index = buildIndex();
+make:MODEL_TO_MAKE[model],
+model
 
-saveIndex(index);
-
-console.log("=================================");
-console.log("Product index successfully built");
-console.log("Total products:", index.length);
-console.log("Saved to: index/product_index.json");
-console.log("=================================");
+};
 
 }
 
-run();
+}
+
+return {make:"",model:""};
+
+}
+
+/* =====================================================
+PART DETECTION
+===================================================== */
+
+function detectParts(text){
+
+let found=[];
+
+for(const key in PART_SYNONYMS){
+
+if(text.includes(key)){
+text=text.replace(key,PART_SYNONYMS[key]);
+}
+
+}
+
+for(const part of PARTS){
+
+if(text.includes(part)){
+found.push(part);
+}
+
+}
+
+return found;
+
+}
+
+/* =====================================================
+APPLICATION DETECTION
+===================================================== */
+
+function detectApplication(text){
+
+for(const a of APPLICATIONS){
+
+if(text.includes(a)) return a;
+
+}
+
+return "";
+
+}
+
+/* =====================================================
+QUERY BUILDER
+===================================================== */
+
+function buildQuery(make,model,year,parts,application,message){
+
+let q=[];
+
+if(make) q.push(make);
+if(model) q.push(model);
+if(year) q.push(year);
+
+if(parts.length) q.push(parts[0]);
+
+if(application) q.push(application);
+
+let query=q.join(" ");
+
+if(query.length<3){
+
+query=normalize(message);
+
+}
+
+return query;
+
+}
+
+/* =====================================================
+SEARCH URL BUILDER
+===================================================== */
+
+function buildSearchURL(query){
+
+return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=product&options%5Bprefix%5D=last`;
+
+}
+
+/* =====================================================
+TITLE FORMAT
+===================================================== */
+
+function cap(str){
+
+if(!str) return "Not Specified";
+
+return str
+.split(" ")
+.map(w=>w.charAt(0).toUpperCase()+w.slice(1))
+.join(" ");
+
+}
+
+/* =====================================================
+MAIN ANALYZER
+===================================================== */
+
+function analyzeAutomotiveQuery(message){
+
+try{
+
+const clean=normalize(message);
+
+const vehicle=detectVehicle(clean);
+
+const year=detectYear(clean);
+
+const parts=detectParts(clean);
+
+const application=detectApplication(clean);
+
+const query=buildQuery(
+vehicle.make,
+vehicle.model,
+year,
+parts,
+application,
+message
+);
+
+return{
+
+make:cap(vehicle.make),
+model:cap(vehicle.model),
+year:year || "Not Specified",
+part:parts.length ? cap(parts[0]) : "Not Specified",
+application:cap(application),
+query,
+url:buildSearchURL(query)
+
+};
+
+}catch(err){
+
+return{
+
+make:"Not Specified",
+model:"Not Specified",
+year:"Not Specified",
+part:"Not Specified",
+application:"Not Specified",
+query:message,
+url:buildSearchURL(message)
+
+};
+
+}
+
+}
+
+/* =====================================================
+EXPORT
+===================================================== */
+
+module.exports={
+
+analyzeAutomotiveQuery
+
+};
