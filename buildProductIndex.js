@@ -9,11 +9,11 @@ SHOPIFY CONFIG
 ===================================================== */
 
 const SHOP = process.env.SHOPIFY_STORE_DOMAIN;
-const TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 const VERSION = process.env.SHOPIFY_API_VERSION || "2024-10";
 
 if (!SHOP || !TOKEN) {
-  console.error("Missing Shopify credentials in .env");
+  console.error("Missing Shopify credentials in environment variables");
   process.exit(1);
 }
 
