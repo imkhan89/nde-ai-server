@@ -24,17 +24,20 @@ const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
 const SHOPIFY_API = `https://${SHOPIFY_STORE}/admin/api/2023-10`;
 
 /* =====================================================
-INDEX FILES
+INDEX PATHS
 ===================================================== */
 
 const INDEX_DIR = path.join(__dirname,"index");
+
 const PRODUCT_INDEX_FILE = path.join(INDEX_DIR,"product_index.json");
+const SEARCH_INDEX_FILE = path.join(INDEX_DIR,"search_index.json");
 
 /* =====================================================
 MEMORY
 ===================================================== */
 
 let PRODUCT_INDEX = [];
+let SEARCH_INDEX = {};
 let SESSIONS = {};
 
 /* =====================================================
@@ -57,13 +60,40 @@ console.log("Products Loaded:",PRODUCT_INDEX.length);
 
 }catch(err){
 
-console.log("Index Load Error:",err.message);
+console.log("Product Index Load Error:",err.message);
+
+}
+
+}
+
+/* =====================================================
+LOAD SEARCH INDEX
+===================================================== */
+
+function loadSearchIndex(){
+
+try{
+
+if(fs.existsSync(SEARCH_INDEX_FILE)){
+
+SEARCH_INDEX = JSON.parse(
+fs.readFileSync(SEARCH_INDEX_FILE,"utf8")
+);
+
+console.log("Search Tokens Loaded:",Object.keys(SEARCH_INDEX).length);
+
+}
+
+}catch(err){
+
+console.log("Search Index Load Error:",err.message);
 
 }
 
 }
 
 loadProductIndex();
+loadSearchIndex();
 
 /* =====================================================
 HELPERS
@@ -78,17 +108,6 @@ return str
 .replace(/&/g,"&amp;")
 .replace(/</g,"&lt;")
 .replace(/>/g,"&gt;");
-}
-
-function titleCase(str){
-
-if(!str) return "";
-
-return str
-.split(" ")
-.map(w => w.charAt(0).toUpperCase()+w.slice(1))
-.join(" ");
-
 }
 
 /* =====================================================
@@ -224,42 +243,51 @@ return null;
 }
 
 /* =====================================================
-PRODUCT SEARCH
+WORLD CLASS SEARCH ENGINE
 ===================================================== */
 
 function searchProducts(query){
 
-query=query.toLowerCase();
+query = query.toLowerCase();
 
-let results=[];
+const tokens = query
+.replace(/[^a-z0-9 ]/g," ")
+.split(/\s+/)
+.filter(t=>t.length>2);
 
-const tokens=query.split(" ");
+let scores={};
 
-for(const p of PRODUCT_INDEX){
+for(const token of tokens){
 
-const title=p.title.toLowerCase();
+const matches = SEARCH_INDEX[token];
 
-let score=0;
+if(!matches) continue;
 
-if(title.includes(query)) score+=5;
+for(const m of matches){
 
-for(const t of tokens){
+if(!scores[m.id]){
 
-if(title.includes(t)) score++;
+scores[m.id]={
+
+score:0,
+product:m
+
+};
 
 }
 
-if(score>0){
-
-results.push({...p,score});
+scores[m.id].score++;
 
 }
 
 }
 
-results.sort((a,b)=>b.score-a.score);
+const ranked = Object.values(scores)
+.sort((a,b)=>b.score-a.score)
+.map(r=>r.product)
+.slice(0,5);
 
-return results.slice(0,3);
+return ranked;
 
 }
 
@@ -309,6 +337,7 @@ return `Thank you for contacting ndestore.com.
 Vehicle Identified
 Make: ${data.make}
 Model: ${data.model}
+Generation: ${data.generation}
 Model Year: ${data.year}
 Part Requested: ${data.part}
 
@@ -409,9 +438,39 @@ return reply;
 
 }
 
-/* PRODUCT SEARCH */
+/* AUTOMOTIVE QUERY ANALYSIS */
 
 const data=analyzeAutomotiveQuery(message);
+
+/* SEARCH PRODUCTS */
+
+const results = searchProducts(data.query);
+
+if(results.length){
+
+let list = results
+.map(p=>`• ${p.title}`)
+.join("\n");
+
+return `Thank you for contacting ndestore.com.
+
+Vehicle Identified
+Make: ${data.make}
+Model: ${data.model}
+Generation: ${data.generation}
+Model Year: ${data.year}
+Part Requested: ${data.part}
+
+Matching Products
+${list}
+
+Search Link
+${data.url}
+
+Best Regards
+ndestore.com`;
+
+}
 
 return buildProductReply(data);
 
