@@ -3,6 +3,7 @@ NDE AUTOMOTIVE KNOWLEDGE GRAPH (MERGED)
 Vehicles + Recognition Patterns
 ===================================================== */
 const VEHICLE_DATABASE = [
+const vehicles = VEHICLE_DATABASE;
   "TOYOTA",
   "COROLLA & ALTIS",
   "TOYOTA COROLLA (2002-2008)",
