@@ -192,19 +192,18 @@ return null;
 PART DETECTION
 ===================================================== */
 
-function detectParts(text){
+/* =====================================================
+PART DETECTION
+Standard + Marketplace Intelligence
+===================================================== */
 
-let found=[];
+let parts = detectParts(clean);
 
-for(const part of PARTS){
+/* advanced marketplace detection */
 
-if(text.includes(part)){
-found.push(part);
-}
+if(!parts.length){
 
-}
-
-return found;
+parts = detectPartsAdvanced(clean);
 
 }
 
@@ -306,8 +305,19 @@ clean
 
 /* Part detection */
 
-const parts = detectParts(clean);
+/* =====================================================
+PART DETECTION
+Standard + Marketplace Intelligence
+===================================================== */
 
+let parts = detectParts(clean);
+
+if(!parts.length){
+
+parts = detectPartsAdvanced(clean);
+
+}
+  
 /* Application detection */
 
 const application = detectApplication(clean);
