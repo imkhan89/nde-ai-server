@@ -1,9 +1,10 @@
 /* =====================================================
-NDE AUTOMOTIVE KNOWLEDGE GRAPH (MERGED)
+NDE AUTOMOTIVE KNOWLEDGE GRAPH
 Vehicles + Recognition Patterns
 ===================================================== */
+
 const VEHICLE_DATABASE = [
-const vehicles = VEHICLE_DATABASE;
+  
   "TOYOTA",
   "COROLLA & ALTIS",
   "TOYOTA COROLLA (2002-2008)",
@@ -480,9 +481,21 @@ const vehicles = VEHICLE_DATABASE;
 "GR STICKERS"
 ];
 
+/* =====================================================
+DATA PREP
+===================================================== */
+
 const vehicles = VEHICLE_DATABASE;
 
-/* Normalize Text */
+/* Create search patterns */
+
+const vehiclePatterns = vehicles
+.map(v => v.toLowerCase())
+.filter(v => v.length > 2);
+
+/* =====================================================
+UTILITY FUNCTIONS
+===================================================== */
 
 function normalizeText(text){
 return text
@@ -495,54 +508,70 @@ return text
 /* Detect Pattern */
 
 function detectVehiclePattern(message){
+
 const text = normalizeText(message)
 
 for(const pattern of vehiclePatterns){
+
 if(!pattern) continue
-if(text.includes(pattern)) return pattern
+
+if(text.includes(pattern)){
+return pattern
+}
+
 }
 
 return null
+
 }
 
 /* Detect Year */
 
 function detectYear(message){
+
 const match = message.match(/(19|20)\d{2}/)
+
 return match ? parseInt(match[0]) : null
+
 }
 
 /* Match Vehicle */
 
-function matchVehicle(pattern,year){
+function matchVehicle(pattern){
+
 if(!pattern) return null
 
 for(const v of vehicles){
-const model = v.model?.toLowerCase?.() || ""
 
-if(pattern.includes(model)){
-if(!year || (year >= v.year_start && year <= v.year_end)){
+if(pattern.includes(v.toLowerCase())){
 return v
 }
-}
+
 }
 
 return null
+
 }
 
 /* Full Identification */
 
 function identifyVehicle(message){
+
 const pattern = detectVehiclePattern(message)
 const year = detectYear(message)
-const vehicle = matchVehicle(pattern,year)
+const vehicle = matchVehicle(pattern)
 
 return {
 pattern,
 year,
 vehicle
 }
+
 }
+
+/* =====================================================
+EXPORT
+===================================================== */
 
 module.exports = {
 vehicles,
@@ -551,4 +580,4 @@ detectVehiclePattern,
 detectYear,
 matchVehicle,
 identifyVehicle
-};
+}
