@@ -175,6 +175,30 @@ return null;
 }
 
 /* =====================================================
+DEFAULT GENERATION RESOLVER
+Used when year is not provided
+===================================================== */
+
+function resolveDefaultGeneration(make,model){
+
+for(const g of GENERATIONS){
+
+if(g.make===make && g.model===model){
+
+return {
+generation:g.generation,
+years:g.years
+};
+
+}
+
+}
+
+return null;
+
+}
+
+/* =====================================================
 PART DETECTION
 ===================================================== */
 
