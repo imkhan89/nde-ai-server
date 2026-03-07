@@ -242,10 +242,19 @@ function buildQuery(make,model,year,part){
 
 let q=[];
 
+if(part){
+
+const parts = part.split(",");
+
+parts.forEach(p=>{
+q.push(p.trim());
+});
+
+}
+
 if(make) q.push(make);
 if(model) q.push(model);
 if(year) q.push(year);
-if(part) q.push(part);
 
 return q.join(" ");
 
@@ -352,7 +361,7 @@ const application = detectApplication(clean);
 
 /* PRIMARY PART */
 
-const part = parts.length ? parts[0] : "";
+const part = parts.length ? parts.join(", ") : "";
 
 /* QUERY */
 
