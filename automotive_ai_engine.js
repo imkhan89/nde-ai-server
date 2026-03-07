@@ -192,18 +192,19 @@ return null;
 PART DETECTION
 ===================================================== */
 
-/* =====================================================
-PART DETECTION
-Standard + Marketplace Intelligence
-===================================================== */
+function detectParts(text){
 
-let parts = detectParts(clean);
+let found = [];
 
-/* advanced marketplace detection */
+for(const part of PARTS){
 
-if(!parts.length){
+if(text.includes(part)){
+found.push(part);
+}
 
-parts = detectPartsAdvanced(clean);
+}
+
+return found;
 
 }
 
@@ -311,8 +312,6 @@ Standard + Marketplace Intelligence
 ===================================================== */
 
 let parts = detectParts(clean);
-
-/* fallback to marketplace intelligence */
 
 if(!parts.length){
 
