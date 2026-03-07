@@ -397,6 +397,47 @@ ndestore.com`;
 
 }
 
+/* ACCESSORY SEARCH */
+
+if(session.state==="ACCESSORY_SEARCH"){
+
+const vehicle=detectVehicle(text);
+const part=detectPart(text);
+
+if(!vehicle.make || !vehicle.model || !part){
+
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Accessory Required
+
+Example
+Toyota Aqua Floor Mat`;
+
+}
+
+const url=buildSearchURL(vehicle.make,vehicle.model,"",part);
+
+session.state="MENU";
+
+return `Thank you for contacting ndestore.com.
+
+Vehicle Details
+
+Vehicle Make: ${vehicle.make}
+Model Name: ${vehicle.model}
+Accessory Required: ${part}
+
+Product URL
+${url}
+
+Best Regards
+Customer Support Team
+ndestore.com`;
+
+}
+
 /* ORDER STATUS */
 
 if(session.state==="ORDER"){
