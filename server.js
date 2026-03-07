@@ -149,6 +149,42 @@ const session=getSession(user);
 
 let text=(message || "").toLowerCase().trim();
 
+/* SMART AUTOMOTIVE DETECTION */
+
+const aiResult = analyzeAutomotiveQuery(text);
+
+if(
+aiResult.part !== "Not Specified" &&
+aiResult.model !== "Not Specified"
+){
+
+const url = buildSearchURL(
+aiResult.part,
+aiResult.make,
+aiResult.model,
+aiResult.year
+);
+
+session.state="MENU";
+
+return `Vehicle Details
+
+Vehicle Make: ${aiResult.make}
+Model Name: ${aiResult.model}
+Model Year: ${aiResult.year}
+Part Required: ${aiResult.part}
+
+Product URL
+${url}
+
+Best Regards
+Customer Support
+ndestore.com`;
+
+}
+
+/* existing menu logic continues below */
+  
 /* =====================================================
 FIRST MESSAGE
 ===================================================== */
