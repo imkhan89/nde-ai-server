@@ -4,6 +4,8 @@ const express = require("express");
 const axios = require("axios");
 const crypto = require("crypto");
 
+const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
+
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
@@ -15,13 +17,22 @@ const PORT = process.env.PORT || 3000;
 SESSION MEMORY
 ===================================================== */
 
-let SESSIONS = {};
+const SESSIONS = {};
 
 function getSession(user){
+
 if(!SESSIONS[user]){
-SESSIONS[user]={state:"NEW"};
+
+SESSIONS[user]={
+state:"NEW",
+retries:0,
+data:{}
+};
+
 }
+
 return SESSIONS[user];
+
 }
 
 /* =====================================================
@@ -33,42 +44,12 @@ return crypto.randomBytes(6).toString("hex");
 }
 
 function xmlSafe(str){
+
 return str
 .replace(/&/g,"&amp;")
 .replace(/</g,"&lt;")
 .replace(/>/g,"&gt;");
-}
 
-function titleCase(str){
-return str.replace(/\w\S*/g,(txt)=>txt.charAt(0).toUpperCase()+txt.substr(1));
-}
-
-/* =====================================================
-TEXT NORMALIZATION
-===================================================== */
-
-function normalizeText(text){
-
-text = text.toLowerCase();
-
-const replacements = {
-
-"ac filter":"cabin filter",
-"a/c filter":"cabin filter",
-"airfilter":"air filter",
-"oilfilter":"oil filter",
-"break pad":"brake pad",
-"brakepads":"brake pad",
-"sparkplug":"spark plug",
-"wipers":"wiper"
-
-};
-
-for(const r in replacements){
-text = text.replace(r,replacements[r]);
-}
-
-return text;
 }
 
 /* =====================================================
@@ -80,133 +61,30 @@ function mainMenu(){
 return `Welcome to ndestore.com
 How can we help you?
 
-1. Parts Inquiry
-2. Car Accessories
-3. Order Status
-4. Complaints
-5. Decal Stickers
-6. Other
+1 Parts Inquiry
+2 Car Accessories
+3 Order Status
+4 Complaints
+5 Decal Stickers
+6 Other
 
-Please reply with 1, 2, 3, 4, 5, or 6`;
+Please reply with 1 2 3 4 5 or 6`;
 
-}
-/* =====================================================
-VEHICLE DATABASE
-===================================================== */
-
-const VEHICLES = {
-
-civic:{make:"Honda",gens:[
-{range:"2017-2021",start:2017,end:2021},
-{range:"2013-2016",start:2013,end:2016}
-]},
-
-corolla:{make:"Toyota",gens:[
-{range:"2014-2020",start:2014,end:2020},
-{range:"2009-2013",start:2009,end:2013}
-]},
-
-cultus:{make:"Suzuki",gens:[
-{range:"2017-Present",start:2017,end:2030}
-]},
-
-city:{make:"Honda",gens:[
-{range:"2014-2021",start:2014,end:2021}
-]}
-
-};
-
-/* =====================================================
-PART DATABASE
-===================================================== */
-
-const PART_MAP={
-
-"brake pad":"Brake Pads",
-"air filter":"Air Filter",
-"oil filter":"Oil Filter",
-"cabin filter":"Cabin Filter",
-"spark plug":"Spark Plug",
-"wiper":"Wiper Blade",
-
-"floor mat":"Floor Mats",
-"sun shade":"Sun Shade",
-"air visor":"Air Visor",
-"mud flap":"Mud Flaps",
-"trunk tray":"Trunk Tray",
-
-"sticker":"Sticker",
-"decal":"Decal"
-
-};
-
-/* =====================================================
-VEHICLE DETECTION
-===================================================== */
-
-function detectVehicle(text){
-
-let model="";
-let make="";
-let generation="";
-let year=null;
-
-const yearMatch = text.match(/20\d{2}/);
-
-if(yearMatch){
-year=parseInt(yearMatch[0]);
-}
-
-for(const v in VEHICLES){
-
-if(text.includes(v)){
-
-model=titleCase(v);
-make=VEHICLES[v].make;
-
-for(const g of VEHICLES[v].gens){
-
-if(year && year>=g.start && year<=g.end){
-generation=g.range;
-}
-
-}
-
-}
-
-}
-
-return {make,model,generation};
 }
 
 /* =====================================================
-PART DETECTION
+SHOPIFY SEARCH URL
 ===================================================== */
 
-function detectPart(text){
+function buildSearchURL(part,make,model,year){
 
-for(const p in PART_MAP){
-
-if(text.includes(p)){
-return PART_MAP[p];
-}
-
-}
-
-return "";
-}
-
-/* =====================================================
-SHOPIFY SEARCH
-===================================================== */
-
-function buildSearchURL(make,model,generation,part){
-
-const query=`${part} ${make} ${model} ${generation || ""}`
+let query=`${part} for ${make} ${model} ${year}`
+.trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
 
-return `https://ndestore.com/search?q=${query}`;
+return `https://www.ndestore.com/search?q=${query}`;
+
 }
 
 /* =====================================================
@@ -250,6 +128,18 @@ return null;
 }
 
 /* =====================================================
+COMPLAINT TICKET
+===================================================== */
+
+function generateTicket(){
+
+const n=Math.floor(Math.random()*900000+100000);
+
+return `TKT-${n}`;
+
+}
+
+/* =====================================================
 AI ENGINE
 ===================================================== */
 
@@ -258,22 +148,26 @@ async function automotiveAI(message,user){
 const session=getSession(user);
 
 let text=(message || "").toLowerCase().trim();
-text = normalizeText(text);
 
-/* FIRST MESSAGE ALWAYS TRIGGERS GREETING */
+/* =====================================================
+FIRST MESSAGE
+===================================================== */
 
 if(session.state==="NEW"){
 
 session.state="MENU";
+
 return mainMenu();
 
 }
 
 /* =====================================================
-MENU HANDLING
+MENU
 ===================================================== */
 
 if(session.state==="MENU"){
+
+text=text.replace(/[^0-9]/g,"");
 
 if(text==="1"){
 
@@ -299,10 +193,11 @@ return `Please confirm
 
 Vehicle Make
 Vehicle Model
-Accessory Required
+Model Year
+Required Accessory
 
 Example
-Toyota Aqua Floor Mat`;
+Toyota Aqua 2018 Floor Mat`;
 
 }
 
@@ -321,7 +216,10 @@ if(text==="4"){
 
 session.state="COMPLAINT";
 
-return `Please describe the complaint and include your order number`;
+return `Kindly share the following information
+
+Order Number
+Complaint Details`;
 
 }
 
@@ -341,11 +239,9 @@ Reply with 1 2 or 3`;
 
 if(text==="6"){
 
-return `Customer Support
+session.state="CHAT";
 
-Whatsapp +92-321-4222294
-Landline +92-423-7724222
-Email info@ndestore.com`;
+return `Please share your inquiry and our assistant will assist you shortly.`;
 
 }
 
@@ -359,41 +255,62 @@ PART SEARCH
 
 if(session.state==="PART_SEARCH"){
 
-const vehicle=detectVehicle(text);
-const part=detectPart(text);
+const result = analyzeAutomotiveQuery(text);
 
-if(!vehicle.make || !vehicle.model || !part){
+if(result.part==="Not Specified" || result.model==="Not Specified"){
 
-return `Please confirm
+session.retries++;
 
-Vehicle Make
-Vehicle Model
-Model Year
-Part Required
+if(session.retries>=2){
 
-Example
-Honda Civic 2018 Brake Pad`;
+session.state="MENU";
+session.retries=0;
+
+return `We were unable to identify the product.
+
+Please contact our representative
+
+WhatsApp
++92 308 7643288
++92 321 4222294
+
+or visit
+www.ndestore.com`;
 
 }
 
-const url=buildSearchURL(vehicle.make,vehicle.model,vehicle.generation,part);
+return `Please share details in the following format
+
+Part Name + Vehicle Make + Vehicle Model + Model Year
+
+Example
+Brake Pad Toyota Corolla 2018`;
+
+}
+
+session.retries=0;
+
+const url=buildSearchURL(
+result.part,
+result.make,
+result.model,
+result.year
+);
 
 session.state="MENU";
 
-return `Thank you for contacting ndestore.com.
+return `Vehicle Details
 
-Vehicle Details
-
-Vehicle Make: ${vehicle.make}
-Model Name: ${vehicle.model}
-Model Year: ${vehicle.generation || "Unknown"}
-Part Required: ${part}
+Vehicle Make: ${result.make}
+Model Name: ${result.model}
+Model Year: ${result.year}
+Part Required: ${result.part}
 
 Product URL
 ${url}
 
 Best Regards
-Customer Support Team
+Customer Support
 ndestore.com`;
 
 }
@@ -404,151 +321,62 @@ ACCESSORY SEARCH
 
 if(session.state==="ACCESSORY_SEARCH"){
 
-const vehicle=detectVehicle(text);
-const part=detectPart(text);
+const result = analyzeAutomotiveQuery(text);
 
-if(!vehicle.make || !vehicle.model || !part){
+if(result.part==="Not Specified" || result.model==="Not Specified"){
 
-return `Please confirm
+session.retries++;
 
-Vehicle Make
-Vehicle Model
-Accessory Required
+if(session.retries>=2){
 
-Example
-Toyota Aqua Floor Mat`;
+session.state="MENU";
+session.retries=0;
+
+return `We were unable to identify the accessory.
+
+Please contact our representative
+
+WhatsApp
++92 308 7643288
++92 321 4222294`;
 
 }
 
-const url=buildSearchURL(vehicle.make,vehicle.model,"",part);
+return `Please share details in the following format
+
+Accessory + Vehicle Make + Vehicle Model + Model Year
+
+Example
+Floor Mat Toyota Corolla 2018`;
+
+}
+
+session.retries=0;
+
+const url=buildSearchURL(
+result.part,
+result.make,
+result.model,
+result.year
+);
 
 session.state="MENU";
 
-return `Thank you for contacting ndestore.com.
+return `Vehicle Details
 
-Vehicle Details
-
-Vehicle Make: ${vehicle.make}
-Model Name: ${vehicle.model}
-Accessory Required: ${part}
+Vehicle Make: ${result.make}
+Model Name: ${result.model}
+Model Year: ${result.year}
+Required Accessory: ${result.part}
 
 Product URL
 ${url}
 
 Best Regards
-Customer Support Team
+Customer Support
 ndestore.com`;
 
 }
-
-/* =====================================================
-DECAL MENU
-===================================================== */
-
-if(session.state==="DECAL_MENU"){
-
-if(text==="1"){
-
-session.state="MENU";
-
-const captions=[
-"For the full decal sticker range kindly explore the following link:",
-"Browse our entire collection of automotive decal stickers here:",
-"View the complete selection of vehicle decals at the link below:"
-];
-
-const caption=captions[Math.floor(Math.random()*captions.length)];
-
-return `${caption}
-
-https://www.ndestore.com/collections/stickers-decal`;
-
-}
-
-if(text==="2"){
-
-session.state="DECAL_COLLECTION";
-
-return `Decal Sticker Collections
-
-1 Firearm Stickers
-2 Army Stickers
-3 Advocate Stickers
-4 Doctor Stickers
-5 Markhor Stickers
-6 Hunter Stickers
-7 Toyota Stickers
-8 Toyota TEQ Stickers
-9 Honda Stickers
-10 Sports Mind Stickers
-11 Laptop Stickers
-12 Jeep Stickers
-13 GR Stickers
-
-Reply with the collection number`;
-
-}
-
-if(text==="3"){
-
-session.state="MENU";
-
-const captions=[
-"For custom decal stickers please visit the following page:",
-"You may order personalized decal stickers using this link:",
-"To create your own custom decal sticker please use the page below:"
-];
-
-const caption=captions[Math.floor(Math.random()*captions.length)];
-
-return `${caption}
-
-https://www.ndestore.com/pages/custom-decal-and-sticker`;
-
-}
-
-return `Reply with 1 2 or 3`;
-
-}
-
-/* =====================================================
-DECAL COLLECTION LINKS
-===================================================== */
-
-if(session.state==="DECAL_COLLECTION"){
-
-const collections={
-
-1:"https://www.ndestore.com/collections/firearm-stickers",
-2:"https://www.ndestore.com/collections/sticker-decal-army-theme",
-3:"https://www.ndestore.com/collections/legal-professional-lawyer",
-4:"https://www.ndestore.com/collections/decal-sticker-doctor-medic-hospital-dentist",
-5:"https://www.ndestore.com/collections/markhor-stickers",
-6:"https://www.ndestore.com/collections/hunter-stickers",
-7:"https://www.ndestore.com/collections/toyota-decals",
-8:"https://www.ndestore.com/collections/teq-series-decal-jdm-japan",
-9:"https://www.ndestore.com/collections/honda-stickers",
-10:"https://www.ndestore.com/collections/sports-mind-sticker/SPORTS-MIND-STICKER",
-11:"https://www.ndestore.com/collections/laptop-stickers-decals-skins-animie",
-12:"https://www.ndestore.com/collections/sticker-jeep",
-13:"https://www.ndestore.com/collections/sticker-decal-toyota-gazoo-racing-gr"
-
-};
-
-if(collections[text]){
-
-session.state="MENU";
-
-return `Kindly visit the following website link
-
-${collections[text]}`;
-
-}
-
-return `Please reply with a number between 1 and 13`;
-
-}
-
 
 /* =====================================================
 ORDER STATUS
@@ -559,13 +387,17 @@ if(session.state==="ORDER"){
 const orderMatch=text.match(/\d{5,}/);
 
 if(!orderMatch){
+
 return `Please provide a valid order number`;
+
 }
 
 const order = await fetchOrder(orderMatch[0]);
 
 if(!order){
+
 return `Order not located`;
+
 }
 
 session.state="MENU";
@@ -586,21 +418,83 @@ COMPLAINT
 
 if(session.state==="COMPLAINT"){
 
-const ticket="TKT-"+Math.floor(Math.random()*90000+10000);
+const ticket=generateTicket();
 
 session.state="MENU";
 
-return `Complaint Registered
+return `Complaint Submitted
 
 Ticket Number: ${ticket}
 
-Our representative will contact you shortly.`;
+Our representative will contact you shortly.
+
+Thank you for contacting ndestore.com`;
+
+}
+
+/* =====================================================
+DECAL MENU
+===================================================== */
+
+if(session.state==="DECAL_MENU"){
+
+if(text==="1"){
+
+session.state="MENU";
+
+return `For the full decal sticker range kindly explore the following link
+
+https://www.ndestore.com/collections/stickers-decal`;
+
+}
+
+if(text==="2"){
+
+session.state="MENU";
+
+return `Browse our decal sticker collections
+
+https://www.ndestore.com/collections`;
+
+}
+
+if(text==="3"){
+
+session.state="MENU";
+
+return `For customized decal stickers please visit
+
+https://www.ndestore.com/pages/custom-decal-and-sticker`;
+
+}
+
+return `Reply with 1 2 or 3`;
+
+}
+
+/* =====================================================
+CHAT MODE
+===================================================== */
+
+if(session.state==="CHAT"){
+
+session.state="MENU";
+
+return `Thank you for contacting ndestore.com.
+
+Our support team will review your inquiry and respond shortly.
+
+For urgent assistance please contact
+
+WhatsApp
++92 321 4222294`;
 
 }
 
 return mainMenu();
 
 }
+
 /* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
@@ -609,15 +503,17 @@ app.post("/whatsapp", async (req,res)=>{
 
 try{
 
-const message = req.body.Body || "";
-const user = req.body.From || uid();
+const message=req.body.Body || "";
+const user=req.body.From || uid();
 
 console.log("Incoming:",message);
 
-let reply = await automotiveAI(message,user);
+let reply=await automotiveAI(message,user);
 
 if(!reply || reply.trim()===""){
+
 reply="Please confirm Vehicle Make Model Year and Part Required.";
+
 }
 
 res.set("Content-Type","text/xml");
@@ -639,5 +535,7 @@ SERVER
 ===================================================== */
 
 app.listen(PORT,()=>{
+
 console.log("AI Server Running");
+
 });
