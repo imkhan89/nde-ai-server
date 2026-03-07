@@ -3,7 +3,16 @@ ndestore.com AUTOMOTIVE AI ENGINE
 Vehicle + Generation Detection
 ===================================================== */
 
-const VEHICLE_DB = require("./data/vehicle_database");
+let vehicle = detectVehicle(clean);
+
+const aliasVehicle = resolveVehicle(clean);
+
+if(aliasVehicle){
+
+vehicle.make = aliasVehicle.make.toLowerCase();
+vehicle.model = aliasVehicle.model.toLowerCase();
+
+}
 const PARTS = require("./data/part_database");
 const GENERATIONS = require("./data/vehicle_generations");
 
