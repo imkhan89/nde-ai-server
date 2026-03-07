@@ -1,4 +1,4 @@
-const { detectPartsAdvanced } = require("./marketplace_intelligence")
+const { detectPartsAdvanced } = require("./marketplace_intelligence");
 
 /* =====================================================
 ndestore.com AUTOMOTIVE AI ENGINE
@@ -84,12 +84,9 @@ let t = text.toLowerCase();
 t = t.replace(/[^\w\s]/g," ");
 t = t.replace(/\s+/g," ").trim();
 
-/* apply part synonyms */
-
 for(const key in PART_SYNONYMS){
 
 const r = new RegExp(`\\b${key}\\b`,"g");
-
 t = t.replace(r,PART_SYNONYMS[key]);
 
 }
@@ -123,10 +120,8 @@ const r = new RegExp(`\\b${model}\\b`);
 if(r.test(text)){
 
 return {
-
-make:MODEL_TO_MAKE[model],
+make: MODEL_TO_MAKE[model],
 model
-
 };
 
 }
@@ -148,8 +143,6 @@ for(const g of GENERATIONS){
 if(g.make!==make) continue;
 if(g.model!==model) continue;
 
-/* detect by alias */
-
 if(g.aliases){
 
 for(const a of g.aliases){
@@ -157,10 +150,8 @@ for(const a of g.aliases){
 if(text.includes(a)){
 
 return {
-
 generation:g.generation,
 years:g.years
-
 };
 
 }
@@ -169,15 +160,11 @@ years:g.years
 
 }
 
-/* detect by year */
-
 if(year && g.years.includes(year)){
 
 return {
-
 generation:g.generation,
 years:g.years
-
 };
 
 }
@@ -194,7 +181,7 @@ PART DETECTION
 
 function detectParts(text){
 
-let found = [];
+let found=[];
 
 for(const part of PARTS){
 
@@ -276,11 +263,11 @@ try{
 
 const clean = normalize(message);
 
-/* Standard vehicle detection */
+/* VEHICLE DETECTION */
 
 let vehicle = detectVehicle(clean);
 
-/* Alias detection (reborn, rebirth, etc.) */
+/* ALIAS DETECTION */
 
 const aliasVehicle = resolveVehicle(clean);
 
@@ -291,11 +278,11 @@ vehicle.model = aliasVehicle.model.toLowerCase();
 
 }
 
-/* Year detection */
+/* YEAR */
 
 const year = detectYear(clean);
 
-/* Generation detection */
+/* GENERATION */
 
 const generation = detectGeneration(
 vehicle.make,
@@ -303,8 +290,6 @@ vehicle.model,
 year,
 clean
 );
-
-/* Part detection */
 
 /* =====================================================
 PART DETECTION
@@ -319,21 +304,15 @@ parts = detectPartsAdvanced(clean);
 
 }
 
-/* =====================================================
-APPLICATION DETECTION
-===================================================== */
+/* APPLICATION */
 
 const application = detectApplication(clean);
 
-/* =====================================================
-PRIMARY PART
-===================================================== */
+/* PRIMARY PART */
 
 const part = parts.length ? parts[0] : "";
 
-/* =====================================================
-QUERY BUILDER
-===================================================== */
+/* QUERY */
 
 const query = buildQuery(
 vehicle.make,
@@ -342,9 +321,7 @@ year,
 part
 );
 
-/* =====================================================
-RETURN STRUCTURED RESULT
-===================================================== */
+/* RESULT */
 
 return {
 
@@ -359,8 +336,7 @@ part: part ? cap(part) : "Not Specified",
 
 application: cap(application),
 
-query: query,
-
+query,
 url: buildSearchURL(query)
 
 };
@@ -369,26 +345,25 @@ url: buildSearchURL(query)
 
 return {
 
-make: "Not Specified",
-model: "Not Specified",
-generation: "Not Specified",
-year: "Not Specified",
-part: "Not Specified",
-application: "Not Specified",
-query: message,
-url: buildSearchURL(message)
+make:"Not Specified",
+model:"Not Specified",
+generation:"Not Specified",
+year:"Not Specified",
+part:"Not Specified",
+application:"Not Specified",
+query:message,
+url:buildSearchURL(message)
 
 };
 
 }
 
 }
+
 /* =====================================================
 EXPORT
 ===================================================== */
 
 module.exports = {
-
 analyzeAutomotiveQuery
-
 };
