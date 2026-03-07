@@ -81,12 +81,12 @@ return `Welcome to ndestore.com
 
 How can we help you?
 
-1️⃣ Parts Inquiry
-2️⃣ Car Accessories
-3️⃣ Order Status
-4️⃣ Complaints
-5️⃣ Decal Stickers
-6️⃣ Other
+1. Parts Inquiry
+2. Car Accessories
+3. Order Status
+4. Complaints
+5. Decal Stickers
+6. Other
 
 Please reply with 1, 2, 3, 4, 5, or 6`;
 
