@@ -3,18 +3,11 @@ ndestore.com AUTOMOTIVE AI ENGINE
 Vehicle + Generation Detection
 ===================================================== */
 
-let vehicle = detectVehicle(clean);
-
-const aliasVehicle = resolveVehicle(clean);
-
-if(aliasVehicle){
-
-vehicle.make = aliasVehicle.make.toLowerCase();
-vehicle.model = aliasVehicle.model.toLowerCase();
-
-}
+const VEHICLE_DB = require("./data/vehicle_database");
 const PARTS = require("./data/part_database");
 const GENERATIONS = require("./data/vehicle_generations");
+
+const { resolveVehicle } = require("./fitment_engine");
 
 /* =====================================================
 PART SYNONYMS
@@ -281,9 +274,26 @@ try{
 
 const clean = normalize(message);
 
-const vehicle = detectVehicle(clean);
+/* Standard vehicle detection */
+
+let vehicle = detectVehicle(clean);
+
+/* Alias detection (reborn, rebirth, etc.) */
+
+const aliasVehicle = resolveVehicle(clean);
+
+if(aliasVehicle){
+
+vehicle.make = aliasVehicle.make.toLowerCase();
+vehicle.model = aliasVehicle.model.toLowerCase();
+
+}
+
+/* Year detection */
 
 const year = detectYear(clean);
+
+/* Generation detection */
 
 const generation = detectGeneration(
 vehicle.make,
@@ -292,11 +302,17 @@ year,
 clean
 );
 
+/* Part detection */
+
 const parts = detectParts(clean);
+
+/* Application detection */
 
 const application = detectApplication(clean);
 
 const part = parts.length ? parts[0] : "";
+
+/* Query builder */
 
 const query = buildQuery(
 vehicle.make,
@@ -304,6 +320,8 @@ vehicle.model,
 year,
 part
 );
+
+/* Return structured result */
 
 return {
 
