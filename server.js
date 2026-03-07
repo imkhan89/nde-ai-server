@@ -543,37 +543,35 @@ WHATSAPP WEBHOOK
 
 app.post("/whatsapp", async (req,res)=>{
 
-const message = req.body.Body
-const user = req.body.From
+try{
 
-const vehicleResult = vehicleGraph.identifyVehicle(message)
+const message = req.body.Body || "";
+const user = req.body.From || "";
 
-if(vehicleResult.vehicle){
+console.log("Incoming:", message);
 
-return res.send(`
+const vehicleResult = vehicleGraph.identifyVehicle(message);
 
+if(vehicleResult && vehicleResult.vehicle){
+
+const reply = `
 Vehicle Identified
 
 Make: ${vehicleResult.vehicle.make}
 Model: ${vehicleResult.vehicle.model}
 Year Range: ${vehicleResult.vehicle.year_start}-${vehicleResult.vehicle.year_end}
+`;
 
-`)
+res.set("Content-Type","text/xml");
+
+return res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 
 }
 
-/* your existing AI logic continues here */
-
-})
-
-console.log("Incoming:",message);
-
-let reply=await automotiveAI(message,user);
+let reply = await automotiveAI(message,user);
 
 if(!reply || reply.trim()===""){
-
-reply="Please confirm Vehicle Make Model Year and Part Required.";
-
+reply = "Please confirm Vehicle Make Model Year and Part Required.";
 }
 
 res.set("Content-Type","text/xml");
@@ -583,6 +581,8 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 }catch(e){
 
 console.log("Webhook error:",e);
+
+res.set("Content-Type","text/xml");
 
 res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
 
@@ -595,7 +595,5 @@ SERVER
 ===================================================== */
 
 app.listen(PORT,()=>{
-
 console.log("AI Server Running");
-
 });
