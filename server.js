@@ -275,7 +275,9 @@ return mainMenu();
 
 if(session.state==="MENU"){
 
-if(text==="1" || text==="2"){
+/* PARTS */
+
+if(text==="1"){
 
 session.state="PART_SEARCH";
 
@@ -289,6 +291,24 @@ Part Required
 Example
 Honda Civic 2018 Brake Pad`;
 
+}
+
+/* ACCESSORIES */
+
+if(text==="2"){
+
+session.state="ACCESSORY_SEARCH";
+
+return `Please confirm
+
+Vehicle Make
+Vehicle Model
+Accessory Required
+
+Example
+Toyota Aqua Floor Mat`;
+
+}
 }
 
 if(text==="3"){
