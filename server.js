@@ -77,20 +77,20 @@ MAIN MENU
 
 function mainMenu(){
 
-return `Thank you for contacting ndestore.com.
+return `Welcome to ndestore.com
 
-How can we assist you today?
+How can we help you?
 
-1 Parts Inquiry
-2 Car Accessories
-3 Order Status
-4 Complaints
-5 Decal Stickers
-6 Other
+1️⃣ Parts Inquiry
+2️⃣ Car Accessories
+3️⃣ Order Status
+4️⃣ Complaints
+5️⃣ Decal Stickers
+6️⃣ Other
 
-Reply with 1 2 3 4 5 or 6`;
+Please reply with 1, 2, 3, 4, 5, or 6`;
+
 }
-
 /* =====================================================
 VEHICLE DATABASE
 ===================================================== */
