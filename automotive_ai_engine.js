@@ -10,7 +10,6 @@ const {
   vehicles: VEHICLE_DB,
   vehiclePatterns,
   detectVehiclePattern,
-  detectYear,
   matchVehicle,
   identifyVehicle
 } = require("./data/vehicle_database");
