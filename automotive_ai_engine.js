@@ -315,12 +315,23 @@ const year = detectYear(clean);
 
 /* GENERATION */
 
-const generation = detectGeneration(
+let generation = detectGeneration(
 vehicle.make,
 vehicle.model,
 year,
 clean
 );
+
+/* fallback generation detection */
+
+if(!generation && vehicle.make && vehicle.model){
+
+generation = resolveDefaultGeneration(
+vehicle.make,
+vehicle.model
+);
+
+}
 
 /* =====================================================
 PART DETECTION
