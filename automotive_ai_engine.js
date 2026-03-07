@@ -60,15 +60,37 @@ const APPLICATIONS = [
 MODEL → MAKE MAP
 ===================================================== */
 
-const MODEL_TO_MAKE = {};
+Object.keys(VEHICLE_DB).forEach(make=>{
 
-for(const make in VEHICLE_DB){
+const models = VEHICLE_DB[make];
 
-Object.keys(VEHICLE_DB[make]).forEach(model=>{
-MODEL_TO_MAKE[model] = make;
+if(Array.isArray(models)){
+
+models.forEach(model=>{
+
+vehicleIndex.push({
+make: make,
+model: model.model || model,
+data: model
+});
+
+});
+
+}else{
+
+Object.keys(models).forEach(model=>{
+
+vehicleIndex.push({
+make: make,
+model: model,
+data: models[model]
+});
+
 });
 
 }
+
+});
 
 /* =====================================================
 TEXT NORMALIZER
