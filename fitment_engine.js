@@ -1,14 +1,11 @@
 /* =====================================================
 AUTOMOTIVE FITMENT INTELLIGENCE ENGINE
-Used by Automotive Marketplaces
+Pakistan Vehicle Alias Recognition
 ===================================================== */
 
-const VEHICLE_DB = require("./vehicle_database")
-const GENERATIONS = require("./vehicle_generations")
-
 /* =====================================================
-LOCAL VEHICLE ALIASES
-Pakistan Market
+VEHICLE ALIASES
+Local market naming used by customers
 ===================================================== */
 
 const VEHICLE_ALIASES = {
@@ -61,7 +58,7 @@ model:"Hilux",
 years:[2015,2016,2017,2018,2019,2020,2021,2022,2023]
 }
 
-}
+};
 
 /* =====================================================
 YEAR DETECTION
