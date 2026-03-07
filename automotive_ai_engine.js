@@ -372,7 +372,7 @@ model: cap(vehicle.model),
 
 generation: generation ? generation.generation : "Not Specified",
 
-year: year || "Not Specified",
+year: year || (generation ? generation.years[0] : "Not Specified"),
 
 part: part ? cap(part) : "Not Specified",
 
