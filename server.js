@@ -266,16 +266,15 @@ text = normalizeText(text);
 if(session.state==="NEW"){
 
 session.state="MENU";
-
 return mainMenu();
 
 }
 
-/* MENU */
+/* =====================================================
+MENU HANDLING
+===================================================== */
 
 if(session.state==="MENU"){
-
-/* PARTS */
 
 if(text==="1"){
 
@@ -293,8 +292,6 @@ Honda Civic 2018 Brake Pad`;
 
 }
 
-/* ACCESSORIES */
-
 if(text==="2"){
 
 session.state="ACCESSORY_SEARCH";
@@ -308,7 +305,6 @@ Accessory Required
 Example
 Toyota Aqua Floor Mat`;
 
-}
 }
 
 if(text==="3"){
@@ -332,8 +328,6 @@ return `Please describe the complaint and include your order number`;
 
 if(text==="5"){
 
-session.state="DECAL";
-
 return `Visit decal collection
 
 https://www.ndestore.com/collections/stickers-decal`;
@@ -354,7 +348,9 @@ return mainMenu();
 
 }
 
-/* PART SEARCH */
+/* =====================================================
+PART SEARCH
+===================================================== */
 
 if(session.state==="PART_SEARCH"){
 
@@ -397,7 +393,9 @@ ndestore.com`;
 
 }
 
-/* ACCESSORY SEARCH */
+/* =====================================================
+ACCESSORY SEARCH
+===================================================== */
 
 if(session.state==="ACCESSORY_SEARCH"){
 
@@ -438,7 +436,9 @@ ndestore.com`;
 
 }
 
-/* ORDER STATUS */
+/* =====================================================
+ORDER STATUS
+===================================================== */
 
 if(session.state==="ORDER"){
 
@@ -448,7 +448,7 @@ if(!orderMatch){
 return `Please provide a valid order number`;
 }
 
-const order=await fetchOrder(orderMatch[0]);
+const order = await fetchOrder(orderMatch[0]);
 
 if(!order){
 return `Order not located`;
@@ -466,7 +466,9 @@ Courier Company: ${order.courier}`;
 
 }
 
-/* COMPLAINT */
+/* =====================================================
+COMPLAINT
+===================================================== */
 
 if(session.state==="COMPLAINT"){
 
@@ -485,7 +487,6 @@ Our representative will contact you shortly.`;
 return mainMenu();
 
 }
-
 /* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
