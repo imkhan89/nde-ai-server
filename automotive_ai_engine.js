@@ -312,19 +312,29 @@ Standard + Marketplace Intelligence
 
 let parts = detectParts(clean);
 
+/* fallback to marketplace intelligence */
+
 if(!parts.length){
 
 parts = detectPartsAdvanced(clean);
 
 }
-  
-/* Application detection */
+
+/* =====================================================
+APPLICATION DETECTION
+===================================================== */
 
 const application = detectApplication(clean);
 
+/* =====================================================
+PRIMARY PART
+===================================================== */
+
 const part = parts.length ? parts[0] : "";
 
-/* Query builder */
+/* =====================================================
+QUERY BUILDER
+===================================================== */
 
 const query = buildQuery(
 vehicle.make,
@@ -333,12 +343,14 @@ year,
 part
 );
 
-/* Return structured result */
+/* =====================================================
+RETURN STRUCTURED RESULT
+===================================================== */
 
 return {
 
-make:cap(vehicle.make),
-model:cap(vehicle.model),
+make: cap(vehicle.make),
+model: cap(vehicle.model),
 
 generation: generation ? generation.generation : "Not Specified",
 
@@ -346,9 +358,9 @@ year: year || "Not Specified",
 
 part: part ? cap(part) : "Not Specified",
 
-application:cap(application),
+application: cap(application),
 
-query,
+query: query,
 
 url: buildSearchURL(query)
 
@@ -358,21 +370,20 @@ url: buildSearchURL(query)
 
 return {
 
-make:"Not Specified",
-model:"Not Specified",
-generation:"Not Specified",
-year:"Not Specified",
-part:"Not Specified",
-application:"Not Specified",
-query:message,
-url:buildSearchURL(message)
+make: "Not Specified",
+model: "Not Specified",
+generation: "Not Specified",
+year: "Not Specified",
+part: "Not Specified",
+application: "Not Specified",
+query: message,
+url: buildSearchURL(message)
 
 };
 
 }
 
 }
-
 /* =====================================================
 EXPORT
 ===================================================== */
