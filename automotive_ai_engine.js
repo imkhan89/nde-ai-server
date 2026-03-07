@@ -64,7 +64,7 @@ const MODEL_TO_MAKE = {};
 
 for(const make in VEHICLE_DB){
 
-VEHICLE_DB[make].forEach(model=>{
+Object.keys(VEHICLE_DB[make]).forEach(model=>{
 MODEL_TO_MAKE[model] = make;
 });
 
