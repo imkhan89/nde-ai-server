@@ -1,122 +1,95 @@
 /* =====================================================
-AUTOMOTIVE FITMENT INTELLIGENCE ENGINE
-Pakistan Vehicle Alias Recognition
-===================================================== */
-
-/* =====================================================
-VEHICLE ALIASES
-Local market naming used by customers
+AUTOMOTIVE KNOWLEDGE GRAPH
+Pakistan Vehicle Naming Intelligence
 ===================================================== */
 
 const VEHICLE_ALIASES = {
 
 reborn:{
-make:"Honda",
-model:"Civic",
-years:[2006,2007,2008,2009,2010,2011]
+make:"honda",
+model:"civic",
+start:2006,
+end:2011
 },
 
 rebirth:{
-make:"Honda",
-model:"Civic",
-years:[2012,2013,2014,2015]
+make:"honda",
+model:"civic",
+start:2012,
+end:2015
 },
 
 civicx:{
-make:"Honda",
-model:"Civic",
-years:[2016,2017,2018,2019,2020]
+make:"honda",
+model:"civic",
+start:2016,
+end:2020
 },
 
 grande:{
-make:"Toyota",
-model:"Corolla",
-years:[2015,2016,2017]
+make:"toyota",
+model:"corolla",
+start:2014,
+end:2017
 },
 
 gli:{
-make:"Toyota",
-model:"Corolla",
-years:[2009,2010,2011,2012,2013]
+make:"toyota",
+model:"corolla",
+start:2009,
+end:2013
 },
 
 altis:{
-make:"Toyota",
-model:"Corolla",
-years:[2009,2010,2011,2012,2013]
+make:"toyota",
+model:"corolla",
+start:2009,
+end:2013
 },
 
 vigo:{
-make:"Toyota",
-model:"Hilux",
-years:[2005,2006,2007,2008,2009,2010,2011,2012,2013,2014]
+make:"toyota",
+model:"hilux",
+start:2005,
+end:2014
 },
 
 revo:{
-make:"Toyota",
-model:"Hilux",
-years:[2015,2016,2017,2018,2019,2020,2021,2022,2023]
+make:"toyota",
+model:"hilux",
+start:2015,
+end:2023
 }
 
 };
 
 /* =====================================================
-YEAR DETECTION
+ALIAS VEHICLE DETECTION
 ===================================================== */
 
-function detectYear(text){
+function resolveVehicle(text){
 
-const match=text.match(/\b(19|20)\d{2}\b/)
-
-return match?parseInt(match[0]):null
-
-}
-
-/* =====================================================
-ALIAS DETECTION
-===================================================== */
-
-function detectAlias(text){
+text=text.toLowerCase();
 
 for(const alias in VEHICLE_ALIASES){
 
 if(text.includes(alias)){
 
-return VEHICLE_ALIASES[alias]
+const v=VEHICLE_ALIASES[alias];
+
+return {
+
+make:v.make,
+model:v.model,
+year:v.start
+
+};
 
 }
 
 }
 
-return null
-
-}
-
-/* =====================================================
-FITMENT RESOLVER
-===================================================== */
-
-function resolveVehicle(text){
-
-text=text.toLowerCase()
-
-const year=detectYear(text)
-
-const alias=detectAlias(text)
-
-if(alias){
-
-return{
-
-make:alias.make,
-model:alias.model,
-year:year || alias.years[0]
-
-}
-
-}
-
-return null
+return null;
 
 }
 
@@ -124,4 +97,4 @@ module.exports={
 
 resolveVehicle
 
-}
+};
