@@ -13,6 +13,7 @@ const {
   matchVehicle,
   identifyVehicle
 } = require("./data/vehicle_database");
+
 const PARTS = require("./data/part_database");
 const GENERATIONS = require("./data/vehicle_generations");
 
@@ -63,37 +64,25 @@ const APPLICATIONS = [
 ];
 
 /* =====================================================
-MODEL → MAKE MAP
+MODEL INDEX BUILDER
 ===================================================== */
 
-Object.keys(VEHICLE_DB).forEach(make=>{
+const vehicleIndex = [];
+const MODEL_TO_MAKE = {};
 
-const models = VEHICLE_DB[make];
+VEHICLE_DB.forEach(vehicle => {
 
-if(Array.isArray(models)){
-
-models.forEach(model=>{
-
-vehicleIndex.push({
-make: make,
-model: model.model || model,
-data: model
-});
-
-});
-
-}else{
-
-Object.keys(models).forEach(model=>{
+const make = (vehicle.make || "").toLowerCase();
+const model = (vehicle.model || "").toLowerCase();
 
 vehicleIndex.push({
-make: make,
-model: model,
-data: models[model]
+make,
+model,
+data: vehicle
 });
 
-});
-
+if(model){
+MODEL_TO_MAKE[model] = make;
 }
 
 });
@@ -204,7 +193,6 @@ return null;
 
 /* =====================================================
 DEFAULT GENERATION RESOLVER
-Used when year is not provided
 ===================================================== */
 
 function resolveDefaultGeneration(make,model){
@@ -323,21 +311,17 @@ try{
 
 const clean = normalize(message);
 
-/* record query safely */
-
 try{
 learnQuery(clean);
 }catch(e){}
 
-/* VEHICLE DETECTION */
+/* VEHICLE */
 
 let vehicle = detectVehicle(clean);
 
-/* ALIAS DETECTION */
+/* ALIAS */
 
 const aliasVehicle = resolveVehicle(clean);
-
-/* only override if vehicle not detected */
 
 if(aliasVehicle && !vehicle.model){
 
@@ -359,8 +343,6 @@ year,
 clean
 );
 
-/* fallback generation detection */
-
 if(!generation && vehicle.make && vehicle.model){
 
 generation = resolveDefaultGeneration(
@@ -370,28 +352,16 @@ vehicle.model
 
 }
 
-/* =====================================================
-PART DETECTION
-Standard + Marketplace Intelligence
-===================================================== */
+/* PART */
 
 let parts = detectParts(clean);
 
 if(!parts.length){
-
 parts = detectPartsAdvanced(clean);
-
 }
 
-/* APPLICATION */
-
 const application = detectApplication(clean);
-
-/* PRIMARY PART */
-
 const part = parts.length ? parts.join(", ") : "";
-
-/* QUERY */
 
 const query = buildQuery(
 vehicle.make,
@@ -399,8 +369,6 @@ vehicle.model,
 year,
 part
 );
-
-/* RESULT */
 
 return {
 
