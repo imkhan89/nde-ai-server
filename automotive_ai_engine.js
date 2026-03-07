@@ -1,5 +1,4 @@
 const { learnQuery } = require("./learning_engine");
-
 const { detectPartsAdvanced } = require("./marketplace_intelligence");
 
 /* =====================================================
@@ -66,9 +65,7 @@ const MODEL_TO_MAKE = {};
 for(const make in VEHICLE_DB){
 
 VEHICLE_DB[make].forEach(model=>{
-
 MODEL_TO_MAKE[model] = make;
-
 });
 
 }
@@ -265,6 +262,12 @@ try{
 
 const clean = normalize(message);
 
+/* record query safely */
+
+try{
+learnQuery(clean);
+}catch(e){}
+
 /* VEHICLE DETECTION */
 
 let vehicle = detectVehicle(clean);
@@ -273,7 +276,9 @@ let vehicle = detectVehicle(clean);
 
 const aliasVehicle = resolveVehicle(clean);
 
-if(aliasVehicle){
+/* only override if vehicle not detected */
+
+if(aliasVehicle && !vehicle.model){
 
 vehicle.make = aliasVehicle.make.toLowerCase();
 vehicle.model = aliasVehicle.model.toLowerCase();
