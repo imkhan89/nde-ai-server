@@ -78,7 +78,6 @@ MAIN MENU
 function mainMenu(){
 
 return `Welcome to ndestore.com
-
 How can we help you?
 
 1. Parts Inquiry
