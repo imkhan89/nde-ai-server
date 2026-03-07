@@ -1,14 +1,7 @@
-
 /* =====================================================
 NDE AUTOMOTIVE KNOWLEDGE GRAPH (MERGED)
 Vehicles + Recognition Patterns
 ===================================================== */
-
-/* Vehicle Database */
-
-
-/* NDESTORE COMPLETE VEHICLE DATABASE */
-
 const VEHICLE_DATABASE = [
   "TOYOTA",
   "COROLLA & ALTIS",
@@ -483,17 +476,9 @@ const VEHICLE_DATABASE = [
   "CUSTOM DECALS",
   "JEEP STICKERS",
   "FIREARM STICKERS",
-  "GR STICKERS",
-  "ACCESSORIES",
-  "STORAGE BOX",
-  "TIRE NOZZLE CAP"
+  "GR STICKERS",  
 ];
-
 module.exports = VEHICLE_DATABASE;
-
-  
-
-];
 
 /* Normalize Text */
 
