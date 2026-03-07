@@ -1,3 +1,5 @@
+const { detectPartsAdvanced } = require("./marketplace_intelligence")
+
 /* =====================================================
 ndestore.com AUTOMOTIVE AI ENGINE
 Vehicle + Generation Detection
