@@ -328,9 +328,15 @@ return `Please describe the complaint and include your order number`;
 
 if(text==="5"){
 
-return `Visit decal collection
+session.state="DECAL_MENU";
 
-https://www.ndestore.com/collections/stickers-decal`;
+return `Decal Sticker Options
+
+1 Complete Collection
+2 Collection Options
+3 Customized Decals
+
+Reply with 1 2 or 3`;
 
 }
 
@@ -435,6 +441,115 @@ Customer Support Team
 ndestore.com`;
 
 }
+
+/* =====================================================
+DECAL MENU
+===================================================== */
+
+if(session.state==="DECAL_MENU"){
+
+if(text==="1"){
+
+session.state="MENU";
+
+const captions=[
+"For the full decal sticker range kindly explore the following link:",
+"Browse our entire collection of automotive decal stickers here:",
+"View the complete selection of vehicle decals at the link below:"
+];
+
+const caption=captions[Math.floor(Math.random()*captions.length)];
+
+return `${caption}
+
+https://www.ndestore.com/collections/stickers-decal`;
+
+}
+
+if(text==="2"){
+
+session.state="DECAL_COLLECTION";
+
+return `Decal Sticker Collections
+
+1 Firearm Stickers
+2 Army Stickers
+3 Advocate Stickers
+4 Doctor Stickers
+5 Markhor Stickers
+6 Hunter Stickers
+7 Toyota Stickers
+8 Toyota TEQ Stickers
+9 Honda Stickers
+10 Sports Mind Stickers
+11 Laptop Stickers
+12 Jeep Stickers
+13 GR Stickers
+
+Reply with the collection number`;
+
+}
+
+if(text==="3"){
+
+session.state="MENU";
+
+const captions=[
+"For custom decal stickers please visit the following page:",
+"You may order personalized decal stickers using this link:",
+"To create your own custom decal sticker please use the page below:"
+];
+
+const caption=captions[Math.floor(Math.random()*captions.length)];
+
+return `${caption}
+
+https://www.ndestore.com/pages/custom-decal-and-sticker`;
+
+}
+
+return `Reply with 1 2 or 3`;
+
+}
+
+/* =====================================================
+DECAL COLLECTION LINKS
+===================================================== */
+
+if(session.state==="DECAL_COLLECTION"){
+
+const collections={
+
+1:"https://www.ndestore.com/collections/firearm-stickers",
+2:"https://www.ndestore.com/collections/sticker-decal-army-theme",
+3:"https://www.ndestore.com/collections/legal-professional-lawyer",
+4:"https://www.ndestore.com/collections/decal-sticker-doctor-medic-hospital-dentist",
+5:"https://www.ndestore.com/collections/markhor-stickers",
+6:"https://www.ndestore.com/collections/hunter-stickers",
+7:"https://www.ndestore.com/collections/toyota-decals",
+8:"https://www.ndestore.com/collections/teq-series-decal-jdm-japan",
+9:"https://www.ndestore.com/collections/honda-stickers",
+10:"https://www.ndestore.com/collections/sports-mind-sticker/SPORTS-MIND-STICKER",
+11:"https://www.ndestore.com/collections/laptop-stickers-decals-skins-animie",
+12:"https://www.ndestore.com/collections/sticker-jeep",
+13:"https://www.ndestore.com/collections/sticker-decal-toyota-gazoo-racing-gr"
+
+};
+
+if(collections[text]){
+
+session.state="MENU";
+
+return `Kindly visit the following website link
+
+${collections[text]}`;
+
+}
+
+return `Please reply with a number between 1 and 13`;
+
+}
+
 
 /* =====================================================
 ORDER STATUS
