@@ -6,7 +6,14 @@ ndestore.com AUTOMOTIVE AI ENGINE
 Vehicle + Generation Detection
 ===================================================== */
 
-const VEHICLE_DB = require("./data/vehicle_database");
+const {
+  vehicles: VEHICLE_DB,
+  vehiclePatterns,
+  detectVehiclePattern,
+  detectYear,
+  matchVehicle,
+  identifyVehicle
+} = require("./data/vehicle_database");
 const PARTS = require("./data/part_database");
 const GENERATIONS = require("./data/vehicle_generations");
 
