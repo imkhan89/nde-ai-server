@@ -1,3 +1,5 @@
+const vehicleGraph = require("./data/vehicle_database")
+
 require("dotenv").config();
 
 const express = require("express");
@@ -541,10 +543,28 @@ WHATSAPP WEBHOOK
 
 app.post("/whatsapp", async (req,res)=>{
 
-try{
+const message = req.body.Body
+const user = req.body.From
 
-const message=req.body.Body || "";
-const user=req.body.From || uid();
+const vehicleResult = vehicleGraph.identifyVehicle(message)
+
+if(vehicleResult.vehicle){
+
+return res.send(`
+
+Vehicle Identified
+
+Make: ${vehicleResult.vehicle.make}
+Model: ${vehicleResult.vehicle.model}
+Year Range: ${vehicleResult.vehicle.year_start}-${vehicleResult.vehicle.year_end}
+
+`)
+
+}
+
+/* your existing AI logic continues here */
+
+})
 
 console.log("Incoming:",message);
 
