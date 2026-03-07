@@ -472,14 +472,15 @@ const vehicles = VEHICLE_DATABASE;
   "TOYOTA TEQ STICKERS",
   "HONDA STICKERS",
   "SPORTS MIND STICKERS",
-  "DOOR SILL STICKERS",
-  "LAPTOP STICKERS",
-  "CUSTOM DECALS",
-  "JEEP STICKERS",
-  "FIREARM STICKERS",
-  "GR STICKERS",  
+"DOOR SILL STICKERS",
+"LAPTOP STICKERS",
+"CUSTOM DECALS",
+"JEEP STICKERS",
+"FIREARM STICKERS",
+"GR STICKERS"
 ];
-module.exports = VEHICLE_DATABASE;
+
+const vehicles = VEHICLE_DATABASE;
 
 /* Normalize Text */
 
@@ -517,7 +518,7 @@ function matchVehicle(pattern,year){
 if(!pattern) return null
 
 for(const v of vehicles){
-const model = v.model.toLowerCase()
+const model = v.model?.toLowerCase?.() || ""
 
 if(pattern.includes(model)){
 if(!year || (year >= v.year_start && year <= v.year_end)){
