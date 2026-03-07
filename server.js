@@ -149,11 +149,17 @@ const session=getSession(user);
 
 let text=(message || "").toLowerCase().trim();
 
-/* SMART AUTOMOTIVE DETECTION */
+/* =====================================================
+SMART AUTOMOTIVE DETECTION
+Skip menu if valid automotive query
+===================================================== */
 
 const aiResult = analyzeAutomotiveQuery(text);
 
+/* prevent interception of menu selections */
+
 if(
+!/^[1-6]$/.test(text) &&
 aiResult.part !== "Not Specified" &&
 aiResult.model !== "Not Specified"
 ){
@@ -183,8 +189,6 @@ ndestore.com`;
 
 }
 
-/* existing menu logic continues below */
-  
 /* =====================================================
 FIRST MESSAGE
 ===================================================== */
