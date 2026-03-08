@@ -8,7 +8,7 @@ const GENERATIONS = require("./data/vehicle_generations");
 const { resolveVehicle } = require("./fitment_engine");
 
 /* =====================================================
-PART SYNONYMS
+PART SYNONYMS (EXTENSIBLE MEMORY)
 ===================================================== */
 
 const PART_SYNONYMS = {
@@ -83,23 +83,34 @@ MODEL_TO_MAKE[model] = make;
 TEXT NORMALIZER
 ===================================================== */
 
-function normalize(text){
+function normalizeText(text){
 
-if(!text) return "";
-
-let t = text.toLowerCase();
-
-t = t.replace(/[^a-z0-9\s]/g," ");
-t = t.replace(/\s+/g," ").trim();
-
-for(const key in PART_SYNONYMS){
-
-const r = new RegExp(`\\b${key}\\b`,"g");
-t = t.replace(r,PART_SYNONYMS[key]);
+return text
+.toLowerCase()
+.replace(/\+/g," ")
+.replace(/-/g," ")
+.replace(/\//g," ")
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim();
 
 }
 
-return t;
+/* =====================================================
+SYNONYM NORMALIZER
+===================================================== */
+
+function applySynonyms(text){
+
+Object.keys(PART_SYNONYMS).forEach(syn => {
+
+if(text.includes(syn)){
+text = text.replace(new RegExp(`\\b${syn}\\b`,"g"),PART_SYNONYMS[syn]);
+}
+
+});
+
+return text;
 
 }
 
@@ -120,8 +131,6 @@ VEHICLE DETECTION
 ===================================================== */
 
 function detectVehicle(text){
-
-text = text.toLowerCase();
 
 for(const vehicle of vehicleIndex){
 
@@ -212,7 +221,7 @@ return null;
 }
 
 /* =====================================================
-PART DETECTION
+INTELLIGENT PART DETECTION
 ===================================================== */
 
 function detectParts(text){
@@ -240,7 +249,27 @@ found.push(part);
 
 }
 
-return found;
+/* AI Synonym Expansion */
+
+if(!found.length){
+
+const tokens = text.split(" ");
+
+tokens.forEach(token=>{
+
+for(const part of PARTS){
+
+if(part.includes(token) || token.includes(part)){
+found.push(part);
+}
+
+}
+
+});
+
+}
+
+return [...new Set(found)];
 
 }
 
@@ -311,6 +340,10 @@ return str
 
 }
 
+/* =====================================================
+YEAR OPTIONS
+===================================================== */
+
 function getYearOptions(make, model){
 
 const years=[];
@@ -344,7 +377,9 @@ function analyzeAutomotiveQuery(message){
 
 try{
 
-const clean = normalize(message);
+let clean = normalizeText(message);
+
+clean = applySynonyms(clean);
 
 try{
 learnQuery(clean);
@@ -369,7 +404,7 @@ vehicle.model = aliasVehicle.model.toLowerCase();
 
 const year = detectYear(clean);
 
-/* YEAR OPTIONS IF YEAR NOT PROVIDED */
+/* YEAR OPTIONS */
 
 if(vehicle.make && vehicle.model && !year){
 
@@ -394,7 +429,7 @@ yearOptions: options
 }
 
 }
-  
+
 /* GENERATION */
 
 let generation = detectGeneration(
@@ -417,7 +452,7 @@ vehicle.model
 
 let parts = detectParts(clean);
 
-if(!Array.isArray(parts) || !parts.length){
+if(!parts.length){
 parts = detectPartsAdvanced(clean);
 }
 
