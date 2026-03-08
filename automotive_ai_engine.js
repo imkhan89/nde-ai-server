@@ -1,45 +1,11 @@
-const { vehicles: VEHICLE_DB } = require("./data/vehicle_database");
-const { learnQuery } = require("./learning_engine");
+const { vehicles: VEHICLE_DB } = require("./data/vehicle_database")
+const GENERATIONS = require("./data/vehicle_generations")
 
-const GENERATIONS = require("./data/vehicle_generations");
-const { resolveVehicle } = require("./fitment_engine");
+const { learnQuery } = require("./learning_engine")
+const { resolveVehicle } = require("./fitment_engine")
 
-/* PARSER SYSTEM */
-
-const parse = require("./data/parser");
-const { GLOBAL_PART_INDEX } = require("./data/automotive_intelligence");
-
-/* =====================================================
-MODEL INDEX BUILDER
-===================================================== */
-
-const vehicleIndex = [];
-const MODEL_TO_MAKE = {};
-
-if (Array.isArray(VEHICLE_DB)) {
-
-VEHICLE_DB.forEach(vehicle => {
-
-const make = (vehicle.make || "").toLowerCase();
-const model = (vehicle.model || "").toLowerCase();
-
-if(!make || !model) return;
-
-vehicleIndex.push({
-make,
-model,
-data: vehicle
-});
-
-MODEL_TO_MAKE[model] = make;
-
-});
-
-}
-
-/* =====================================================
-TEXT NORMALIZER
-===================================================== */
+const parse = require("./data/parser")
+const { GLOBAL_PART_INDEX } = require("./data/automotive_intelligence")
 
 function normalizeText(text){
 
@@ -50,31 +16,24 @@ return text
 .replace(/\//g," ")
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
-.trim();
+.trim()
 
 }
-
-/* =====================================================
-GENERATION DETECTION
-===================================================== */
 
 function detectGeneration(make,model,year,text){
 
 for(const g of GENERATIONS){
 
-if(g.make!==make) continue;
-if(g.model!==model) continue;
+if(g.make.toLowerCase()!==make) continue
+if(g.model.toLowerCase()!==model) continue
 
 if(g.aliases){
 
 for(const a of g.aliases){
 
-if(text.includes(a)){
+if(text.includes(a.toLowerCase())){
 
-return {
-generation:g.generation,
-years:g.years
-};
+return g
 
 }
 
@@ -82,167 +41,61 @@ years:g.years
 
 }
 
-if(year && Array.isArray(g.years) && g.years.includes(year)){
+if(year && g.years.includes(year)){
 
-return {
-generation:g.generation,
-years:g.years
-};
+return g
 
 }
 
 }
 
-return null;
+return null
 
 }
-
-/* =====================================================
-DEFAULT GENERATION
-===================================================== */
-
-function resolveDefaultGeneration(make,model){
-
-for(const g of GENERATIONS){
-
-if(g.make===make && g.model===model){
-
-return {
-generation:g.generation,
-years:g.years
-};
-
-}
-
-}
-
-return null;
-
-}
-
-/* =====================================================
-SEARCH URL
-===================================================== */
 
 function buildSearchURL(query){
 
-return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}&type=product&options%5Bprefix%5D=last`;
+return `https://www.ndestore.com/search?q=${encodeURIComponent(query)}`
 
 }
 
-/* =====================================================
-CAPITALIZATION
-===================================================== */
-
 function cap(str){
 
-if(!str) return "Not Specified";
+if(!str) return "Not Specified"
 
 return str
 .split(" ")
 .map(w=>w.charAt(0).toUpperCase()+w.slice(1))
-.join(" ");
+.join(" ")
 
 }
-
-/* =====================================================
-YEAR OPTIONS
-===================================================== */
-
-function getYearOptions(make, model){
-
-const years=[];
-
-for(const g of GENERATIONS){
-
-if(
-g.make.toLowerCase()===make.toLowerCase() &&
-g.model.toLowerCase()===model.toLowerCase()
-){
-
-if(Array.isArray(g.years) && g.years.length){
-
-years.push(`${g.years[0]}-${g.years[g.years.length-1]}`);
-
-}
-
-}
-
-}
-
-return years;
-
-}
-
-/* =====================================================
-MAIN ANALYZER
-===================================================== */
 
 function analyzeAutomotiveQuery(message){
 
 try{
 
-let clean = normalizeText(message);
+let clean = normalizeText(message)
 
-try{ learnQuery(clean); }catch(e){}
+learnQuery(clean)
 
-/* PARSE AUTOMOTIVE QUERY */
+const parsed = parse(clean, GLOBAL_PART_INDEX)
 
-const parsed = parse(clean, GLOBAL_PART_INDEX);
+let vehicle = parsed.vehicle || {make:"",model:""}
 
-let vehicle = parsed.vehicle || {make:"",model:""};
-const year = parsed.year;
-const part = parsed.part;
-const application = parsed.position;
+const year = parsed.year
+const part = parsed.part
+const application = parsed.position
 
-/* VEHICLE ALIAS */
-
-const aliasVehicle = resolveVehicle(clean);
+const aliasVehicle = resolveVehicle(clean)
 
 if(aliasVehicle && !vehicle.model){
 
-vehicle.make = aliasVehicle.make.toLowerCase();
-vehicle.model = aliasVehicle.model.toLowerCase();
+vehicle.make = aliasVehicle.make
+vehicle.model = aliasVehicle.model
 
 }
 
-/* YEAR OPTIONS */
-
-if(vehicle.make && vehicle.model && !year){
-
-const options = getYearOptions(vehicle.make,vehicle.model);
-
-if(options.length){
-
-return {
-
-make:cap(vehicle.make),
-model:cap(vehicle.model),
-generation:"Not Specified",
-year:"Select Model Year",
-part:"Not Specified",
-application:"",
-query:"",
-url:"",
-yearOptions:options
-
-};
-
-}
-
-}
-
-/* GENERATION */
-
-let generation = detectGeneration(vehicle.make,vehicle.model,year,clean);
-
-if(!generation && vehicle.make && vehicle.model){
-
-generation = resolveDefaultGeneration(vehicle.make,vehicle.model);
-
-}
-
-/* QUERY BUILDER */
+let generation = detectGeneration(vehicle.make,vehicle.model,year,clean)
 
 const query=[
 application,
@@ -252,33 +105,26 @@ vehicle.model,
 year
 ]
 .filter(Boolean)
-.join(" ");
+.join(" ")
 
-/* RESPONSE */
-
-return {
+return{
 
 make:cap(vehicle.make),
 model:cap(vehicle.model),
-
 generation:generation ? generation.generation : "Not Specified",
-
-year:year || (generation ? generation.years[0] : "Not Specified"),
-
-part:part ? cap(part) : "Not Specified",
-
+year:year || "Not Specified",
+part:cap(part),
 application:cap(application),
-
 query,
 url:buildSearchURL(query)
 
-};
+}
 
 }catch(err){
 
-console.error("AUTOMOTIVE AI ERROR:",err);
+console.error("AI ERROR",err)
 
-return {
+return{
 
 make:"Not Specified",
 model:"Not Specified",
@@ -289,16 +135,10 @@ application:"Not Specified",
 query:message,
 url:buildSearchURL(message)
 
-};
-
 }
 
 }
 
-/* =====================================================
-EXPORT
-===================================================== */
+}
 
-module.exports = {
-analyzeAutomotiveQuery
-};
+module.exports={ analyzeAutomotiveQuery }
