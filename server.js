@@ -88,9 +88,15 @@ Please reply with 1 2 3 4 5 or 6`;
 SEARCH URL BUILDER
 ===================================================== */
 
-function buildSearchURL(part,make,model){
+function buildSearchURL(part, make, model){
 
-let query = `${part} ${make} ${model}`
+let q = [];
+
+if(part && part !== "Not Specified") q.push(part);
+if(make && make !== "Not Specified") q.push(make);
+if(model && model !== "Not Specified") q.push(model);
+
+const query = q.join(" ")
 .trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
