@@ -203,7 +203,9 @@ if(session.state==="NEW"){
 
 session.state="MENU";
 
+if(!/^[1-6]$/.test(text)){
 return mainMenu();
+}
 
 }
 
