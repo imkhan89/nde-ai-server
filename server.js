@@ -153,6 +153,14 @@ let text=(message || "").toLowerCase().trim();
 
 const aiResult = analyzeAutomotiveQuery(text);
 
+if(aiResult.yearOptions){
+
+return `Kindly provide vehicle model year
+
+${aiResult.yearOptions.join("\n")}`;
+
+}
+  
 if(
 !/^[1-6]$/.test(text) &&
 aiResult.part !== "Not Specified" &&
