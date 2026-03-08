@@ -3,75 +3,154 @@ AUTOMOTIVE QUERY PARSER
 Production Version
 ====================================================== */
 
-const VEHICLES = require("./vehicle_database")
-const PARTS = require("./parts_dictionary.json")
+const { vehicles: VEHICLES } = require("./vehicle_database")
 
-function normalize(text) {
-return (text || "").toLowerCase().trim()
+/* ======================================================
+TEXT NORMALIZER
+====================================================== */
+
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/\+/g," ")
+.replace(/-/g," ")
+.replace(/\//g," ")
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
 }
 
-function detectVehicle(text) {
+/* ======================================================
+YEAR DETECTION
+====================================================== */
 
-let found = null
+function detectYear(text){
 
-for (let v of VEHICLES) {
+const match = text.match(/\b(19|20)\d{2}\b/)
+
+if(match){
+return parseInt(match[0])
+}
+
+return null
+
+}
+
+/* ======================================================
+VEHICLE DETECTION
+====================================================== */
+
+function detectVehicle(text){
+
+if(!Array.isArray(VEHICLES)) return null
+
+for(const v of VEHICLES){
 
 const make = (v.make || "").toLowerCase()
 const model = (v.model || "").toLowerCase()
 
-if (text.includes(make) && text.includes(model)) {
+if(!make || !model) continue
 
-found = {
-make: v.make,
-model: v.model,
-generation: v.generation || null,
-year_from: v.year_from || null,
-year_to: v.year_to || null
+if(text.includes(make) && text.includes(model)){
+
+return{
+make,
+model
 }
 
-break
-}
-
-}
-
-return found
-}
-
-function detectPart(text) {
-
-for (let part in PARTS) {
-
-if (text.includes(part)) {
-return part
-}
-
-let aliases = PARTS[part].aliases || []
-
-for (let a of aliases) {
-if (text.includes(a)) return part
 }
 
 }
 
 return null
+
 }
 
-function parseQuery(query) {
+/* ======================================================
+PART DETECTION
+====================================================== */
+
+function detectPart(text, PART_INDEX){
+
+if(!PART_INDEX) return null
+
+const words = text.split(" ")
+
+for(const w of words){
+
+if(PART_INDEX[w]){
+
+return PART_INDEX[w].part || w
+
+}
+
+}
+
+return null
+
+}
+
+/* ======================================================
+POSITION / APPLICATION DETECTION
+====================================================== */
+
+function detectPosition(text){
+
+const positions=[
+
+"front",
+"rear",
+"left",
+"right",
+
+"front left",
+"front right",
+"rear left",
+"rear right"
+
+]
+
+for(const p of positions){
+
+if(text.includes(p)) return p
+
+}
+
+return null
+
+}
+
+/* ======================================================
+MAIN PARSER
+====================================================== */
+
+function parse(query, PART_INDEX){
 
 const text = normalize(query)
 
 const vehicle = detectVehicle(text)
 
-const part = detectPart(text)
+const year = detectYear(text)
 
-return {
-query,
-vehicle,
-part
+const part = detectPart(text, PART_INDEX)
+
+const position = detectPosition(text)
+
+return{
+
+vehicle: vehicle || {make:"",model:""},
+year,
+part,
+position
+
 }
 
 }
 
-module.exports = {
-parseQuery
-}
+/* ======================================================
+EXPORT
+====================================================== */
+
+module.exports = parse
