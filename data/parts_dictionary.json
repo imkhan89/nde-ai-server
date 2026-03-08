@@ -7,7 +7,6 @@
 "ac filter",
 "fuel filter",
 "transmission filter",
-
 "engine oil",
 "gear oil",
 "transmission oil",
@@ -15,7 +14,6 @@
 "coolant",
 "radiator coolant",
 "windshield washer fluid",
-
 "spark plug",
 "spark plugs",
 "glow plug",
@@ -23,7 +21,6 @@
 "ignition module",
 "distributor cap",
 "distributor rotor",
-
 "radiator",
 "radiator cap",
 "radiator fan",
@@ -34,7 +31,6 @@
 "water pump",
 "coolant reservoir",
 "expansion tank",
-
 "timing belt",
 "timing chain",
 "timing tensioner",
@@ -42,7 +38,6 @@
 "drive belt",
 "belt tensioner",
 "idler pulley",
-
 "alternator",
 "starter motor",
 "starter solenoid",
@@ -53,7 +48,6 @@
 "fuse",
 "fuse box",
 "relay",
-
 "engine mount",
 "engine gasket",
 "cylinder head gasket",
@@ -61,14 +55,12 @@
 "oil pan gasket",
 "intake manifold gasket",
 "exhaust manifold gasket",
-
 "piston",
 "piston ring",
 "crankshaft",
 "camshaft",
 "camshaft sensor",
 "crankshaft sensor",
-
 "oxygen sensor",
 "o2 sensor",
 "maf sensor",
@@ -77,13 +69,11 @@
 "throttle position sensor",
 "coolant temperature sensor",
 "fuel pressure sensor",
-
 "fuel pump",
 "fuel injector",
 "fuel rail",
 "fuel tank",
 "fuel cap",
-
 "brake pad",
 "brake pads",
 "brake disc",
@@ -98,7 +88,6 @@
 "brake line",
 "abs sensor",
 "abs module",
-
 "clutch plate",
 "clutch disc",
 "clutch pressure plate",
@@ -106,7 +95,6 @@
 "clutch slave cylinder",
 "clutch master cylinder",
 "flywheel",
-
 "shock absorber",
 "strut",
 "coil spring",
@@ -125,7 +113,6 @@
 "stabilizer link",
 "sway bar",
 "sway bar bushing",
-
 "axle shaft",
 "cv joint",
 "cv axle",
@@ -134,7 +121,6 @@
 "differential",
 "differential gear",
 "differential oil",
-
 "headlight",
 "tail light",
 "fog light",
@@ -147,18 +133,15 @@
 "hid bulb",
 "parking light",
 "license plate light",
-
 "horn",
 "car horn",
 "electric horn",
-
 "wiper blade",
 "wiper blades",
 "wiper arm",
 "wiper motor",
 "wiper linkage",
 "washer pump",
-
 "air conditioning compressor",
 "ac compressor",
 "ac condenser",
@@ -166,37 +149,31 @@
 "ac expansion valve",
 "ac dryer",
 "ac hose",
-
 "car mat",
 "floor mat",
 "rubber mat",
 "trunk tray",
 "trunk mat",
 "cargo liner",
-
 "sun shade",
 "window sun shade",
 "windshield sun shade",
-
 "phone holder",
 "dashboard phone holder",
 "car charger",
 "usb charger",
 "cigarette lighter charger",
-
 "car cover",
 "seat cover",
 "steering wheel cover",
 "gear knob",
 "pedal cover",
-
 "side mirror",
 "mirror glass",
 "door handle",
 "door lock",
 "window regulator",
 "window motor",
-
 "bumper",
 "front bumper",
 "rear bumper",
@@ -207,12 +184,10 @@
 "engine shield",
 "fender liner",
 "inner fender",
-
 "emblem",
 "monogram",
 "car badge",
 "logo badge",
-
 "decal",
 "sticker",
 "car sticker",
@@ -222,199 +197,10 @@
 "army sticker",
 "pakistan army sticker",
 "brand sticker",
-
 "car perfume",
 "air freshener",
 "dashboard ornament"
-
-filters:[
-"air filter",
-"oil filter",
-"cabin filter",
-"fuel filter",
-"transmission filter",
-"hydraulic filter"
-],
-
-engine:[
-"piston",
-"piston ring",
-"connecting rod",
-"crankshaft",
-"camshaft",
-"engine mount",
-"engine block",
-"cylinder head",
-"valve",
-"valve spring",
-"valve seal",
-"timing belt",
-"timing chain",
-"timing tensioner",
-"engine gasket",
-"head gasket"
-],
-
-ignition:[
-"spark plug",
-"glow plug",
-"ignition coil",
-"ignition module",
-"distributor cap",
-"distributor rotor"
-],
-
-cooling:[
-"radiator",
-"radiator cap",
-"radiator hose",
-"radiator fan",
-"radiator fan motor",
-"thermostat",
-"thermostat housing",
-"water pump",
-"coolant reservoir"
-],
-
-fuel:[
-"fuel pump",
-"fuel injector",
-"fuel rail",
-"fuel tank",
-"fuel cap",
-"fuel pressure regulator"
-],
-
-sensors:[
-"oxygen sensor",
-"maf sensor",
-"map sensor",
-"knock sensor",
-"camshaft sensor",
-"crankshaft sensor",
-"coolant temperature sensor",
-"fuel pressure sensor",
-"throttle position sensor"
-],
-
-brakes:[
-"brake pad",
-"brake rotor",
-"brake disc",
-"brake shoe",
-"brake drum",
-"brake caliper",
-"brake master cylinder",
-"brake booster",
-"brake hose",
-"abs sensor",
-"abs module"
-],
-
-transmission:[
-"clutch plate",
-"clutch disc",
-"clutch pressure plate",
-"clutch release bearing",
-"clutch master cylinder",
-"clutch slave cylinder",
-"flywheel",
-"torque converter"
-],
-
-suspension:[
-"shock absorber",
-"strut",
-"coil spring",
-"leaf spring",
-"control arm",
-"ball joint",
-"tie rod",
-"tie rod end",
-"wheel bearing",
-"hub assembly",
-"stabilizer link"
-],
-
-drivetrain:[
-"axle shaft",
-"cv joint",
-"cv axle",
-"drive shaft",
-"propeller shaft",
-"differential",
-"differential gear"
-],
-
-electrical:[
-"alternator",
-"starter motor",
-"starter solenoid",
-"battery",
-"battery terminal",
-"battery cable",
-"relay",
-"fuse",
-"fuse box"
-],
-
-lighting:[
-"headlight",
-"tail light",
-"fog light",
-"indicator light",
-"brake light",
-"daytime running light",
-"license plate light"
-],
-
-body:[
-"bumper",
-"front bumper",
-"rear bumper",
-"hood",
-"bonnet",
-"grille",
-"fender",
-"engine shield",
-"fender liner"
-],
-
-interior:[
-"floor mat",
-"car mat",
-"rubber mat",
-"trunk mat",
-"cargo liner",
-"seat cover",
-"steering wheel cover",
-"gear knob"
-],
-
-accessories:[
-"sun shade",
-"car cover",
-"phone holder",
-"dashboard phone holder",
-"car charger",
-"usb charger"
-],
-
-branding:[
-"emblem",
-"monogram",
-"car badge",
-"logo badge"
-],
-
-decals:[
-"decal",
-"sticker",
-"car sticker",
-"bumper sticker",
-"vinyl decal"
-]
-
+,
 "intake manifold",
 "throttle body",
 "throttle cable",
@@ -596,7 +382,7 @@ decals:[
 "coolant flush",
 "engine oil additive",
 "fuel additive"
-
+,
 "engine timing cover",
 "timing cover gasket",
 "timing cover seal",
@@ -816,79 +602,58 @@ decals:[
 "coolant reservoir cap",
 
 "engine mounting bracket",
-
 "engine lifting bracket",
 
 "engine harness",
 
 "wiring harness connector",
-
 "electrical connector",
-
 "terminal connector",
 
 "ground strap",
 
 "fuse holder",
-
 "relay socket",
 
 "interior fuse panel",
-
 "engine bay fuse panel",
 
 "dashboard mounting bracket",
 
 "center console bracket",
-
 "console latch",
-
 "console hinge",
 
 "seat mounting rail",
-
 "seat slider",
 
 "seat belt guide",
-
 "seat belt anchor bolt",
 
 "sun visor clip",
-
 "sun visor hinge",
 
 "mirror cover",
-
 "mirror indicator",
-
 "mirror folding motor",
-
 "mirror adjustment motor",
-
 "mirror switch panel",
 
 "rear view mirror mount",
-
 "rear view mirror bracket",
 
 "rear window defogger",
-
 "defogger relay",
-
 "defogger grid",
-
 "defogger connector",
 
 "antenna amplifier",
-
 "antenna bracket",
-
 "antenna gasket",
 
 "audio wiring harness",
 
 "speaker grille",
-
 "speaker mount",
 
 "subwoofer enclosure",
@@ -904,7 +669,6 @@ decals:[
 "remote key fob",
 
 "smart key module",
-
 "smart key battery",
 
 "engine start button",
@@ -932,9 +696,7 @@ decals:[
 "noise insulation pad",
 
 "wheel arch liner",
-
 "wheel arch trim",
-
 "wheel arch flare",
 
 "body side cladding",
@@ -942,806 +704,10 @@ decals:[
 "side body trim",
 
 "tailgate handle",
-
 "tailgate latch",
-
 "tailgate lock actuator",
-
 "tailgate strut",
-
 "tailgate hinge"
 
-"engine balance shaft",
-"balance shaft gear",
-"balance shaft chain",
-"balance shaft bearing",
 
-"engine harmonic balancer",
-"crankshaft damper",
-"crankshaft pulley bolt",
-
-"engine cam gear",
-"camshaft sprocket",
-"camshaft timing gear",
-
-"engine cam cap",
-"camshaft bearing cap",
-
-"valve spring retainer",
-"valve spring seat",
-"valve keeper",
-"valve collet",
-
-"engine valve shim",
-"valve adjustment screw",
-
-"oil pressure switch",
-"oil pressure sender",
-"oil pressure regulator",
-
-"oil drain plug",
-"oil drain bolt",
-"oil drain washer",
-
-"engine oil strainer",
-"oil pickup screen",
-
-"engine oil return pipe",
-"oil return hose",
-
-"intake manifold bolt",
-"intake manifold stud",
-
-"exhaust manifold stud",
-"exhaust manifold bolt",
-
-"exhaust flange gasket",
-"exhaust flange bolt",
-
-"turbo oil feed line",
-"turbo oil return line",
-
-"intercooler bracket",
-"intercooler mounting bracket",
-
-"boost control solenoid",
-
-"gearbox selector fork",
-"gearbox synchronizer",
-"gearbox synchronizer ring",
-"gearbox gear set",
-
-"gearbox bearing",
-"gearbox seal",
-
-"clutch alignment tool",
-"clutch pilot bearing",
-
-"transfer case bearing",
-"transfer case seal kit",
-
-"driveshaft coupling",
-"driveshaft universal joint",
-
-"axle flange",
-"axle flange bolt",
-
-"wheel hub flange",
-
-"wheel alignment bolt",
-
-"suspension camber bolt",
-"suspension camber kit",
-
-"control arm bolt kit",
-
-"suspension mounting bracket",
-
-"steering rack bracket",
-
-"steering rack bolt",
-
-"steering shaft bearing",
-
-"steering column bearing",
-
-"steering wheel hub",
-
-"power steering pulley",
-
-"power steering bracket",
-
-"brake caliper guide pin",
-
-"brake caliper slider pin",
-
-"brake caliper boot",
-
-"brake caliper seal kit",
-
-"brake pedal pad",
-
-"brake pedal stopper",
-
-"brake pedal bracket",
-
-"brake reservoir sensor",
-
-"abs pump motor",
-
-"abs hydraulic unit",
-
-"wheel speed sensor ring",
-
-"parking brake actuator",
-
-"parking brake module",
-
-"parking brake cable bracket",
-
-"headlight adjustment motor",
-
-"headlight aiming screw",
-
-"headlight dust cover",
-
-"headlight mounting bracket",
-
-"tail light mounting bracket",
-
-"lamp retaining clip",
-
-"bulb retaining clip",
-
-"bulb dust cap",
-
-"indicator lens",
-
-"fog light bracket",
-
-"fog light bezel",
-
-"fog lamp cover",
-
-"horn bracket",
-
-"horn mounting plate",
-
-"wiper arm nut cap",
-
-"wiper linkage bushing",
-
-"wiper linkage repair kit",
-
-"washer pump grommet",
-
-"washer tank cap",
-
-"washer hose connector",
-
-"ac compressor clutch",
-
-"ac compressor pulley",
-
-"ac compressor bracket",
-
-"ac condenser fan",
-
-"ac condenser bracket",
-
-"ac evaporator housing",
-
-"ac evaporator core",
-
-"ac refrigerant line",
-
-"ac refrigerant pipe",
-
-"ac system pressure switch",
-
-"blower fan wheel",
-
-"blower housing cover",
-
-"heater control cable",
-
-"heater core hose",
-
-"heater hose clamp",
-
-"hvac blend door actuator",
-
-"hvac mode actuator",
-
-"hvac temperature actuator",
-
-"door lock rod",
-
-"door latch rod",
-
-"door hinge pin",
-
-"door hinge bolt",
-
-"door weatherstrip clip",
-
-"window regulator cable drum",
-
-"window regulator pulley",
-
-"window motor bracket",
-
-"window switch bezel",
-
-"door mirror gasket",
-
-"mirror mounting plate",
-
-"mirror mounting bolt",
-
-"mirror wiring harness",
-
-"rear view mirror cover",
-
-"rear view mirror sensor",
-
-"sunroof drain hose",
-
-"sunroof guide rail",
-
-"sunroof wind deflector",
-
-"sunroof shade",
-
-"sunroof glass",
-
-"roof trim molding",
-
-"roof rack mounting kit",
-
-"roof rack bracket",
-
-"roof rack crossbar",
-
-"tailgate handle bracket",
-
-"tailgate latch cable",
-
-"tailgate trim panel",
-
-"tailgate hinge bolt",
-
-"tailgate gas strut bracket",
-
-"bumper energy absorber",
-
-"bumper crash bar",
-
-"bumper mounting clip",
-
-"bumper side bracket",
-
-"grille mounting clip",
-
-"grille mounting bracket",
-
-"hood latch bracket",
-
-"hood latch support",
-
-"hood hinge bolt",
-
-"hood hinge bracket",
-
-"fender mounting bracket",
-
-"fender mounting bolt",
-
-"wheel arch protector",
-
-"wheel arch molding",
-
-"body mounting clip",
-
-"body mounting bracket",
-
-"chassis crossmember",
-
-"subframe mount",
-
-"subframe bolt",
-
-"subframe bushing",
-
-"frame rail",
-
-"chassis reinforcement bar",
-
-"engine skid plate bolt",
-
-"engine skid plate bracket",
-
-"engine guard bracket",
-
-"underbody shield bolt",
-
-"heat insulation clip",
-
-"thermal insulation mat",
-
-"sound deadening mat",
-
-"floor insulation clip",
-
-"carpet retention clip",
-
-"carpet fastener",
-
-"dashboard mounting clip",
-
-"dashboard screw",
-
-"dashboard vent grille",
-
-"console storage box",
-
-"console storage lid",
-
-"console armrest",
-
-"console armrest hinge",
-
-"console cup holder insert",
-
-"seat belt warning sensor",
-
-"seat belt height adjuster",
-
-"seat belt mounting bolt",
-
-"seat rail bolt",
-
-"seat rail cover",
-
-"seat adjuster lever",
-
-"seat back latch",
-
-"seat headrest guide",
-
-"seat headrest post",
-
-"seat headrest clip",
-
-"headliner clip",
-
-"interior trim fastener",
-
-"interior panel screw",
-
-"door sill trim clip",
-
-"scuff plate clip",
-
-"kick panel clip",
-
-"pillar trim fastener",
-
-"roof liner fastener",
-
-"trunk trim fastener",
-
-"cargo net hook",
-
-"cargo tie down hook",
-
-"trunk cargo hook",
-
-"license plate screw",
-
-"license plate bolt",
-
-"license plate light lens",
-
-"antenna mast",
-
-"antenna mounting bolt",
-
-"antenna wiring harness",
-
-"speaker wiring harness",
-
-"speaker mounting bracket",
-
-"audio amplifier bracket",
-
-"subwoofer mounting bracket",
-
-"alarm siren",
-
-"alarm sensor",
-
-"alarm control module",
-
-"remote locking actuator",
-
-"remote locking receiver",
-
-"remote locking antenna",
-
-"smart key antenna coil",
-
-"smart key control unit",
-
-"push start control module"
-
-"engine dowel pin",
-"engine locating pin",
-"engine mounting bolt",
-"engine mounting nut",
-
-"crankshaft thrust washer",
-"crankshaft bearing",
-"main bearing",
-"connecting rod bearing",
-
-"engine cylinder liner",
-"engine cylinder sleeve",
-
-"camshaft oil seal",
-"camshaft thrust plate",
-"camshaft sprocket bolt",
-
-"valve cover bolt",
-"valve cover washer",
-
-"engine block drain plug",
-
-"intake air resonator box",
-"intake air filter housing cover",
-
-"exhaust manifold heat shield bolt",
-
-"turbocharger gasket kit",
-"turbocharger mounting bolt",
-
-"intercooler mounting bolt",
-
-"boost control valve",
-
-"gear selector lever",
-"gear selector bracket",
-
-"gearbox drain plug",
-"gearbox filler plug",
-
-"clutch pedal bracket",
-"clutch pedal spring",
-
-"driveshaft center bearing bracket",
-
-"axle retaining clip",
-
-"wheel hub retaining ring",
-
-"wheel bearing snap ring",
-
-"suspension stabilizer bracket",
-
-"suspension mounting nut",
-
-"steering column mounting bracket",
-
-"steering wheel trim cover",
-
-"steering wheel switch",
-
-"steering wheel control module",
-
-"power steering pressure switch",
-
-"brake caliper mounting bolt",
-
-"brake caliper anti rattle clip",
-
-"brake rotor retaining screw",
-
-"brake pedal switch bracket",
-
-"brake booster vacuum hose",
-
-"brake booster check valve",
-
-"abs wheel ring",
-
-"abs control relay",
-
-"parking brake actuator motor",
-
-"parking brake control switch",
-
-"headlight wiring harness",
-
-"headlight bulb socket",
-
-"headlight leveling motor",
-
-"tail light bulb holder",
-
-"tail light wiring harness",
-
-"indicator bulb socket",
-
-"indicator relay module",
-
-"fog light wiring harness",
-
-"horn wiring harness",
-
-"horn contact plate",
-
-"wiper motor bracket",
-
-"wiper motor mounting bolt",
-
-"wiper linkage clip",
-
-"washer hose connector tee",
-
-"washer nozzle grommet",
-
-"ac compressor mounting bolt",
-
-"ac condenser mounting bracket",
-
-"ac refrigerant pressure valve",
-
-"ac evaporator housing seal",
-
-"ac blower fan housing",
-
-"blower fan resistor connector",
-
-"heater core mounting bracket",
-
-"heater control valve hose",
-
-"hvac air distribution door",
-
-"hvac recirculation actuator",
-
-"door hinge bushing",
-
-"door hinge washer",
-
-"door latch striker plate",
-
-"door latch bracket",
-
-"door lock actuator rod",
-
-"window regulator cable guide",
-
-"window regulator pulley bracket",
-
-"window switch wiring harness",
-
-"mirror adjustment switch",
-
-"mirror folding actuator",
-
-"mirror glass backing plate",
-
-"rear view mirror auto dim sensor",
-
-"sunroof drain tube",
-
-"sunroof glass seal",
-
-"sunroof motor bracket",
-
-"roof molding fastener",
-
-"roof rack mounting bolt",
-
-"tailgate release switch",
-
-"tailgate handle gasket",
-
-"tailgate trim clip",
-
-"tailgate lock rod",
-
-"bumper guide bracket",
-
-"bumper mounting screw",
-
-"bumper retainer clip",
-
-"grille emblem bracket",
-
-"hood latch spring",
-
-"hood latch release handle",
-
-"fender liner clip",
-
-"wheel arch liner clip",
-
-"body panel mounting bolt",
-
-"body panel mounting clip",
-
-"chassis reinforcement bracket",
-
-"subframe reinforcement plate",
-
-"subframe mount bolt",
-
-"engine skid plate mounting bolt",
-
-"underbody shield mounting clip",
-
-"heat insulation fastener",
-
-"sound insulation clip",
-
-"dashboard wiring harness",
-
-"dashboard bracket",
-
-"center console wiring harness",
-
-"console trim fastener",
-
-"console cup holder bracket",
-
-"seat rail mounting bracket",
-
-"seat belt anchor bracket",
-
-"seat belt mounting washer",
-
-"seat belt retractor bolt",
-
-"seat headrest lock button",
-
-"headliner retaining clip",
-
-"interior trim mounting clip",
-
-"door sill plate fastener",
-
-"scuff plate fastener",
-
-"kick panel mounting clip",
-
-"pillar trim mounting clip",
-
-"trunk trim mounting clip",
-
-"cargo net mounting hook",
-
-"cargo floor panel",
-
-"license plate light housing",
-
-"license plate light wiring",
-
-"antenna mounting gasket",
-
-"antenna ground wire",
-
-"speaker mounting screw",
-
-"speaker connector",
-
-"audio amplifier wiring harness",
-
-"subwoofer wiring harness",
-
-"alarm sensor bracket",
-
-"alarm siren bracket",
-
-"remote key receiver module",
-
-"keyless entry antenna",
-
-"smart key antenna wire",
-
-"push start button trim",
-
-"push start wiring harness"
-
-
-
-
-
-/* ======================================================
-GENERATE DICTIONARY
-====================================================== */
-
-let dictionary = {}
-
-function normalize(text){
-
-return text.toLowerCase().trim()
-
-}
-
-function addPart(part){
-
-const key = normalize(part)
-
-if(!dictionary[key]){
-
-dictionary[key]={
-aliases:new Set()
-}
-
-}
-
-/* alias rules */
-
-for(const rule of aliasRules){
-
-if(part.includes(rule[0])){
-
-const alias = part.replace(rule[0],rule[1])
-
-dictionary[key].aliases.add(alias)
-
-}
-
-}
-
-}
-
-/* build dictionary */
-
-for(const category in BASE_PARTS){
-
-for(const part of BASE_PARTS[category]){
-
-addPart(part)
-
-}
-
-}
-
-/* expand positions */
-
-const positions=["front","rear","left","right"]
-
-for(const part in dictionary){
-
-for(const pos of positions){
-
-const variant = pos+" "+part
-
-dictionary[part].aliases.add(variant)
-
-}
-
-}
-
-/* convert set → array */
-
-for(const part in dictionary){
-
-dictionary[part].aliases=[...dictionary[part].aliases]
-
-}
-
-/* ======================================================
-SAVE FILE
-====================================================== */
-
-fs.writeFileSync(
-"./parts_dictionary.json",
-JSON.stringify(dictionary,null,2)
-)
-
-console.log("Ultimate parts dictionary generated.")
-console.log("Total parts:",Object.keys(dictionary).length)
+]
