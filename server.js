@@ -73,12 +73,14 @@ Please reply with 1 2 3 4 5 or 6`;
 }
 
 /* =====================================================
-SHOPIFY SEARCH URL
+SEARCH URL BUILDER
 ===================================================== */
 
-function buildSearchURL(part,make,model,year){
+function buildSearchURL(query){
 
-let query=`${part} for ${make} ${model} ${year}`
+if(!query) return "https://www.ndestore.com";
+
+query = query
 .trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
@@ -149,9 +151,13 @@ const session=getSession(user);
 
 let text=(message || "").toLowerCase().trim();
 
-/* SMART AUTOMOTIVE DETECTION */
+/* =========================================
+AUTOMOTIVE DETECTION FIRST
+========================================= */
 
 const aiResult = analyzeAutomotiveQuery(text);
+
+/* MODEL YEAR SELECTION */
 
 if(aiResult.yearOptions){
 
@@ -160,19 +166,15 @@ return `Kindly provide vehicle model year
 ${aiResult.yearOptions.join("\n")}`;
 
 }
-  
+
+/* IF AI DETECTED VALID VEHICLE + PART */
+
 if(
-!/^[1-6]$/.test(text) &&
 aiResult.part !== "Not Specified" &&
 aiResult.model !== "Not Specified"
 ){
 
-const url = buildSearchURL(
-aiResult.part,
-aiResult.make,
-aiResult.model,
-aiResult.year
-);
+const url = aiResult.url || buildSearchURL(aiResult.query);
 
 session.state="MENU";
 
@@ -183,7 +185,7 @@ Model Name: ${aiResult.model}
 Model Year: ${aiResult.year}
 Part Required: ${aiResult.part}
 
-Product URL
+Product Search
 ${url}
 
 Best Regards
@@ -192,7 +194,9 @@ ndestore.com`;
 
 }
 
-/* FIRST MESSAGE */
+/* =========================================
+FIRST MESSAGE
+========================================= */
 
 if(session.state==="NEW"){
 
@@ -202,7 +206,9 @@ return mainMenu();
 
 }
 
-/* MENU */
+/* =========================================
+MENU
+========================================= */
 
 if(session.state==="MENU"){
 
@@ -270,7 +276,9 @@ return mainMenu();
 
 }
 
-/* PART SEARCH */
+/* =========================================
+PART SEARCH
+========================================= */
 
 if(session.state==="PART_SEARCH"){
 
@@ -309,12 +317,7 @@ Brake Pad Toyota Corolla 2018`;
 
 session.retries=0;
 
-const url=buildSearchURL(
-result.part,
-result.make,
-result.model,
-result.year
-);
+const url=result.url || buildSearchURL(result.query);
 
 session.state="MENU";
 
@@ -325,7 +328,7 @@ Model Name: ${result.model}
 Model Year: ${result.year}
 Part Required: ${result.part}
 
-Product URL
+Product Search
 ${url}
 
 Best Regards
@@ -334,7 +337,9 @@ ndestore.com`;
 
 }
 
-/* DEFAULT */
+/* =========================================
+DEFAULT
+========================================= */
 
 return mainMenu();
 
