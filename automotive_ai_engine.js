@@ -250,10 +250,10 @@ for(const token of tokens){
 
 for(const part of PARTS){
 
-if(part.includes(token) && token.length>3){
+if(part.includes(token) && token.length >= 4){
 found.push(part);
+break;
 }
-
 }
 
 }
@@ -441,14 +441,24 @@ vehicle.model
 
 /* PART */
 
-let parts=detectParts(clean);
+let parts = detectParts(clean);
+
+/* only use marketplace intelligence if nothing detected */
 
 if(!parts.length){
-parts=detectPartsAdvanced(clean);
+
+const advanced = detectPartsAdvanced(clean);
+
+if(Array.isArray(advanced) && advanced.length){
+parts = advanced;
 }
 
+}
+
+/* ensure valid array */
+
 if(!Array.isArray(parts)){
-parts=[];
+parts = [];
 }
 
 const application=detectApplication(clean);
@@ -457,12 +467,13 @@ const part=parts.length ? parts.join(", ") : "";
 
 /* QUERY */
 
-const query=buildQuery(
-vehicle.make || "",
-vehicle.model || "",
-year || "",
-part || ""
-);
+const query = [
+part,
+vehicle.make,
+vehicle.model
+]
+.filter(Boolean)
+.join(" ");
 
 /* RESPONSE */
 
