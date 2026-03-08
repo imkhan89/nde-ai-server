@@ -55,10 +55,17 @@ const APPLICATIONS = [
 MODEL INDEX BUILDER
 ===================================================== */
 
+const vehicleIndex = [];
+const MODEL_TO_MAKE = {};
+
+if (Array.isArray(VEHICLE_DB)) {
+
 VEHICLE_DB.forEach(vehicle => {
 
 const make = (vehicle.make || "").toLowerCase();
 const model = (vehicle.model || "").toLowerCase();
+
+if(!make || !model) return;
 
 vehicleIndex.push({
 make,
@@ -66,7 +73,11 @@ model,
 data: vehicle
 });
 
+MODEL_TO_MAKE[model] = make;
+
 });
+
+}
 
 /* =====================================================
 TEXT NORMALIZER
