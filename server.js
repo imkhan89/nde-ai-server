@@ -52,6 +52,18 @@ return str
 
 }
 
+function normalizeText(text){
+
+return text
+.toLowerCase()
+.replace(/\+/g," ")
+.replace(/-/g," ")
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim();
+
+}
+
 /* =====================================================
 MAIN MENU
 ===================================================== */
@@ -130,18 +142,6 @@ return null;
 }
 
 /* =====================================================
-COMPLAINT TICKET
-===================================================== */
-
-function generateTicket(){
-
-const n=Math.floor(Math.random()*900000+100000);
-
-return `TKT-${n}`;
-
-}
-
-/* =====================================================
 AI ENGINE
 ===================================================== */
 
@@ -149,15 +149,15 @@ async function automotiveAI(message,user){
 
 const session=getSession(user);
 
-let text=(message || "").toLowerCase().trim();
+let text = normalizeText(message);
 
 /* =========================================
-AUTOMOTIVE DETECTION FIRST
+RUN AI DETECTION FIRST
 ========================================= */
 
 const aiResult = analyzeAutomotiveQuery(text);
 
-/* MODEL YEAR SELECTION */
+/* YEAR OPTIONS */
 
 if(aiResult.yearOptions){
 
@@ -167,7 +167,7 @@ ${aiResult.yearOptions.join("\n")}`;
 
 }
 
-/* IF AI DETECTED VALID VEHICLE + PART */
+/* SUCCESSFUL AI DETECTION */
 
 if(
 aiResult.part !== "Not Specified" &&
@@ -195,7 +195,26 @@ ndestore.com`;
 }
 
 /* =========================================
-FIRST MESSAGE
+FALLBACK SEARCH (VERY IMPORTANT)
+If AI cannot detect but query is long enough
+========================================= */
+
+if(text.split(" ").length >= 3){
+
+const fallbackURL = buildSearchURL(text);
+
+return `Product Search
+
+${fallbackURL}
+
+Best Regards
+Customer Support
+ndestore.com`;
+
+}
+
+/* =========================================
+FIRST MESSAGE MENU
 ========================================= */
 
 if(session.state==="NEW"){
@@ -277,7 +296,7 @@ return mainMenu();
 }
 
 /* =========================================
-PART SEARCH
+PART SEARCH STATE
 ========================================= */
 
 if(session.state==="PART_SEARCH"){
@@ -337,9 +356,7 @@ ndestore.com`;
 
 }
 
-/* =========================================
-DEFAULT
-========================================= */
+/* DEFAULT */
 
 return mainMenu();
 
