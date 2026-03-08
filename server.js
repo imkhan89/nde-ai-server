@@ -39,10 +39,6 @@ return SESSIONS[user];
 HELPERS
 ===================================================== */
 
-function uid(){
-return crypto.randomBytes(6).toString("hex");
-}
-
 function xmlSafe(str){
 
 return str
@@ -85,7 +81,8 @@ Please reply with 1 2 3 4 5 or 6`;
 }
 
 /* =====================================================
-SEARCH URL BUILDER
+SHOPIFY SEARCH URL BUILDER
+Best practice: part + make + model
 ===================================================== */
 
 function buildSearchURL(part, make, model){
@@ -96,52 +93,13 @@ if(part && part !== "Not Specified") q.push(part);
 if(make && make !== "Not Specified") q.push(make);
 if(model && model !== "Not Specified") q.push(model);
 
-const query = q.join(" ")
+const query = q
+.join(" ")
 .trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
 
 return `https://www.ndestore.com/search?q=${query}`;
-
-}
-
-/* =====================================================
-ORDER LOOKUP
-===================================================== */
-
-async function fetchOrder(order){
-
-try{
-
-const url=`https://${process.env.SHOPIFY_STORE_DOMAIN}/admin/api/2024-10/orders.json`;
-
-const res=await axios.get(url,{
-headers:{
-"X-Shopify-Access-Token":process.env.SHOPIFY_ADMIN_API_TOKEN
-},
-params:{
-status:"any",
-query:`name:${order}`
-}
-});
-
-if(!res.data.orders.length) return null;
-
-const o=res.data.orders[0];
-
-return{
-id:o.name,
-status:o.fulfillment_status || "Unfulfilled",
-tracking:o.fulfillments?.[0]?.tracking_number || "Processing",
-courier:o.fulfillments?.[0]?.tracking_company || "Processing"
-};
-
-}catch(e){
-
-console.log(e.message);
-return null;
-
-}
 
 }
 
@@ -161,7 +119,9 @@ RUN AI DETECTION FIRST
 
 const aiResult = analyzeAutomotiveQuery(text);
 
-/* YEAR OPTIONS */
+/* =========================================
+MODEL YEAR OPTIONS
+========================================= */
 
 if(aiResult.yearOptions){
 
@@ -171,7 +131,9 @@ ${aiResult.yearOptions.join("\n")}`;
 
 }
 
-/* SUCCESSFUL AI DETECTION */
+/* =========================================
+VALID AUTOMOTIVE QUERY
+========================================= */
 
 if(
 aiResult.part !== "Not Specified" &&
@@ -203,13 +165,19 @@ ndestore.com`;
 }
 
 /* =========================================
-FALLBACK SEARCH (VERY IMPORTANT)
-If AI cannot detect but query is long enough
+SMART FALLBACK SEARCH
+If AI partially fails
 ========================================= */
 
 if(text.split(" ").length >= 3){
 
-const fallbackURL = buildSearchURL(text);
+const words = text.split(" ");
+
+const part = words[words.length-1];
+const make = words[0];
+const model = words[1];
+
+const fallbackURL = buildSearchURL(part, make, model);
 
 return `Product Search
 
@@ -344,7 +312,11 @@ Brake Pad Toyota Corolla 2018`;
 
 session.retries=0;
 
-const url=result.url || buildSearchURL(result.query);
+const url = buildSearchURL(
+result.part,
+result.make,
+result.model
+);
 
 session.state="MENU";
 
@@ -364,7 +336,9 @@ ndestore.com`;
 
 }
 
-/* DEFAULT */
+/* =========================================
+DEFAULT
+========================================= */
 
 return mainMenu();
 
