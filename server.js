@@ -1,6 +1,3 @@
-const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
-const vehicleGraph = require("./data/vehicle_database")
-
 require("dotenv").config();
 
 const express = require("express");
@@ -152,14 +149,9 @@ const session=getSession(user);
 
 let text=(message || "").toLowerCase().trim();
 
-/* =====================================================
-SMART AUTOMOTIVE DETECTION
-Skip menu if valid automotive query
-===================================================== */
+/* SMART AUTOMOTIVE DETECTION */
 
 const aiResult = analyzeAutomotiveQuery(text);
-
-/* prevent interception of menu selections */
 
 if(
 !/^[1-6]$/.test(text) &&
@@ -192,9 +184,7 @@ ndestore.com`;
 
 }
 
-/* =====================================================
-FIRST MESSAGE
-===================================================== */
+/* FIRST MESSAGE */
 
 if(session.state==="NEW"){
 
@@ -204,18 +194,14 @@ return mainMenu();
 
 }
 
-/* =====================================================
-MENU
-===================================================== */
+/* MENU */
 
 if(session.state==="MENU"){
 
 text=text.replace(/[^0-9]/g,"");
 
 if(text==="1"){
-
 session.state="PART_SEARCH";
-
 return `Please confirm
 
 Vehicle Make
@@ -225,13 +211,10 @@ Part Required
 
 Example
 Honda Civic 2018 Brake Pad`;
-
 }
 
 if(text==="2"){
-
 session.state="ACCESSORY_SEARCH";
-
 return `Please confirm
 
 Vehicle Make
@@ -241,35 +224,26 @@ Required Accessory
 
 Example
 Toyota Aqua 2018 Floor Mat`;
-
 }
 
 if(text==="3"){
-
 session.state="ORDER";
-
 return `Please share your order number
 
 Example
 10011421`;
-
 }
 
 if(text==="4"){
-
 session.state="COMPLAINT";
-
 return `Kindly share the following information
 
 Order Number
 Complaint Details`;
-
 }
 
 if(text==="5"){
-
 session.state="DECAL_MENU";
-
 return `Decal Sticker Options
 
 1 Complete Collection
@@ -277,24 +251,18 @@ return `Decal Sticker Options
 3 Customized Decals
 
 Reply with 1 2 or 3`;
-
 }
 
 if(text==="6"){
-
 session.state="CHAT";
-
 return `Please share your inquiry and our assistant will assist you shortly.`;
-
 }
 
 return mainMenu();
 
 }
 
-/* =====================================================
-PART SEARCH
-===================================================== */
+/* PART SEARCH */
 
 if(session.state==="PART_SEARCH"){
 
@@ -358,181 +326,7 @@ ndestore.com`;
 
 }
 
-/* =====================================================
-ACCESSORY SEARCH
-===================================================== */
-
-if(session.state==="ACCESSORY_SEARCH"){
-
-const result = analyzeAutomotiveQuery(text);
-
-if(result.part==="Not Specified" || result.model==="Not Specified"){
-
-session.retries++;
-
-if(session.retries>=2){
-
-session.state="MENU";
-session.retries=0;
-
-return `We were unable to identify the accessory.
-
-Please contact our representative
-
-WhatsApp
-+92 308 7643288
-+92 321 4222294`;
-
-}
-
-return `Please share details in the following format
-
-Accessory + Vehicle Make + Vehicle Model + Model Year
-
-Example
-Floor Mat Toyota Corolla 2018`;
-
-}
-
-session.retries=0;
-
-const url=buildSearchURL(
-result.part,
-result.make,
-result.model,
-result.year
-);
-
-session.state="MENU";
-
-return `Vehicle Details
-
-Vehicle Make: ${result.make}
-Model Name: ${result.model}
-Model Year: ${result.year}
-Required Accessory: ${result.part}
-
-Product URL
-${url}
-
-Best Regards
-Customer Support
-ndestore.com`;
-
-}
-
-/* =====================================================
-ORDER STATUS
-===================================================== */
-
-if(session.state==="ORDER"){
-
-const orderMatch=text.match(/\d{5,}/);
-
-if(!orderMatch){
-
-return `Please provide a valid order number`;
-
-}
-
-const order = await fetchOrder(orderMatch[0]);
-
-if(!order){
-
-return `Order not located`;
-
-}
-
-session.state="MENU";
-
-return `Order ID: ${order.id}
-
-Status: ${order.status}
-
-Tracking Number: ${order.tracking}
-
-Courier Company: ${order.courier}`;
-
-}
-
-/* =====================================================
-COMPLAINT
-===================================================== */
-
-if(session.state==="COMPLAINT"){
-
-const ticket=generateTicket();
-
-session.state="MENU";
-
-return `Complaint Submitted
-
-Ticket Number: ${ticket}
-
-Our representative will contact you shortly.
-
-Thank you for contacting ndestore.com`;
-
-}
-
-/* =====================================================
-DECAL MENU
-===================================================== */
-
-if(session.state==="DECAL_MENU"){
-
-if(text==="1"){
-
-session.state="MENU";
-
-return `For the full decal sticker range kindly explore the following link
-
-https://www.ndestore.com/collections/stickers-decal`;
-
-}
-
-if(text==="2"){
-
-session.state="MENU";
-
-return `Browse our decal sticker collections
-
-https://www.ndestore.com/collections`;
-
-}
-
-if(text==="3"){
-
-session.state="MENU";
-
-return `For customized decal stickers please visit
-
-https://www.ndestore.com/pages/custom-decal-and-sticker`;
-
-}
-
-return `Reply with 1 2 or 3`;
-
-}
-
-/* =====================================================
-CHAT MODE
-===================================================== */
-
-if(session.state==="CHAT"){
-
-session.state="MENU";
-
-return `Thank you for contacting ndestore.com.
-
-Our support team will review your inquiry and respond shortly.
-
-For urgent assistance please contact
-
-WhatsApp
-+92 321 4222294`;
-
-}
+/* DEFAULT */
 
 return mainMenu();
 
@@ -550,24 +344,6 @@ const message = req.body.Body || "";
 const user = req.body.From || "";
 
 console.log("Incoming:", message);
-
-const vehicleResult = vehicleGraph.identifyVehicle(message);
-
-if(vehicleResult && vehicleResult.vehicle){
-
-const reply = `
-Vehicle Identified
-
-Make: ${vehicleResult.vehicle.make}
-Model: ${vehicleResult.vehicle.model}
-Year Range: ${vehicleResult.vehicle.year_start}-${vehicleResult.vehicle.year_end}
-`;
-
-res.set("Content-Type","text/xml");
-
-return res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
-
-}
 
 let reply = await automotiveAI(message,user);
 
