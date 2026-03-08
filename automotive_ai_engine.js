@@ -1,3 +1,4 @@
+const { vehicles } = require("./data/vehicle_database");
 const { learnQuery } = require("./learning_engine");
 const { detectPartsAdvanced } = require("./marketplace_intelligence");
 
