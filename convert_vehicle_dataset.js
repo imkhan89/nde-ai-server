@@ -81,8 +81,8 @@ show_year_menu: false
 /* Save output */
 
 fs.writeFileSync(
-"vehicle_database_structured.js",
-"const vehicles = " + JSON.stringify(vehicles,null,2)
+"./data/vehicle_database.js",
+"const vehicles = " + JSON.stringify(vehicles,null,2) + ";\n\nmodule.exports = { vehicles };"
 )
 
 console.log("Vehicle dataset created")
