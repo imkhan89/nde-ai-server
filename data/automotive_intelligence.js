@@ -1,67 +1,110 @@
 /* =====================================================
 AUTOMOTIVE INTELLIGENCE ENGINE
+GLOBAL PART INDEX BUILDER
 ===================================================== */
 
-const VEHICLES = require("./vehicle_database")
 const PARTS = require("./parts_dictionary.json")
 
-function normalize(text) {
-return (text || "").toLowerCase().trim()
-}
+/* =====================================================
+TEXT NORMALIZER
+===================================================== */
 
-function detectVehicle(query) {
+function normalize(text){
 
-for (const v of VEHICLES) {
-
-const make = (v.make || "").toLowerCase()
-const model = (v.model || "").toLowerCase()
-
-if (query.includes(make) && query.includes(model)) {
-
-return {
-make: v.make,
-model: v.model,
-generation: v.generation || null,
-year_from: v.year_from || null,
-year_to: v.year_to || null
-}
+return (text || "")
+.toLowerCase()
+.replace(/\+/g," ")
+.replace(/-/g," ")
+.replace(/\//g," ")
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
 
 }
 
+/* =====================================================
+GLOBAL PART INDEX
+===================================================== */
+
+const GLOBAL_PART_INDEX = {}
+
+if(PARTS && typeof PARTS === "object"){
+
+for(const part in PARTS){
+
+const base = normalize(part)
+
+GLOBAL_PART_INDEX[base] = {
+part: base,
+position: PARTS[part].position || ""
 }
 
-return null
-}
-
-function detectPart(query) {
-
-for (const part in PARTS) {
-
-if (query.includes(part)) return part
+/* ALIASES */
 
 const aliases = PARTS[part].aliases || []
 
-for (const a of aliases) {
-if (query.includes(a)) return part
+for(const alias of aliases){
+
+const a = normalize(alias)
+
+GLOBAL_PART_INDEX[a] = {
+part: base,
+position: PARTS[part].position || ""
+}
+
+}
+
+}
+
+}
+
+/* =====================================================
+PART DETECTION
+===================================================== */
+
+function detectPart(text){
+
+const words = normalize(text).split(" ")
+
+for(const w of words){
+
+if(GLOBAL_PART_INDEX[w]){
+
+return GLOBAL_PART_INDEX[w]
+
 }
 
 }
 
 return null
+
 }
 
-function analyzeQuery(query) {
+/* =====================================================
+MAIN ANALYZER
+===================================================== */
+
+function analyzeQuery(query){
 
 const text = normalize(query)
 
+const partData = detectPart(text)
+
 return {
-vehicle: detectVehicle(text),
-part: detectPart(text),
+
+part: partData ? partData.part : null,
+position: partData ? partData.position : null,
 query
+
 }
 
 }
+
+/* =====================================================
+EXPORTS
+===================================================== */
 
 module.exports = {
+GLOBAL_PART_INDEX,
 analyzeQuery
 }
