@@ -89,7 +89,7 @@ if(!text) return "";
 
 let t = text.toLowerCase();
 
-t = t.replace(/[^\w\s]/g," ");
+t = t.replace(/[^a-z0-9\s]/g," ");
 t = t.replace(/\s+/g," ").trim();
 
 for(const key in PART_SYNONYMS){
@@ -130,10 +130,7 @@ const model = vehicle.model;
 
 if(!make || !model) continue;
 
-if(
-text.includes(make) &&
-text.includes(model)
-){
+if(text.includes(make) && text.includes(model)){
 
 return {
 make,
@@ -147,6 +144,7 @@ model
 return {make:"",model:""};
 
 }
+
 /* =====================================================
 GENERATION DETECTION
 ===================================================== */
