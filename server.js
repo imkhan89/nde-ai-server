@@ -103,10 +103,6 @@ return `https://www.ndestore.com/search?q=${query}`;
 
 }
 
-/* =====================================================
-AI ENGINE
-===================================================== */
-
 async function automotiveAI(message,user){
 
 const session=getSession(user);
@@ -114,7 +110,17 @@ const session=getSession(user);
 let text = normalizeText(message);
 
 /* =========================================
-RUN AI DETECTION FIRST
+HANDLE MENU NUMBERS FIRST
+========================================= */
+
+if(/^[1-6]$/.test(text)){
+
+session.state="MENU";
+
+}
+
+/* =========================================
+RUN AI DETECTION
 ========================================= */
 
 const aiResult = analyzeAutomotiveQuery(text);
