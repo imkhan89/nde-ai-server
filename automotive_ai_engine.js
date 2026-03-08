@@ -119,14 +119,22 @@ VEHICLE DETECTION
 
 function detectVehicle(text){
 
-for(const model in MODEL_TO_MAKE){
+text = text.toLowerCase();
 
-const r = new RegExp(`\\b${model}\\b`);
+for(const vehicle of vehicleIndex){
 
-if(r.test(text)){
+const make = vehicle.make;
+const model = vehicle.model;
+
+if(!make || !model) continue;
+
+if(
+text.includes(make) &&
+text.includes(model)
+){
 
 return {
-make: MODEL_TO_MAKE[model],
+make,
 model
 };
 
@@ -137,7 +145,6 @@ model
 return {make:"",model:""};
 
 }
-
 /* =====================================================
 GENERATION DETECTION
 ===================================================== */
