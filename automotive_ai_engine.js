@@ -1,19 +1,6 @@
-const { vehicles } = require("./data/vehicle_database");
+const { vehicles: VEHICLE_DB } = require("./data/vehicle_database");
 const { learnQuery } = require("./learning_engine");
 const { detectPartsAdvanced } = require("./marketplace_intelligence");
-
-/* =====================================================
-ndestore.com AUTOMOTIVE AI ENGINE
-Vehicle + Generation Detection
-===================================================== */
-
-const {
-  vehicles: VEHICLE_DB,
-  vehiclePatterns,
-  detectVehiclePattern,
-  matchVehicle,
-  identifyVehicle
-} = require("./data/vehicle_database");
 
 const PARTS = require("./data/part_database");
 const GENERATIONS = require("./data/vehicle_generations");
