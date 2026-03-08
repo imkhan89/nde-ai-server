@@ -6,34 +6,15 @@ const crypto = require("crypto");
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
 
+/* SESSION MANAGER */
+const session = require("./sessions/sessionManager");
+
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-
-/* =====================================================
-SESSION MEMORY
-===================================================== */
-
-const SESSIONS = {};
-
-function getSession(user){
-
-if(!SESSIONS[user]){
-
-SESSIONS[user]={
-state:"NEW",
-retries:0,
-data:{}
-};
-
-}
-
-return SESSIONS[user];
-
-}
 
 /* =====================================================
 HELPERS
@@ -60,6 +41,15 @@ return text
 
 }
 
+function normalizePhone(phone){
+
+return phone
+.replace("whatsapp:","")
+.replace(/\D/g,"")
+.replace(/^0/,"92");
+
+}
+
 /* =====================================================
 MAIN MENU
 ===================================================== */
@@ -82,7 +72,6 @@ Please reply with 1 2 3 4 5 or 6`;
 
 /* =====================================================
 SHOPIFY SEARCH URL BUILDER
-Best practice: part + make + model
 ===================================================== */
 
 function buildSearchURL(part, make, model){
@@ -103,9 +92,13 @@ return `https://www.ndestore.com/search?q=${query}`;
 
 }
 
+/* =====================================================
+CONVERSATION ENGINE
+===================================================== */
+
 async function automotiveAI(message,user){
 
-const session=getSession(user);
+const sessionData=session.getSession(user);
 
 let text = normalizeText(message);
 
@@ -115,7 +108,7 @@ HANDLE MENU NUMBERS FIRST
 
 if(/^[1-6]$/.test(text)){
 
-session.state="MENU";
+sessionData.state="MENU";
 
 }
 
@@ -152,7 +145,7 @@ aiResult.make,
 aiResult.model
 );
 
-session.state="MENU";
+sessionData.state="MENU";
 
 return `Vehicle Details
 
@@ -172,7 +165,6 @@ ndestore.com`;
 
 /* =========================================
 SMART FALLBACK SEARCH
-If AI partially fails
 ========================================= */
 
 if(text.split(" ").length >= 3){
@@ -199,9 +191,9 @@ ndestore.com`;
 FIRST MESSAGE MENU
 ========================================= */
 
-if(session.state==="NEW"){
+if(sessionData.state==="NEW"){
 
-session.state="MENU";
+sessionData.state="MENU";
 
 if(!/^[1-6]$/.test(text)){
 return mainMenu();
@@ -213,12 +205,12 @@ return mainMenu();
 MENU
 ========================================= */
 
-if(session.state==="MENU"){
+if(sessionData.state==="MENU"){
 
 text=text.replace(/[^0-9]/g,"");
 
 if(text==="1"){
-session.state="PART_SEARCH";
+sessionData.state="PART_SEARCH";
 return `Please confirm
 
 Vehicle Make
@@ -231,7 +223,7 @@ Honda Civic 2018 Brake Pad`;
 }
 
 if(text==="2"){
-session.state="ACCESSORY_SEARCH";
+sessionData.state="ACCESSORY_SEARCH";
 return `Please confirm
 
 Vehicle Make
@@ -244,7 +236,7 @@ Toyota Aqua 2018 Floor Mat`;
 }
 
 if(text==="3"){
-session.state="ORDER";
+sessionData.state="ORDER";
 return `Please share your order number
 
 Example
@@ -252,7 +244,7 @@ Example
 }
 
 if(text==="4"){
-session.state="COMPLAINT";
+sessionData.state="COMPLAINT";
 return `Kindly share the following information
 
 Order Number
@@ -260,7 +252,7 @@ Complaint Details`;
 }
 
 if(text==="5"){
-session.state="DECAL_MENU";
+sessionData.state="DECAL_MENU";
 return `Decal Sticker Options
 
 1 Complete Collection
@@ -271,7 +263,7 @@ Reply with 1 2 or 3`;
 }
 
 if(text==="6"){
-session.state="CHAT";
+sessionData.state="CHAT";
 return `Please share your inquiry and our assistant will assist you shortly.`;
 }
 
@@ -283,18 +275,18 @@ return mainMenu();
 PART SEARCH STATE
 ========================================= */
 
-if(session.state==="PART_SEARCH"){
+if(sessionData.state==="PART_SEARCH"){
 
 const result = analyzeAutomotiveQuery(text);
 
 if(result.part==="Not Specified" || result.model==="Not Specified"){
 
-session.retries++;
+sessionData.retries++;
 
-if(session.retries>=2){
+if(sessionData.retries>=2){
 
-session.state="MENU";
-session.retries=0;
+sessionData.state="MENU";
+sessionData.retries=0;
 
 return `We were unable to identify the product.
 
@@ -318,7 +310,7 @@ Brake Pad Toyota Corolla 2018`;
 
 }
 
-session.retries=0;
+sessionData.retries=0;
 
 const url = buildSearchURL(
 result.part,
@@ -326,7 +318,7 @@ result.make,
 result.model
 );
 
-session.state="MENU";
+sessionData.state="MENU";
 
 return `Vehicle Details
 
@@ -360,16 +352,29 @@ app.post("/whatsapp", async (req,res)=>{
 
 try{
 
+const rawUser = req.body.From || "";
 const message = req.body.Body || "";
-const user = req.body.From || "";
+
+const user = normalizePhone(rawUser);
 
 console.log("Incoming:", message);
+
+/* SESSION MANAGEMENT */
+
+if(!session.sessionExists(user)){
+session.createSession(user);
+}
+
+session.updateSession(user);
+session.logSession(user,"USER: "+message);
 
 let reply = await automotiveAI(message,user);
 
 if(!reply || reply.trim()===""){
 reply = "Please confirm Vehicle Make Model Year and Part Required.";
 }
+
+session.logSession(user,"BOT: "+reply);
 
 res.set("Content-Type","text/xml");
 
@@ -378,6 +383,10 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 }catch(e){
 
 console.log("Webhook error:",e);
+
+const user = normalizePhone(req.body.From || "");
+
+session.logError(user,e.message);
 
 res.set("Content-Type","text/xml");
 
@@ -388,9 +397,48 @@ res.send(`<Response><Message>System temporarily unavailable</Message></Response>
 });
 
 /* =====================================================
+WHATSAPP SEND API
+===================================================== */
+
+app.post("/send-message",async(req,res)=>{
+
+try{
+
+const {phone,message}=req.body;
+
+await axios.post(process.env.WHATSAPP_SEND_URL,{
+phone,
+message
+});
+
+res.send("sent");
+
+}catch(e){
+
+console.log("Send message error",e);
+
+res.status(500).send("error");
+
+}
+
+});
+
+/* =====================================================
+GLOBAL ERROR HANDLER
+===================================================== */
+
+process.on("uncaughtException",(err)=>{
+console.error("Uncaught Exception:",err);
+});
+
+process.on("unhandledRejection",(err)=>{
+console.error("Unhandled Rejection:",err);
+});
+
+/* =====================================================
 SERVER
 ===================================================== */
 
 app.listen(PORT,()=>{
-console.log("AI Server Running");
+console.log("AI Server Running on port",PORT);
 });
