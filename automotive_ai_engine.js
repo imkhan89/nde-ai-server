@@ -58,6 +58,7 @@ MODEL INDEX BUILDER
 const vehicleIndex = [];
 const MODEL_TO_MAKE = {};
 
+if(Array.isArray(VEHICLE_DB)){
 VEHICLE_DB.forEach(vehicle => {
 
 const make = (vehicle.make || "").toLowerCase();
@@ -74,6 +75,7 @@ MODEL_TO_MAKE[model] = make;
 }
 
 });
+}
 
 /* =====================================================
 TEXT NORMALIZER
@@ -164,7 +166,7 @@ years:g.years
 
 }
 
-if(year && g.years.includes(year)){
+if(year && Array.isArray(g.years) && g.years.includes(year)){
 
 return {
 generation:g.generation,
@@ -180,7 +182,7 @@ return null;
 }
 
 /* =====================================================
-DEFAULT GENERATION RESOLVER
+DEFAULT GENERATION
 ===================================================== */
 
 function resolveDefaultGeneration(make,model){
@@ -305,7 +307,7 @@ learnQuery(clean);
 
 /* VEHICLE */
 
-let vehicle = detectVehicle(clean);
+let vehicle = detectVehicle(clean) || {make:"",model:""};
 
 /* ALIAS */
 
@@ -344,19 +346,28 @@ vehicle.model
 
 let parts = detectParts(clean);
 
-if(!parts.length){
+if(!Array.isArray(parts) || !parts.length){
 parts = detectPartsAdvanced(clean);
 }
 
+if(!Array.isArray(parts)){
+parts=[];
+}
+
 const application = detectApplication(clean);
+
 const part = parts.length ? parts.join(", ") : "";
 
+/* QUERY */
+
 const query = buildQuery(
-vehicle.make,
-vehicle.model,
-year,
-part
+vehicle.make || "",
+vehicle.model || "",
+year || "",
+part || ""
 );
+
+/* RESPONSE */
 
 return {
 
@@ -377,6 +388,8 @@ url: buildSearchURL(query)
 };
 
 }catch(err){
+
+console.error("AUTOMOTIVE AI ERROR:",err);
 
 return {
 
