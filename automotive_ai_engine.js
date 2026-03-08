@@ -104,7 +104,7 @@ function applySynonyms(text){
 
 Object.entries(PART_SYNONYMS).forEach(([syn,real])=>{
 
-const pattern = new RegExp(`\\b${syn}\\b`,"g");
+const pattern=new RegExp(`\\b${syn}\\b`,"g");
 
 text=text.replace(pattern,real);
 
@@ -225,7 +225,7 @@ function detectParts(text){
 
 let found=[];
 
-/* prioritize longest phrases first */
+/* ---------- PRIORITY 1 : Exact phrase detection ---------- */
 
 const sortedParts=[...PARTS].sort((a,b)=>b.length-a.length);
 
@@ -240,27 +240,46 @@ break;
 
 }
 
-/* fallback token detection */
+/* ---------- PRIORITY 2 : Synonym detection ---------- */
 
 if(!found.length){
 
-const tokens=text.split(" ");
+Object.entries(PART_SYNONYMS).forEach(([syn,real])=>{
 
-for(const token of tokens){
+const pattern=new RegExp(`\\b${syn}\\b`,"i");
 
-for(const part of PARTS){
-
-if(part.includes(token) && token.length >= 4){
-found.push(part);
-break;
+if(pattern.test(text)){
+found.push(real);
 }
-}
+
+});
 
 }
 
+/* ---------- PRIORITY 3 : Marketplace fallback ---------- */
+
+if(!found.length){
+
+try{
+
+const advanced=detectPartsAdvanced(text);
+
+if(Array.isArray(advanced) && advanced.length){
+found=advanced;
 }
 
-return [...new Set(found)];
+}catch(e){}
+
+}
+
+/* ---------- FINAL CLEANUP ---------- */
+
+found=found
+.filter(Boolean)
+.map(p=>p.toLowerCase())
+.filter((v,i,a)=>a.indexOf(v)===i);
+
+return found;
 
 }
 
@@ -277,32 +296,6 @@ if(text.includes(a)) return a;
 }
 
 return "";
-
-}
-
-/* =====================================================
-QUERY BUILDER
-===================================================== */
-
-function buildQuery(make,model,year,part){
-
-let q=[];
-
-if(part){
-
-const parts=part.split(",");
-
-parts.forEach(p=>{
-q.push(p.trim());
-});
-
-}
-
-if(make) q.push(make);
-if(model) q.push(model);
-if(year) q.push(year);
-
-return q.join(" ");
 
 }
 
@@ -372,9 +365,7 @@ let clean=normalizeText(message);
 
 clean=applySynonyms(clean);
 
-try{
-learnQuery(clean);
-}catch(e){}
+try{ learnQuery(clean); }catch(e){}
 
 /* VEHICLE */
 
@@ -423,43 +414,17 @@ yearOptions:options
 
 /* GENERATION */
 
-let generation=detectGeneration(
-vehicle.make,
-vehicle.model,
-year,
-clean
-);
+let generation=detectGeneration(vehicle.make,vehicle.model,year,clean);
 
 if(!generation && vehicle.make && vehicle.model){
 
-generation=resolveDefaultGeneration(
-vehicle.make,
-vehicle.model
-);
+generation=resolveDefaultGeneration(vehicle.make,vehicle.model);
 
 }
 
 /* PART */
 
-let parts = detectParts(clean);
-
-/* only use marketplace intelligence if nothing detected */
-
-if(!parts.length){
-
-const advanced = detectPartsAdvanced(clean);
-
-if(Array.isArray(advanced) && advanced.length){
-parts = advanced;
-}
-
-}
-
-/* ensure valid array */
-
-if(!Array.isArray(parts)){
-parts = [];
-}
+let parts=detectParts(clean);
 
 const application=detectApplication(clean);
 
@@ -467,7 +432,7 @@ const part=parts.length ? parts.join(", ") : "";
 
 /* QUERY */
 
-const query = [
+const query=[
 part,
 vehicle.make,
 vehicle.model
