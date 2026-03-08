@@ -1,3 +1,4 @@
+const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
 const vehicleGraph = require("./data/vehicle_database")
 
 require("dotenv").config();
