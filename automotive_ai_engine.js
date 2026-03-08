@@ -349,6 +349,32 @@ vehicle.model = aliasVehicle.model.toLowerCase();
 
 const year = detectYear(clean);
 
+/* YEAR OPTIONS IF YEAR NOT PROVIDED */
+
+if(vehicle.make && vehicle.model && !year){
+
+const options = getYearOptions(vehicle.make,vehicle.model);
+
+if(options.length){
+
+return {
+
+make: cap(vehicle.make),
+model: cap(vehicle.model),
+generation: "Not Specified",
+year: "Select Model Year",
+part: "Not Specified",
+application: "",
+query: "",
+url: "",
+yearOptions: options
+
+};
+
+}
+
+}
+  
 /* GENERATION */
 
 let generation = detectGeneration(
