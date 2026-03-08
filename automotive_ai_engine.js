@@ -219,11 +219,24 @@ PART DETECTION
 
 function detectParts(text){
 
-let found=[];
+let found = [];
 
 for(const part of PARTS){
 
-if(text.includes(part)){
+const words = part.split(" ");
+
+let match = true;
+
+for(const w of words){
+
+if(!text.includes(w)){
+match = false;
+break;
+}
+
+}
+
+if(match){
 found.push(part);
 }
 
