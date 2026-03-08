@@ -88,11 +88,9 @@ Please reply with 1 2 3 4 5 or 6`;
 SEARCH URL BUILDER
 ===================================================== */
 
-function buildSearchURL(query){
+function buildSearchURL(part,make,model){
 
-if(!query) return "https://www.ndestore.com";
-
-query = query
+let query = `${part} ${make} ${model}`
 .trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
@@ -174,7 +172,11 @@ aiResult.part !== "Not Specified" &&
 aiResult.model !== "Not Specified"
 ){
 
-const url = aiResult.url || buildSearchURL(aiResult.query);
+const url = buildSearchURL(
+aiResult.part,
+aiResult.make,
+aiResult.model
+);
 
 session.state="MENU";
 
