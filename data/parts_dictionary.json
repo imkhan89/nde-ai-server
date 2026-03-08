@@ -2999,16 +2999,3 @@ car floor mat",
 "noise free wiper blade",
 "silent wiper blade"
 ]
-
-const fs = require("fs")
-
-const parts = []
-
-parts.push("wiper blade")
-parts.push("denso wiper blade")
-parts.push("toyota wiper blade")
-
-fs.writeFileSync(
-"./parts_dictionary.json",
-JSON.stringify(parts,null,2)
-)
