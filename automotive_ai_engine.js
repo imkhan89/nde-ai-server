@@ -291,6 +291,31 @@ return str
 
 }
 
+function getYearOptions(make, model){
+
+const years=[];
+
+for(const g of GENERATIONS){
+
+if(
+g.make.toLowerCase()===make.toLowerCase() &&
+g.model.toLowerCase()===model.toLowerCase()
+){
+
+if(Array.isArray(g.years) && g.years.length){
+
+years.push(`${g.years[0]}-${g.years[g.years.length-1]}`);
+
+}
+
+}
+
+}
+
+return years;
+
+}
+
 /* =====================================================
 MAIN ANALYZER
 ===================================================== */
