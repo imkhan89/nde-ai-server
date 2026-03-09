@@ -1,12 +1,6 @@
-// shopify_search_engine.js
-
 /* =====================================================
 SHOPIFY SEARCH ENGINE
 Builds ndestore Shopify search URLs safely
-===================================================== */
-
-/* =====================================================
-NORMALIZE QUERY
 ===================================================== */
 
 function normalize(text){
@@ -20,44 +14,43 @@ return (text || "")
 }
 
 /* =====================================================
-BUILD SHOPIFY SEARCH
+GENERATE SHOPIFY SEARCH URL
 ===================================================== */
 
 function generateSearch(input){
 
-let query = ""
+let query=""
 
-/* Accept object or string */
+/* Accept string or object */
 
 if(typeof input === "string"){
 
 query = normalize(input)
 
-}else if(typeof input === "object" && input.query){
+}
+else if(typeof input === "object" && input.query){
 
 query = normalize(input.query)
 
 }
 
-/* Prevent empty query */
+/* Fallback */
 
 if(!query){
+
 return "https://www.ndestore.com/search"
-}
-
-/* Encode query safely */
-
-const encodedQuery = encodeURIComponent(query)
-
-/* Build URL */
-
-return `https://www.ndestore.com/search?q=${encodedQuery}`
 
 }
 
-/* =====================================================
-EXPORT
-===================================================== */
+/* Encode safely */
+
+const encoded = encodeURIComponent(query)
+
+/* Force product search */
+
+return `https://www.ndestore.com/search?q=${encoded}&type=product`
+
+}
 
 module.exports = {
 
