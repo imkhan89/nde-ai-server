@@ -1,12 +1,16 @@
-const {detectAllPositions} = require("./data/part_positions")
-
 require("dotenv").config();
 
 const express = require("express");
 const axios = require("axios");
-const crypto = require("crypto");
+
+/* =====================================================
+AUTOMOTIVE AI IMPORTS
+===================================================== */
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
+
+/* STEP 2 — POSITION INTELLIGENCE */
+const { detectAllPositions } = require("./data/part_positions");
 
 /* SESSION MANAGER */
 const session = require("./sessions/sessionManager");
@@ -25,9 +29,9 @@ HELPERS
 function xmlSafe(str){
 
 return str
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;");
+.replace(/&/g,"&")
+.replace(/</g,"<")
+.replace(/>/g,">");
 
 }
 
@@ -35,7 +39,7 @@ function normalizeText(text){
 
 return text
 .toLowerCase()
-.replace(/\+/g," ")
+.replace(/+/g," ")
 .replace(/-/g," ")
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
@@ -105,13 +109,17 @@ const sessionData=session.getSession(user);
 let text = normalizeText(message);
 
 /* =========================================
+STEP 3 — POSITION DETECTION
+========================================= */
+
+const positions = detectAllPositions(text);
+
+/* =========================================
 HANDLE MENU NUMBERS FIRST
 ========================================= */
 
 if(/^[1-6]$/.test(text)){
-
 sessionData.state="MENU";
-
 }
 
 /* =========================================
@@ -119,6 +127,20 @@ RUN AI DETECTION
 ========================================= */
 
 const aiResult = analyzeAutomotiveQuery(text);
+
+/* =========================================
+STEP 4 — STRUCTURED AI RESULT
+========================================= */
+
+const structuredResult = {
+vehicleMake: aiResult.make,
+vehicleModel: aiResult.model,
+vehicleYear: aiResult.year,
+part: aiResult.part,
+positions: positions
+};
+
+console.log("AI Result:", structuredResult);
 
 /* =========================================
 MODEL YEAR OPTIONS
@@ -155,6 +177,7 @@ Vehicle Make: ${aiResult.make}
 Model Name: ${aiResult.model}
 Model Year: ${aiResult.year}
 Part Required: ${aiResult.part}
+Position: ${positions.join(", ") || "Not Specified"}
 
 Product Search
 ${url}
@@ -299,7 +322,7 @@ WhatsApp
 +92 321 4222294
 
 or visit
-www.ndestore.com`;
+[www.ndestore.com`](http://www.ndestore.com`);
 
 }
 
