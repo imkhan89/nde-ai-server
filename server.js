@@ -1,50 +1,73 @@
-require("dotenv").config();
+require("dotenv").config()
 
-const express = require("express");
-const axios = require("axios");
+const express = require("express")
+const bodyParser = require("body-parser")
 
-const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
-const { detectAllPositions } = require("./data/part_positions");
-const session = require("./sessions/sessionManager");
+const { mainMenu, processAutoParts } = require("./conversation_engine")
+const { generateTicket } = require("./complaint_ticket_engine")
+const { handleKnowledge } = require("./knowledge_engine")
 
-const app = express();
+const sessionManager = require("./sessions/sessionManager")
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+const app = express()
 
-const PORT = process.env.PORT || 3000;
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+
+const PORT = process.env.PORT || 3000
 
 /* =====================================================
-HELPERS
+SESSION CONFIG
 ===================================================== */
 
-function xmlSafe(str){
+const SESSION_TIMEOUT = 60 * 60 * 1000
 
-return String(str)
-.replace(/&/g,"&amp;")
-.replace(/</g,"&lt;")
-.replace(/>/g,"&gt;");
+/* =====================================================
+WHATSAPP WEBHOOK
+===================================================== */
 
-}
+app.post("/whatsapp", async (req, res) => {
 
-function normalizeText(text){
+const message = (req.body.Body || "").trim()
+const from = req.body.From || ""
 
-return String(text)
-.toLowerCase()
-.replace(/\+/g," ")
-.replace(/-/g," ")
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim();
+let session = sessionManager.getSession(from)
+
+if (!session) {
+
+session = sessionManager.createSession(from)
 
 }
 
-function normalizePhone(phone){
+if (Date.now() - session.lastActivity > SESSION_TIMEOUT) {
 
-return String(phone)
-.replace("whatsapp:","")
-.replace(/\D/g,"")
-.replace(/^0/,"92");
+sessionManager.resetSession(from)
+session = sessionManager.createSession(from)
+
+}
+
+session.lastActivity = Date.now()
+
+/* =====================================================
+RETURN TO MAIN MENU
+===================================================== */
+
+if (message === "#") {
+
+session.state = "MENU"
+
+return res.send(mainMenu())
+
+}
+
+/* =====================================================
+STATE MACHINE
+===================================================== */
+
+if (!session.state) {
+
+session.state = "MENU"
+return res.send(mainMenu())
 
 }
 
@@ -52,376 +75,242 @@ return String(phone)
 MAIN MENU
 ===================================================== */
 
-function mainMenu(){
+if (session.state === "MENU") {
 
-return `Welcome to ndestore.com
-How can we help you?
+if (message === "1") {
 
-1 Parts Inquiry
-2 Car Accessories
-3 Order Status
-4 Complaints
-5 Decal Stickers
-6 Other
+session.state = "AUTO_PARTS"
 
-Please reply with 1 2 3 4 5 or 6`;
-
-}
-
-/* =====================================================
-SHOPIFY SEARCH URL BUILDER
-===================================================== */
-
-function buildSearchURL(part, make, model){
-
-let q = [];
-
-if(part && part !== "Not Specified") q.push(part);
-if(make && make !== "Not Specified") q.push(make);
-if(model && model !== "Not Specified") q.push(model);
-
-const query = q
-.join(" ")
-.trim()
-.replace(/\s+/g,"+")
-.toLowerCase();
-
-return `https://www.ndestore.com/search?q=${query}`;
-
-}
-
-/* =====================================================
-CONVERSATION ENGINE
-===================================================== */
-
-async function automotiveAI(message,user){
-
-const sessionData=session.getSession(user);
-
-let text = normalizeText(message);
-
-/* POSITION DETECTION */
-
-const positions = detectAllPositions(text);
-
-/* MENU NUMBER DETECTION */
-
-if(/^[1-6]$/.test(text)){
-sessionData.state="MENU";
-}
-
-/* RUN AI */
-
-const aiResult = analyzeAutomotiveQuery(text);
-
-const structuredResult = {
-vehicleMake: aiResult.make,
-vehicleModel: aiResult.model,
-vehicleYear: aiResult.year,
-part: aiResult.part,
-positions: positions
-};
-
-console.log("AI Result:", structuredResult);
-
-/* MODEL YEAR OPTIONS */
-
-if(aiResult.yearOptions){
-
-return `Kindly provide vehicle model year
-
-${aiResult.yearOptions.join("\n")}`;
-
-}
-
-/* VALID QUERY */
-
-if(
-aiResult.part !== "Not Specified" &&
-aiResult.model !== "Not Specified"
-){
-
-const url = buildSearchURL(
-aiResult.part,
-aiResult.make,
-aiResult.model
-);
-
-sessionData.state="MENU";
-
-return `Vehicle Details
-
-Vehicle Make: ${aiResult.make}
-Model Name: ${aiResult.model}
-Model Year: ${aiResult.year}
-Part Required: ${aiResult.part}
-Position: ${positions.join(", ") || "Not Specified"}
-
-Product Search
-${url}
-
-Best Regards
-Customer Support
-ndestore.com`;
-
-}
-
-/* FALLBACK SEARCH */
-
-if(text.split(" ").length >= 3){
-
-const words = text.split(" ");
-
-const part = words[words.length-1];
-const make = words[0];
-const model = words[1];
-
-const fallbackURL = buildSearchURL(part, make, model);
-
-return `Product Search
-
-${fallbackURL}
-
-Best Regards
-Customer Support
-ndestore.com`;
-
-}
-
-/* FIRST MESSAGE */
-
-if(sessionData.state==="NEW"){
-
-sessionData.state="MENU";
-
-if(!/^[1-6]$/.test(text)){
-return mainMenu();
-}
-
-}
-
-/* MENU */
-
-if(sessionData.state==="MENU"){
-
-text=text.replace(/[^0-9]/g,"");
-
-if(text==="1"){
-sessionData.state="PART_SEARCH";
-return `Please confirm
+return res.send(
+`Share the following details
 
 Vehicle Make
-Vehicle Model
+Model Name
 Model Year
 Part Required
 
 Example
-Honda Civic 2018 Brake Pad`;
+Honda Civic 2018 Brake Pad
+
+# TO RETURN TO MAIN MENU`
+)
+
 }
 
-if(text==="2"){
-sessionData.state="ACCESSORY_SEARCH";
-return `Please confirm
+if (message === "2") {
+
+session.state = "ACCESSORIES"
+
+return res.send(
+`Please share
 
 Vehicle Make
-Vehicle Model
+Model Name
 Model Year
-Required Accessory
+Accessory Required
 
 Example
-Toyota Aqua 2018 Floor Mat`;
+Toyota Revo 2021 Floor Mats
+
+# TO RETURN TO MAIN MENU`
+)
+
 }
 
-if(text==="3"){
-sessionData.state="ORDER";
-return `Please share your order number
+if (message === "3") {
+
+return res.send(
+`Browse Stickers
+
+https://www.ndestore.com/collections/stickers-decal
+
+# TO RETURN TO MAIN MENU`
+)
+
+}
+
+if (message === "4") {
+
+session.state = "ORDER_STATUS"
+
+return res.send(
+`Please share your Order Number
 
 Example
-10011421`;
-}
+ND12345
 
-if(text==="4"){
-sessionData.state="COMPLAINT";
-return `Kindly share the following information
-
-Order Number
-Complaint Details`;
-}
-
-if(text==="5"){
-sessionData.state="DECAL_MENU";
-return `Decal Sticker Options
-
-1 Complete Collection
-2 Collection Options
-3 Customized Decals
-
-Reply with 1 2 or 3`;
-}
-
-if(text==="6"){
-sessionData.state="CHAT";
-return `Please share your inquiry and our assistant will assist you shortly.`;
-}
-
-return mainMenu();
+# TO RETURN TO MAIN MENU`
+)
 
 }
 
-/* PART SEARCH */
+if (message === "5") {
 
-if(sessionData.state==="PART_SEARCH"){
+session.state = "CHAT_SUPPORT"
 
-const result = analyzeAutomotiveQuery(text);
+return res.send(
+`How can we assist you today?
 
-if(result.part==="Not Specified" || result.model==="Not Specified"){
+You may ask about auto parts, accessories, or decals.
 
-sessionData.retries++;
+# TO RETURN TO MAIN MENU`
+)
 
-if(sessionData.retries>=2){
+}
 
-sessionData.state="MENU";
-sessionData.retries=0;
+if (message === "6") {
 
-return `We were unable to identify the product.
+session.state = "COMPLAINT"
 
-Please contact our representative
+return res.send(
+`We regret the inconvenience caused.
+
+Kindly share the following information so our representative can assist you promptly.
+
+Order Number:
+Details of the Issue:
+
+# TO RETURN TO MAIN MENU`
+)
+
+}
+
+return res.send(mainMenu())
+
+}
+
+/* =====================================================
+AUTO PARTS SEARCH
+===================================================== */
+
+if (session.state === "AUTO_PARTS") {
+
+const result = processAutoParts(message)
+
+return res.send(
+`Vehicle Detected
+
+Make: ${result.analysis.make}
+Model: ${result.analysis.model}
+Year Range: ${result.analysis.generation}
+Part: ${result.analysis.part}
+
+Search Results
+${result.url}
+
+# TO RETURN TO MAIN MENU`
+)
+
+}
+
+/* =====================================================
+ACCESSORIES SEARCH
+===================================================== */
+
+if (session.state === "ACCESSORIES") {
+
+const result = processAutoParts(message)
+
+return res.send(
+`Search Results
+
+${result.url}
+
+# TO RETURN TO MAIN MENU`
+)
+
+}
+
+/* =====================================================
+ORDER STATUS
+===================================================== */
+
+if (session.state === "ORDER_STATUS") {
+
+return res.send(
+`Checking order status...
+
+Please visit
+
+https://www.ndestore.com
+
+# TO RETURN TO MAIN MENU`
+)
+
+}
+
+/* =====================================================
+CHAT SUPPORT
+===================================================== */
+
+if (session.state === "CHAT_SUPPORT") {
+
+const knowledge = handleKnowledge(message)
+
+if (knowledge) {
+
+return res.send(
+`${knowledge}
+
+# TO RETURN TO MAIN MENU`
+)
+
+}
+
+return res.send(
+`Our representative will assist you shortly.
 
 WhatsApp
-+92 308 7643288
-+92 321 4222294
++92 323 4954117
 
-or visit
-www.ndestore.com`;
-
-}
-
-return `Please share details in the following format
-
-Part Name + Vehicle Make + Vehicle Model + Model Year
-
-Example
-Brake Pad Toyota Corolla 2018`;
-
-}
-
-sessionData.retries=0;
-
-const url = buildSearchURL(
-result.part,
-result.make,
-result.model
-);
-
-sessionData.state="MENU";
-
-return `Vehicle Details
-
-Vehicle Make: ${result.make}
-Model Name: ${result.model}
-Model Year: ${result.year}
-Part Required: ${result.part}
-
-Product Search
-${url}
-
-Best Regards
-Customer Support
-ndestore.com`;
-
-}
-
-return mainMenu();
+# TO RETURN TO MAIN MENU`
+)
 
 }
 
 /* =====================================================
-WHATSAPP WEBHOOK
+COMPLAINT SYSTEM
 ===================================================== */
 
-app.post("/whatsapp", async (req,res)=>{
+if (session.state === "COMPLAINT") {
 
-try{
+const lines = message.split("\n")
 
-const rawUser = req.body.From || "";
-const message = req.body.Body || "";
+const orderNumber = lines[0] || "UNKNOWN"
 
-const user = normalizePhone(rawUser);
+const ticket = generateTicket(orderNumber)
 
-console.log("Incoming:", message);
+return res.send(
+`Complaint Registered
 
-if(!session.sessionExists(user)){
-session.createSession(user);
-}
+Ticket Number: ${ticket}
 
-session.updateSession(user);
-session.logSession(user,"USER: "+message);
+Our representative will contact you shortly.
 
-let reply = await automotiveAI(message,user);
+WhatsApp
++92 323 4954117
 
-if(!reply || reply.trim()===""){
-reply = "Please confirm Vehicle Make Model Year and Part Required.";
-}
-
-session.logSession(user,"BOT: "+reply);
-
-res.set("Content-Type","text/xml");
-
-res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
-
-}catch(e){
-
-console.log("Webhook error:",e);
-
-res.set("Content-Type","text/xml");
-res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
+# TO RETURN TO MAIN MENU`
+)
 
 }
 
-});
+return res.send(mainMenu())
+
+})
 
 /* =====================================================
-SEND API
+SERVER START
 ===================================================== */
 
-app.post("/send-message",async(req,res)=>{
+app.get("/", (req, res) => {
 
-try{
+res.send("NDE AI Server Running")
 
-const {phone,message}=req.body;
+})
 
-await axios.post(process.env.WHATSAPP_SEND_URL,{
-phone,
-message
-});
+app.listen(PORT, () => {
 
-res.send("sent");
+console.log("Server running on port", PORT)
 
-}catch(e){
-
-console.log("Send message error",e);
-res.status(500).send("error");
-
-}
-
-});
-
-/* =====================================================
-ERROR HANDLER
-===================================================== */
-
-process.on("uncaughtException",(err)=>{
-console.error("Uncaught Exception:",err);
-});
-
-process.on("unhandledRejection",(err)=>{
-console.error("Unhandled Rejection:",err);
-});
-
-/* =====================================================
-SERVER
-===================================================== */
-
-app.listen(PORT,()=>{
-console.log("AI Server Running on port",PORT);
-});
+})
