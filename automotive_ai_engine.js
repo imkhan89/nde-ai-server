@@ -2,6 +2,7 @@
 AUTOMOTIVE AI CORE ENGINE
 Handles:
 Vehicle detection
+Alias detection (Pakistan vehicles)
 Year → generation conversion
 Part detection
 Shopify search query builder
@@ -12,6 +13,8 @@ const { semanticPartDetection } = require("./semantic_parts_engine")
 const fuzzyMatchPart = require("./fuzzy_parts_engine")
 
 const VEHICLE_GENERATIONS = require("./data/vehicle_generations")
+
+const { detectVehicleAlias } = require("./vehicle_alias_engine")
 
 /* =====================================================
 NORMALIZE
@@ -117,24 +120,54 @@ function analyzeAutomotiveQuery(query){
 
 const text = normalize(query)
 
+/* Parse Standard Query */
+
 const parsed = parseQuery(text)
+
+/* Detect Pakistani Vehicle Alias */
+
+const aliasVehicle = detectVehicleAlias(text)
+
+/* Override vehicle if alias found */
+
+let make = parsed.make
+let model = parsed.model
+let generation = null
+
+if(aliasVehicle){
+
+make = aliasVehicle.make
+model = aliasVehicle.model
+generation = aliasVehicle.generation
+
+}
+
+/* Detect Part */
 
 const part = detectPart(text)
 
-const generation = detectGeneration(
+/* Detect Generation From Year */
 
-parsed.make,
-parsed.model,
+if(!generation){
+
+generation = detectGeneration(
+
+make,
+model,
 parsed.year
 
 )
+
+}
+
+/* Build Search Query */
 
 const searchQuery = buildQuery({
 
 position:parsed.position,
 part:part,
-make:parsed.make,
-model:parsed.model,
+make:make,
+model:model,
 generation:generation
 
 })
@@ -143,8 +176,8 @@ return {
 
 query:searchQuery,
 
-make:parsed.make,
-model:parsed.model,
+make:make,
+model:model,
 year:parsed.year,
 
 generation:generation,
