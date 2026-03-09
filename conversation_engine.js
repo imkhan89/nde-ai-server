@@ -1,5 +1,8 @@
+// conversation_engine.js
+
 /* =====================================================
 NDESTORE WHATSAPP AI CONVERSATION ENGINE
+Handles customer interaction flow
 ===================================================== */
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
@@ -7,12 +10,14 @@ const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
 const { generateSearch } = require("./shopify_search_engine")
 
 const {
-searchProducts,
 findBestMatch,
 buildProductURL
 } = require("./product_search_engine")
 
+const { checkFitment } = require("./fitment_engine")
+
 const { generateTicket } = require("./complaint_ticket_engine")
+
 const { handleKnowledge } = require("./knowledge_engine")
 
 /* =====================================================
@@ -37,7 +42,7 @@ Reply with the number to continue`
 }
 
 /* =====================================================
-AUTO PARTS SEARCH
+AUTO PARTS PROCESSING
 ===================================================== */
 
 async function processAutoParts(message){
@@ -48,6 +53,8 @@ const searchURL = generateSearch(analysis)
 
 const bestProduct = findBestMatch(analysis.query)
 
+const fitment = checkFitment(analysis)
+
 let response = `Vehicle Detection
 
 Make: ${analysis.make || "Unknown"}
@@ -57,7 +64,26 @@ Part: ${analysis.part || "Unknown"}
 
 `
 
-if(bestProduct){
+/* =====================================================
+FITMENT MATCH
+===================================================== */
+
+if(fitment){
+
+response += `Compatible Product
+
+${fitment.title}
+https://www.ndestore.com/products/${fitment.handle}
+
+`
+
+}
+
+/* =====================================================
+LOCAL PRODUCT MATCH
+===================================================== */
+
+else if(bestProduct){
 
 response += `Recommended Product
 
@@ -67,6 +93,10 @@ ${buildProductURL(bestProduct.handle)}
 `
 
 }
+
+/* =====================================================
+SHOPIFY SEARCH
+===================================================== */
 
 response += `Search Results
 ${searchURL}
@@ -78,7 +108,7 @@ return response
 }
 
 /* =====================================================
-ACCESSORIES
+ACCESSORIES SEARCH
 ===================================================== */
 
 async function processAccessories(message){
@@ -94,7 +124,7 @@ ${url}
 }
 
 /* =====================================================
-DECALS
+DECAL STICKERS
 ===================================================== */
 
 function processDecals(){
@@ -161,7 +191,7 @@ WhatsApp
 }
 
 /* =====================================================
-COMPLAINT
+COMPLAINT SYSTEM
 ===================================================== */
 
 function processComplaint(message){
