@@ -1,4 +1,5 @@
 require("dotenv").config()
+
 const fs = require("fs")
 const path = require("path")
 const axios = require("axios")
@@ -8,6 +9,10 @@ const TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
 const API_VERSION = process.env.SHOPIFY_API_VERSION
 
 const OUTPUT = path.join(__dirname,"data","product_index.json")
+
+/* =====================================================
+NORMALIZE TEXT
+===================================================== */
 
 function normalize(text){
 
@@ -22,81 +27,57 @@ return (text || "")
 
 }
 
+/* =====================================================
+EXTRACT VEHICLE INFO FROM TITLE
+===================================================== */
+
 function extractVehicle(title){
 
 const yearMatch = title.match(/\b(19|20)\d{2}\s*-\s*(19|20)\d{2}\b/)
 
 const yearRange = yearMatch ? yearMatch[0] : null
 
-let make = null
-let model = null
+return {
 
-const MAKES=[
-"toyota",
-"honda",
-"suzuki",
-"kia",
-"hyundai",
-"haval",
-"changan",
-"proton",
-"mg",
-"nissan",
-"mitsubishi"
-]
-
-for(const m of MAKES){
-
-if(title.includes(m)){
-make=m
-break
-}
-
-}
-
-if(make){
-
-const parts = title.split(make)
-
-if(parts.length>1){
-model = parts[1].trim().split(" ")[0]
-}
-
-}
-
-return{
-make,
-model,
 yearRange
+
 }
 
 }
+
+/* =====================================================
+FETCH SHOPIFY PRODUCTS
+===================================================== */
 
 async function fetchProducts(){
 
-let products=[]
-let url=`https://${SHOP}/admin/api/${API_VERSION}/products.json?limit=250`
+let products = []
+let url = `https://${SHOP}/admin/api/${API_VERSION}/products.json?limit=250`
 
 while(url){
 
-const res=await axios.get(url,{
+const response = await axios.get(url,{
+
 headers:{
 "X-Shopify-Access-Token":TOKEN
 }
+
 })
 
-products=products.concat(res.data.products)
+const data = response.data.products
 
-const link=res.headers.link
+products = products.concat(data)
+
+const link = response.headers.link
 
 if(link && link.includes('rel="next"')){
 
-const next=link.match(/<(.*?)>; rel="next"/)
-
-url=next ? next[1] : null
+url = link.split(";")[0].replace("<","").replace(">","")
 
 }else{
-url=null
+
+url = null
+
 }
 
 }
@@ -105,41 +86,77 @@ return products
 
 }
 
-async function buildIndex(){
+/* =====================================================
+BUILD SEARCH INDEX
+===================================================== */
 
-console.log("Fetching products from Shopify")
+function buildIndex(products){
 
-const products=await fetchProducts()
+let index=[]
 
-const index=[]
+for(const product of products){
 
-for(const p of products){
+const searchable = normalize(
 
-const title=normalize(p.title)
+`${product.title} ${product.vendor} ${product.tags}`
 
-const vehicle=extractVehicle(title)
+)
+
+const vehicle = extractVehicle(product.title)
 
 index.push({
 
-id:p.id,
-title:p.title,
-handle:p.handle,
-price:p.variants[0].price,
+title:product.title,
 
-make:vehicle.make,
-model:vehicle.model,
-year_range:vehicle.yearRange,
+handle:product.handle,
 
-searchable:title
+searchable:searchable,
+
+vehicle:vehicle
 
 })
 
 }
 
-fs.writeFileSync(OUTPUT,JSON.stringify(index,null,2))
-
-console.log("product_index.json created")
+return index
 
 }
 
-buildIndex()
+/* =====================================================
+MAIN PROCESS
+===================================================== */
+
+async function main(){
+
+try{
+
+console.log("Fetching Shopify products...")
+
+const products = await fetchProducts()
+
+console.log(`Fetched ${products.length} products`)
+
+console.log("Building product index...")
+
+const index = buildIndex(products)
+
+fs.writeFileSync(
+
+OUTPUT,
+JSON.stringify(index,null,2)
+
+)
+
+console.log("Product index generated successfully")
+
+}catch(error){
+
+console.error("Error building product index")
+
+console.error(error.message)
+
+}
+
+}
+
+main()
