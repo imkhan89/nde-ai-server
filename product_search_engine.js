@@ -19,9 +19,6 @@ function normalize(text){
 
 return (text || "")
 .toLowerCase()
-.replace(/\+/g," ")
-.replace(/-/g," ")
-.replace(/\//g," ")
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
 .trim()
@@ -30,21 +27,17 @@ return (text || "")
 
 function searchProducts(query){
 
-const q = normalize(query)
-
-let results=[]
+const q=normalize(query)
 
 for(const p of PRODUCTS){
 
 if(p.searchable.includes(q)){
-
-results.push(p)
-
+return [p]
 }
 
 }
 
-return results
+return []
 
 }
 
