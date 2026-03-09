@@ -1,12 +1,14 @@
 /* =====================================================
 AUTOMOTIVE AI CORE ENGINE
 Handles:
+
 Vehicle detection
 Vehicle alias intelligence
 Year → generation detection
 Part detection
 Position detection
 Search query builder
+
 ===================================================== */
 
 const parseQuery = require("./automotive_query_parser")
@@ -27,7 +29,10 @@ NORMALIZE
 
 function normalize(text){
 
-return (text || "")
+if(!text) return ""
+
+return text
+.toString()
 .toLowerCase()
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
@@ -68,10 +73,18 @@ return null
 }
 
 /* =====================================================
-PART DETECTION
+SMART PART DETECTION
+Priority:
+
+1 Direct graph match
+2 Semantic match
+3 Fuzzy fallback
+
 ===================================================== */
 
 function detectPartSmart(text){
+
+if(!text) return null
 
 let part = detectPart(text)
 
@@ -87,12 +100,17 @@ return part
 
 part = fuzzyMatchPart(text)
 
+if(part){
 return part
+}
+
+return null
 
 }
 
 /* =====================================================
 QUERY BUILDER
+Builds Shopify / search friendly query
 ===================================================== */
 
 function buildQuery(data){
@@ -119,7 +137,7 @@ if(data.generation){
 parts.push(data.generation)
 }
 
-return parts.join(" ")
+return parts.join(" ").trim()
 
 }
 
@@ -131,22 +149,28 @@ function analyzeAutomotiveQuery(query){
 
 const text = normalize(query)
 
+if(!text){
+return {
+query:null
+}
+}
+
 /* parse structured query */
 
-const parsed = parseQuery(text)
+const parsed = parseQuery(text) || {}
 
 /* detect vehicle alias */
 
 const vehicle = detectVehicle(text)
 
-let make = parsed.make
-let model = parsed.model
+let make = parsed.make || null
+let model = parsed.model || null
 let generation = null
 
 if(vehicle){
 
-make = vehicle.make
-model = vehicle.model
+make = vehicle.make || make
+model = vehicle.model || model
 
 if(vehicle.generation){
 generation = vehicle.generation
@@ -163,11 +187,9 @@ const part = detectPartSmart(text)
 if(!generation){
 
 generation = detectGeneration(
-
 make,
 model,
 parsed.year
-
 )
 
 }
@@ -190,13 +212,13 @@ query:searchQuery,
 
 make:make,
 model:model,
-year:parsed.year,
+year:parsed.year || null,
 
 generation:generation,
 
-position:parsed.position,
+position:parsed.position || null,
 
-part:part
+part:part || null
 
 }
 
