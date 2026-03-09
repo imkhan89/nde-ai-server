@@ -3,16 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
 
-/* =====================================================
-AUTOMOTIVE AI IMPORTS
-===================================================== */
-
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine");
-
-/* STEP 2 — POSITION INTELLIGENCE */
 const { detectAllPositions } = require("./data/part_positions");
-
-/* SESSION MANAGER */
 const session = require("./sessions/sessionManager");
 
 const app = express();
@@ -28,7 +20,7 @@ HELPERS
 
 function xmlSafe(str){
 
-return str
+return String(str)
 .replace(/&/g,"&")
 .replace(/</g,"<")
 .replace(/>/g,">");
@@ -37,7 +29,7 @@ return str
 
 function normalizeText(text){
 
-return text
+return String(text)
 .toLowerCase()
 .replace(/+/g," ")
 .replace(/-/g," ")
@@ -49,7 +41,7 @@ return text
 
 function normalizePhone(phone){
 
-return phone
+return String(phone)
 .replace("whatsapp:","")
 .replace(/\D/g,"")
 .replace(/^0/,"92");
@@ -77,7 +69,7 @@ Please reply with 1 2 3 4 5 or 6`;
 }
 
 /* =====================================================
-SHOPIFY SEARCH URL BUILDER
+SEARCH URL BUILDER
 ===================================================== */
 
 function buildSearchURL(part, make, model){
@@ -88,8 +80,7 @@ if(part && part !== "Not Specified") q.push(part);
 if(make && make !== "Not Specified") q.push(make);
 if(model && model !== "Not Specified") q.push(model);
 
-const query = q
-.join(" ")
+const query = q.join(" ")
 .trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
@@ -105,10 +96,9 @@ CONVERSATION ENGINE
 async function automotiveAI(message,user){
 
 const sessionData=session.getSession(user);
-
 let text = normalizeText(message);
 
-/* STEP 3 — POSITION DETECTION */
+/* POSITION DETECTION */
 
 const positions = detectAllPositions(text);
 
@@ -118,11 +108,9 @@ if(/^[1-6]$/.test(text)){
 sessionData.state="MENU";
 }
 
-/* RUN AI DETECTION */
+/* RUN AI */
 
 const aiResult = analyzeAutomotiveQuery(text);
-
-/* STEP 4 — STRUCTURED AI RESULT */
 
 const structuredResult = {
 vehicleMake: aiResult.make,
@@ -134,7 +122,7 @@ positions: positions
 
 console.log("AI Result:", structuredResult);
 
-/* MODEL YEAR OPTIONS */
+/* YEAR OPTIONS */
 
 if(aiResult.yearOptions){
 
@@ -144,7 +132,7 @@ ${aiResult.yearOptions.join("\n")}`;
 
 }
 
-/* VALID AUTOMOTIVE QUERY */
+/* VALID QUERY */
 
 if(
 aiResult.part !== "Not Specified" &&
@@ -176,7 +164,7 @@ ndestore.com`;
 
 }
 
-/* SMART FALLBACK SEARCH */
+/* FALLBACK SEARCH */
 
 if(text.split(" ").length >= 3){
 
@@ -198,7 +186,7 @@ ndestore.com`;
 
 }
 
-/* FIRST MESSAGE MENU */
+/* FIRST MESSAGE */
 
 if(sessionData.state==="NEW"){
 
@@ -278,7 +266,7 @@ return mainMenu();
 
 }
 
-/* PART SEARCH STATE */
+/* PART SEARCH */
 
 if(sessionData.state==="PART_SEARCH"){
 
@@ -341,8 +329,6 @@ ndestore.com`;
 
 }
 
-/* DEFAULT */
-
 return mainMenu();
 
 }
@@ -361,8 +347,6 @@ const message = req.body.Body || "";
 const user = normalizePhone(rawUser);
 
 console.log("Incoming:", message);
-
-/* SESSION MANAGEMENT */
 
 if(!session.sessionExists(user)){
 session.createSession(user);
@@ -387,10 +371,6 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 
 console.log("Webhook error:",e);
 
-const user = normalizePhone(req.body.From || "");
-
-session.logError(user,e.message);
-
 res.set("Content-Type","text/xml");
 
 res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
@@ -400,7 +380,7 @@ res.send(`<Response><Message>System temporarily unavailable</Message></Response>
 });
 
 /* =====================================================
-WHATSAPP SEND API
+SEND API
 ===================================================== */
 
 app.post("/send-message",async(req,res)=>{
@@ -419,7 +399,6 @@ res.send("sent");
 }catch(e){
 
 console.log("Send message error",e);
-
 res.status(500).send("error");
 
 }
