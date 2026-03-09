@@ -1,77 +1,140 @@
 /* =====================================================
 AUTOMOTIVE SEMANTIC PARTS ENGINE
-Understands short / messy customer queries
+Purpose: Detect correct automotive part names
+Fixes:
+disc pad -> brake pad
+disk pad -> brake pad
+pad -> brake pad
+disc -> brake rotor
 ===================================================== */
 
-const PARTS_DICTIONARY = require("./data/parts_dictionary.json")
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
+}
 
 /* =====================================================
-SHORT WORD MAPPING
+PHRASE MAP (Highest Priority)
 ===================================================== */
 
-const SHORT_WORDS = {
+const PHRASE_MAP = {
+
+"disc pad":"brake pad",
+"disk pad":"brake pad",
+"disc brake pad":"brake pad",
+"brake disc pad":"brake pad",
+
+"brake pad":"brake pad",
+"brake pads":"brake pad",
+"front pad":"brake pad",
+"rear pad":"brake pad",
+
+"disc rotor":"brake rotor",
+"disk rotor":"brake rotor",
+"brake disc":"brake rotor",
+"brake rotor":"brake rotor",
+
+"engine oil":"engine oil",
+"gear oil":"gear oil",
+
+"air filter":"air filter",
+"engine air filter":"air filter",
+
+"oil filter":"oil filter",
+
+"ac filter":"cabin filter",
+"cabin filter":"cabin filter",
+
+"fuel filter":"fuel filter",
+
+"spark plug":"spark plug",
+"spark plugs":"spark plug",
+
+"radiator coolant":"coolant",
+"engine coolant":"coolant",
+"coolant":"coolant",
+
+"horn":"horn",
+"car horn":"horn",
+
+"wiper blade":"wiper blade",
+"wiper blades":"wiper blade",
+
+"floor mat":"floor mat",
+"floor mats":"floor mat"
+
+}
+
+/* =====================================================
+WORD MAP
+===================================================== */
+
+const WORD_MAP = {
 
 pad:"brake pad",
 pads:"brake pad",
 
 disc:"brake rotor",
 disk:"brake rotor",
+rotor:"brake rotor",
+
+filter:"filter",
 
 plug:"spark plug",
-plugs:"spark plug",
 
-filter:"air filter",
-filters:"air filter",
+coolant:"coolant",
 
-oil:"oil filter",
+horn:"horn",
 
 mat:"floor mat",
-mats:"floor mat",
-
-wiper:"wiper blade",
-wipers:"wiper blade"
+mats:"floor mat"
 
 }
 
 /* =====================================================
-SEMANTIC PART DETECTION
+SEMANTIC DETECTOR
 ===================================================== */
 
-function semanticPartDetection(text){
+function semanticPartDetection(query){
 
-text=text.toLowerCase()
+const text = normalize(query)
 
-let words=text.split(" ")
+/* phrase detection */
 
-/* short word expansion */
+for(const phrase in PHRASE_MAP){
 
-for(const w of words){
+if(text.includes(phrase)){
 
-if(SHORT_WORDS[w]){
-
-return SHORT_WORDS[w]
+return PHRASE_MAP[phrase]
 
 }
 
 }
 
-/* dictionary detection */
+/* word detection */
 
-for(const part of PARTS_DICTIONARY){
+const words = text.split(" ")
 
-if(text.includes(part)){
+for(const word of words){
 
-return part
+if(WORD_MAP[word]){
 
-}
-
-}
-
-return ""
+return WORD_MAP[word]
 
 }
 
-module.exports={
+}
+
+return null
+
+}
+
+module.exports = {
 
 semanticPartDetection
 
