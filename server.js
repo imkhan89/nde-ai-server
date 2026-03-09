@@ -39,7 +39,7 @@ function normalizeText(text){
 
 return text
 .toLowerCase()
-.replace(/\+/g," ")
+.replace(/+/g," ")
 .replace(/-/g," ")
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
@@ -108,29 +108,21 @@ const sessionData=session.getSession(user);
 
 let text = normalizeText(message);
 
-/* =========================================
-STEP 3 — POSITION DETECTION
-========================================= */
+/* STEP 3 — POSITION DETECTION */
 
 const positions = detectAllPositions(text);
 
-/* =========================================
-HANDLE MENU NUMBERS FIRST
-========================================= */
+/* MENU NUMBER DETECTION */
 
 if(/^[1-6]$/.test(text)){
 sessionData.state="MENU";
 }
 
-/* =========================================
-RUN AI DETECTION
-========================================= */
+/* RUN AI DETECTION */
 
 const aiResult = analyzeAutomotiveQuery(text);
 
-/* =========================================
-STEP 4 — STRUCTURED AI RESULT
-========================================= */
+/* STEP 4 — STRUCTURED AI RESULT */
 
 const structuredResult = {
 vehicleMake: aiResult.make,
@@ -142,9 +134,7 @@ positions: positions
 
 console.log("AI Result:", structuredResult);
 
-/* =========================================
-MODEL YEAR OPTIONS
-========================================= */
+/* MODEL YEAR OPTIONS */
 
 if(aiResult.yearOptions){
 
@@ -154,9 +144,7 @@ ${aiResult.yearOptions.join("\n")}`;
 
 }
 
-/* =========================================
-VALID AUTOMOTIVE QUERY
-========================================= */
+/* VALID AUTOMOTIVE QUERY */
 
 if(
 aiResult.part !== "Not Specified" &&
@@ -188,9 +176,7 @@ ndestore.com`;
 
 }
 
-/* =========================================
-SMART FALLBACK SEARCH
-========================================= */
+/* SMART FALLBACK SEARCH */
 
 if(text.split(" ").length >= 3){
 
@@ -212,9 +198,7 @@ ndestore.com`;
 
 }
 
-/* =========================================
-FIRST MESSAGE MENU
-========================================= */
+/* FIRST MESSAGE MENU */
 
 if(sessionData.state==="NEW"){
 
@@ -226,9 +210,7 @@ return mainMenu();
 
 }
 
-/* =========================================
-MENU
-========================================= */
+/* MENU */
 
 if(sessionData.state==="MENU"){
 
@@ -296,9 +278,7 @@ return mainMenu();
 
 }
 
-/* =========================================
-PART SEARCH STATE
-========================================= */
+/* PART SEARCH STATE */
 
 if(sessionData.state==="PART_SEARCH"){
 
@@ -322,7 +302,8 @@ WhatsApp
 +92 321 4222294
 
 or visit
-www.ndestore.com
+[www.ndestore.com`](http://www.ndestore.com`);
+
 }
 
 return `Please share details in the following format
@@ -360,9 +341,7 @@ ndestore.com`;
 
 }
 
-/* =========================================
-DEFAULT
-========================================= */
+/* DEFAULT */
 
 return mainMenu();
 
