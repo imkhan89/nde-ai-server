@@ -1,97 +1,68 @@
-/* =====================================================
-NDESTORE WHATSAPP AI SERVER
-===================================================== */
-
 require("dotenv").config()
 
-const express = require("express")
-const bodyParser = require("body-parser")
+const express=require("express")
+const bodyParser=require("body-parser")
 
-const sessionManager = require("./sessions/sessionManager")
+const sessionManager=require("./sessions/sessionManager")
 
 const {
+
 mainMenu,
 processAutoParts,
 processAccessories,
 processDecals,
-processCustomSticker,
 processOrderStatus,
 processChatSupport,
 processComplaint
-} = require("./conversation_engine")
+
+}=require("./conversation_engine")
 
 const { escalate } = require("./escalation_engine")
 
-const app = express()
+const app=express()
 
-app.use(bodyParser.urlencoded({ extended:false }))
+app.use(bodyParser.urlencoded({extended:false}))
 app.use(bodyParser.json())
 
-const PORT = process.env.PORT || 3000
+const PORT=process.env.PORT || 3000
 
-/* =====================================================
-SESSION SETTINGS
-===================================================== */
+const SESSION_TIMEOUT=60*60*1000
 
-const SESSION_TIMEOUT = 60 * 60 * 1000
+app.post("/whatsapp",async(req,res)=>{
 
-/* =====================================================
-WHATSAPP WEBHOOK
-===================================================== */
+const message=(req.body.Body || "").trim()
+const phone=req.body.From || ""
 
-app.post("/whatsapp", async (req,res)=>{
-
-const message = (req.body.Body || "").trim()
-const phone = req.body.From || ""
-
-let session = sessionManager.getSession(phone)
+let session=sessionManager.getSession(phone)
 
 if(!session){
-
-session = sessionManager.createSession(phone)
-
+session=sessionManager.createSession(phone)
 }
 
-/* =====================================================
-SESSION TIMEOUT
-===================================================== */
-
-if(Date.now() - session.lastActivity > SESSION_TIMEOUT){
+if(Date.now()-session.lastActivity > SESSION_TIMEOUT){
 
 sessionManager.resetSession(phone)
-session = sessionManager.createSession(phone)
+session=sessionManager.createSession(phone)
 
 }
 
-session.lastActivity = Date.now()
+session.lastActivity=Date.now()
 
-/* =====================================================
-RETURN TO MAIN MENU
-===================================================== */
-
-if(message === "#"){
+if(message==="#"){
 
 session.state="MENU"
-
 return res.send(mainMenu())
 
 }
-
-/* =====================================================
-FIRST MESSAGE
-===================================================== */
 
 if(!session.state){
 
 session.state="MENU"
-
 return res.send(mainMenu())
 
 }
 
-/* =====================================================
-MAIN MENU
-===================================================== */
+/* MENU */
 
 if(session.state==="MENU"){
 
@@ -122,8 +93,6 @@ Toyota Revo Floor Mats
 }
 
 if(message==="3"){
-
-session.state="DECALS"
 
 return res.send(processDecals())
 
@@ -158,7 +127,7 @@ session.state="COMPLAINT"
 
 return res.send(`We regret the inconvenience caused.
 
-Kindly share the following information
+Kindly share
 
 Order Number
 Details
@@ -171,43 +140,25 @@ return res.send(mainMenu())
 
 }
 
-/* =====================================================
-AUTO PARTS FLOW
-===================================================== */
+/* AUTO PARTS */
 
 if(session.state==="AUTO_PARTS"){
 
-const response = await processAutoParts(message,phone)
-
+const response=await processAutoParts(message)
 return res.send(response)
 
 }
 
-/* =====================================================
-ACCESSORIES FLOW
-===================================================== */
+/* ACCESSORIES */
 
 if(session.state==="ACCESSORIES"){
 
-const response = await processAccessories(message)
-
+const response=await processAccessories(message)
 return res.send(response)
 
 }
 
-/* =====================================================
-DECALS FLOW
-===================================================== */
-
-if(session.state==="DECALS"){
-
-return res.send(processDecals())
-
-}
-
-/* =====================================================
-ORDER STATUS FLOW
-===================================================== */
+/* ORDER */
 
 if(session.state==="ORDER_STATUS"){
 
@@ -215,51 +166,31 @@ return res.send(processOrderStatus(message))
 
 }
 
-/* =====================================================
-CHAT SUPPORT FLOW
-===================================================== */
+/* CHAT */
 
 if(session.state==="CHAT_SUPPORT"){
 
-const response = processChatSupport(message)
-
-return res.send(response)
+return res.send(processChatSupport(message))
 
 }
 
-/* =====================================================
-COMPLAINT FLOW
-===================================================== */
+/* COMPLAINT */
 
 if(session.state==="COMPLAINT"){
 
-const response = processComplaint(message)
-
-return res.send(response)
+return res.send(processComplaint(message))
 
 }
-
-/* =====================================================
-FALLBACK
-===================================================== */
 
 return res.send(escalate())
 
 })
-
-/* =====================================================
-HEALTH CHECK
-===================================================== */
 
 app.get("/",(req,res)=>{
 
 res.send("NDE AI Server Running")
 
 })
-
-/* =====================================================
-START SERVER
-===================================================== */
 
 app.listen(PORT,()=>{
 
