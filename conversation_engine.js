@@ -1,23 +1,14 @@
 /* =====================================================
 NDESTORE WHATSAPP AI CONVERSATION ENGINE
+FAST VERSION (NO EXTERNAL API CALLS)
 ===================================================== */
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
 const { searchProducts } = require("./product_search_engine")
 const { buildShopifySearch } = require("./shopify_search_engine")
 
-const { recommendProducts } = require("./sales_recommendation_engine")
 const { generateTicket } = require("./complaint_ticket_engine")
 const { handleKnowledge } = require("./knowledge_engine")
-
-const {
-detectInternationalCustomer,
-verifyLocation
-} = require("./international_customer_engine")
-
-const { convertPKRtoUSD } = require("./currency_conversion_engine")
-
-const { createStickerOrder } = require("./sticker_custom_order_engine")
 
 /* =====================================================
 MAIN MENU
@@ -46,7 +37,7 @@ Reply with number
 AUTO PARTS SEARCH
 ===================================================== */
 
-async function processAutoParts(message, phone){
+async function processAutoParts(message){
 
 const analysis = analyzeAutomotiveQuery(message)
 
@@ -56,77 +47,19 @@ const results = searchProducts(query)
 
 const searchURL = buildShopifySearch(query)
 
-const recommendations = recommendProducts(query)
-
-/* =====================================================
-INTERNATIONAL CUSTOMER DETECTION
-===================================================== */
-
-const international = detectInternationalCustomer(phone)
-
 let response = `Vehicle Detection
 
-Make: ${analysis.make}
-Model: ${analysis.model}
-Generation: ${analysis.generation}
-Part: ${analysis.part}
+Make: ${analysis.make || "Unknown"}
+Model: ${analysis.model || "Unknown"}
+Generation: ${analysis.generation || "Unknown"}
+Part: ${analysis.part || "Unknown"}
 
-Products Found
+Search Results
 ${searchURL}
+
 `
 
-/* =====================================================
-RECOMMENDATIONS
-===================================================== */
-
-if(recommendations && recommendations.length){
-
-response += `
-
-Recommended Products
-`
-
-for(const r of recommendations){
-
-response += `
-${r.title}
-https://www.ndestore.com/products/${r.handle || ""}
-`
-
-}
-
-}
-
-/* =====================================================
-USD PRICING FOR INTERNATIONAL USERS
-===================================================== */
-
-if(international && recommendations.length){
-
-response += `
-
-Estimated USD Prices
-`
-
-for(const r of recommendations){
-
-const usd = await convertPKRtoUSD(parseFloat(r.price || 0))
-
-if(usd){
-
-response += `
-${r.title} - $${usd}
-`
-
-}
-
-}
-
-}
-
-response += `
-
-# TO RETURN TO MAIN MENU`
+response += `# TO RETURN TO MAIN MENU`
 
 return response
 
@@ -138,9 +71,7 @@ ACCESSORIES SEARCH
 
 async function processAccessories(message){
 
-const query = message
-
-const url = buildShopifySearch(query)
+const url = buildShopifySearch(message)
 
 return `Accessory Search Results
 
@@ -168,27 +99,6 @@ Required Dimensions
 
 Example
 10 inch x 4 inch
-
-# TO RETURN TO MAIN MENU`
-
-}
-
-/* =====================================================
-CUSTOM STICKER ORDER
-===================================================== */
-
-function processCustomSticker(data){
-
-const order = createStickerOrder(data)
-
-return `Custom Sticker Request Received
-
-Size: ${order.size}
-
-Our representative will contact you shortly.
-
-WhatsApp
-+92 323 4954117
 
 # TO RETURN TO MAIN MENU`
 
@@ -274,7 +184,6 @@ mainMenu,
 processAutoParts,
 processAccessories,
 processDecals,
-processCustomSticker,
 processOrderStatus,
 processChatSupport,
 processComplaint
