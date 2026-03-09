@@ -1,7 +1,8 @@
 const fs = require("fs")
 const axios = require("axios")
 
-const SESSION_TIMEOUT = 6 * 60 * 60 * 1000  
+const SESSION_TIMEOUT = 6 * 60 * 60 * 1000
+const MAX_SESSIONS = 5000
 const ADMIN_WHATSAPP = "923214222294"
 
 const LOG_FILE = "./logs/session_history.log"
@@ -73,6 +74,14 @@ ERROR_FILE,
 
 // Create Session
 function createSession(phone){
+
+// Memory protection
+if(Object.keys(sessions).length >= MAX_SESSIONS){
+
+const oldest = Object.keys(sessions)[0]
+delete sessions[oldest]
+
+}
 
 const id = generateSessionId()
 
@@ -158,17 +167,16 @@ const session = sessions[phone]
 
 if(!session) return
 
-
 try{
 
-// Send customer message
+// Send customer closing message
 await sendWhatsApp(
 phone,
 "Session ended. Thank you for contacting ndestore.com 🚗"
 )
 
 
-// Prepare admin report
+// Prepare session report
 const report = {
 
 sessionId:session.sessionId,
@@ -220,6 +228,8 @@ setInterval(()=>{
 
 const now = Date.now()
 
+console.log("Active Sessions:",Object.keys(sessions).length)
+
 for(const phone in sessions){
 
 const session = sessions[phone]
@@ -232,7 +242,7 @@ endSession(phone)
 
 }
 
-},60000)   // Check every 60 seconds
+},60000) // Check every 60 seconds
 
 
 
