@@ -1,8 +1,8 @@
 const fs = require("fs")
 const axios = require("axios")
 
-const SESSION_TIMEOUT = 1 * 60 * 1000
-  const ADMIN_WHATSAPP = "923214222294"
+const SESSION_TIMEOUT = 6 * 60 * 60 * 1000  
+const ADMIN_WHATSAPP = "923214222294"
 
 const LOG_FILE = "./logs/session_history.log"
 const ERROR_FILE = "./logs/errors.log"
