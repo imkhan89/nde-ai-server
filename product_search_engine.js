@@ -11,7 +11,7 @@ PRODUCTS=JSON.parse(fs.readFileSync(INDEX_PATH))
 
 }catch(e){
 
-console.log("Product index not found")
+console.log("Product index not loaded")
 
 }
 
@@ -30,7 +30,7 @@ return (text || "")
 
 function searchProducts(query){
 
-const q=normalize(query)
+const q = normalize(query)
 
 let results=[]
 
