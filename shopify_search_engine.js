@@ -1,10 +1,12 @@
+// shopify_search_engine.js
+
 /* =====================================================
 SHOPIFY SEARCH ENGINE
-Builds correct Shopify search URLs
-Handles:
-Generation search
-Fallback search
-Generic product search
+Builds ndestore Shopify search URLs safely
+===================================================== */
+
+/* =====================================================
+NORMALIZE QUERY
 ===================================================== */
 
 function normalize(text){
@@ -18,136 +20,47 @@ return (text || "")
 }
 
 /* =====================================================
-GENERIC PRODUCTS
-(No vehicle required)
+BUILD SHOPIFY SEARCH
 ===================================================== */
 
-const GENERIC_PRODUCTS = [
+function generateSearch(input){
 
-"engine oil",
-"gear oil",
-"coolant",
-"radiator coolant",
-"car shampoo",
-"car polish",
-"car perfume",
-"horn",
-"car horn",
-"battery",
-"engine flush",
-"fuel additive"
+let query = ""
 
-]
+/* Accept object or string */
 
-function isGenericProduct(query){
+if(typeof input === "string"){
 
-const q = normalize(query)
+query = normalize(input)
 
-for(const g of GENERIC_PRODUCTS){
+}else if(typeof input === "object" && input.query){
 
-if(q.includes(g)){
-return true
-}
+query = normalize(input.query)
 
 }
 
-return false
+/* Prevent empty query */
+
+if(!query){
+return "https://www.ndestore.com/search"
+}
+
+/* Encode query safely */
+
+const encodedQuery = encodeURIComponent(query)
+
+/* Build URL */
+
+return `https://www.ndestore.com/search?q=${encodedQuery}`
 
 }
 
 /* =====================================================
-QUERY CLEANER
+EXPORT
 ===================================================== */
-
-function cleanQuery(query){
-
-const q = normalize(query)
-
-const words = q.split(" ")
-
-const filtered = words.filter(w => w.length > 1)
-
-return filtered.join(" ")
-
-}
-
-/* =====================================================
-SHOPIFY SEARCH BUILDER
-===================================================== */
-
-function buildShopifySearch(query){
-
-const base = "https://www.ndestore.com/search?q="
-
-const cleaned = cleanQuery(query)
-
-const encoded = cleaned.replace(/\s+/g,"+")
-
-return base + encoded
-
-}
-
-/* =====================================================
-FALLBACK SEARCH
-===================================================== */
-
-function buildFallbackSearch(data){
-
-let parts=[]
-
-if(data.part){
-parts.push(data.part)
-}
-
-if(data.make){
-parts.push(data.make)
-}
-
-if(data.model){
-parts.push(data.model)
-}
-
-const query = parts.join(" ")
-
-return buildShopifySearch(query)
-
-}
-
-/* =====================================================
-MAIN SEARCH GENERATOR
-===================================================== */
-
-function generateSearch(data){
-
-/* Generic product */
-
-if(isGenericProduct(data.query)){
-
-return buildShopifySearch(data.part || data.query)
-
-}
-
-/* Full search */
-
-let searchQuery = data.query
-
-let url = buildShopifySearch(searchQuery)
-
-/* fallback if generation missing */
-
-if(!data.generation){
-
-url = buildFallbackSearch(data)
-
-}
-
-return url
-
-}
 
 module.exports = {
 
-buildShopifySearch,
 generateSearch
 
 }
