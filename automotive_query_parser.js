@@ -1,28 +1,9 @@
 /* =====================================================
 AUTOMOTIVE QUERY PARSER
-Detects:
-Vehicle Make
-Vehicle Model
-Vehicle Year
-Part Position
-Builds structured query for AI engine
+Extracts make, model, year and position
 ===================================================== */
 
-const VEHICLE_LIST = require("./data/vehicle_list.txt")
-
-/* =====================================================
-NORMALIZE
-===================================================== */
-
-function normalize(text){
-
-return (text || "")
-.toLowerCase()
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim()
-
-}
+const { detectPosition } = require("./position_detection_engine")
 
 /* =====================================================
 KNOWN MAKES
@@ -30,39 +11,37 @@ KNOWN MAKES
 
 const MAKES = [
 
-"toyota",
 "honda",
+"toyota",
 "suzuki",
 "kia",
 "hyundai",
-"nissan",
+"daihatsu",
 "mitsubishi",
-"changan",
-"haval",
-"mg",
-"proton",
-"daihatsu"
+"nissan"
 
 ]
 
 /* =====================================================
-POSITION DETECTION
+KNOWN MODELS
 ===================================================== */
 
-const POSITION_WORDS = {
+const MODELS = [
 
-front:"front",
-rear:"rear",
-left:"left",
-right:"right",
+"civic",
+"corolla",
+"city",
+"yaris",
+"cultus",
+"alto",
+"wagonr",
+"swift",
+"hilux",
+"sportage",
+"elantra",
+"mehran"
 
-upper:"upper",
-lower:"lower",
-
-lh:"left",
-rh:"right"
-
-}
+]
 
 /* =====================================================
 YEAR DETECTION
@@ -70,12 +49,10 @@ YEAR DETECTION
 
 function detectYear(text){
 
-const yearMatch = text.match(/\b(19|20)\d{2}\b/)
+const match = text.match(/\b(19|20)\d{2}\b/)
 
-if(yearMatch){
-
-return parseInt(yearMatch[0])
-
+if(match){
+return parseInt(match[0])
 }
 
 return null
@@ -104,36 +81,12 @@ return null
 MODEL DETECTION
 ===================================================== */
 
-function detectModel(text,make){
+function detectModel(text){
 
-if(!make) return null
+for(const model of MODELS){
 
-const words = text.split(" ")
-
-const makeIndex = words.indexOf(make)
-
-if(makeIndex >= 0 && words.length > makeIndex+1){
-
-return words[makeIndex+1]
-
-}
-
-return null
-
-}
-
-/* =====================================================
-POSITION DETECTION
-===================================================== */
-
-function detectPosition(text){
-
-const words = text.split(" ")
-
-for(const word of words){
-
-if(POSITION_WORDS[word]){
-return POSITION_WORDS[word]
+if(text.includes(model)){
+return model
 }
 
 }
@@ -146,15 +99,13 @@ return null
 MAIN PARSER
 ===================================================== */
 
-function parseQuery(query){
-
-const text = normalize(query)
-
-const year = detectYear(text)
+function parseQuery(text){
 
 const make = detectMake(text)
 
-const model = detectModel(text,make)
+const model = detectModel(text)
+
+const year = detectYear(text)
 
 const position = detectPosition(text)
 
