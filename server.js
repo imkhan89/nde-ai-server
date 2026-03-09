@@ -1,3 +1,5 @@
+const {detectAllPositions} = require("./data/part_positions")
+
 require("dotenv").config();
 
 const express = require("express");
