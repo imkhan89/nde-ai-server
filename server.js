@@ -21,9 +21,9 @@ HELPERS
 function xmlSafe(str){
 
 return String(str)
-.replace(/&/g,"&")
-.replace(/</g,"<")
-.replace(/>/g,">");
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
 
 }
 
@@ -31,7 +31,7 @@ function normalizeText(text){
 
 return String(text)
 .toLowerCase()
-.replace(/+/g," ")
+.replace(/\+/g," ")
 .replace(/-/g," ")
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
@@ -69,7 +69,7 @@ Please reply with 1 2 3 4 5 or 6`;
 }
 
 /* =====================================================
-SEARCH URL BUILDER
+SHOPIFY SEARCH URL BUILDER
 ===================================================== */
 
 function buildSearchURL(part, make, model){
@@ -80,7 +80,8 @@ if(part && part !== "Not Specified") q.push(part);
 if(make && make !== "Not Specified") q.push(make);
 if(model && model !== "Not Specified") q.push(model);
 
-const query = q.join(" ")
+const query = q
+.join(" ")
 .trim()
 .replace(/\s+/g,"+")
 .toLowerCase();
@@ -96,6 +97,7 @@ CONVERSATION ENGINE
 async function automotiveAI(message,user){
 
 const sessionData=session.getSession(user);
+
 let text = normalizeText(message);
 
 /* POSITION DETECTION */
@@ -122,7 +124,7 @@ positions: positions
 
 console.log("AI Result:", structuredResult);
 
-/* YEAR OPTIONS */
+/* MODEL YEAR OPTIONS */
 
 if(aiResult.yearOptions){
 
@@ -290,7 +292,7 @@ WhatsApp
 +92 321 4222294
 
 or visit
-[www.ndestore.com`](http://www.ndestore.com`);
+www.ndestore.com`;
 
 }
 
@@ -372,7 +374,6 @@ res.send(`<Response><Message>${xmlSafe(reply)}</Message></Response>`);
 console.log("Webhook error:",e);
 
 res.set("Content-Type","text/xml");
-
 res.send(`<Response><Message>System temporarily unavailable</Message></Response>`);
 
 }
@@ -406,7 +407,7 @@ res.status(500).send("error");
 });
 
 /* =====================================================
-GLOBAL ERROR HANDLER
+ERROR HANDLER
 ===================================================== */
 
 process.on("uncaughtException",(err)=>{
