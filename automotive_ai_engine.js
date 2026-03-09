@@ -1,12 +1,11 @@
-// automotive_ai_engine.js
-
 /* =====================================================
 AUTOMOTIVE AI CORE ENGINE
 Handles:
 Vehicle detection
-Pakistan vehicle alias detection
-Year → generation conversion
+Vehicle alias intelligence
+Year → generation detection
 Part detection
+Position detection
 Search query builder
 ===================================================== */
 
@@ -18,7 +17,9 @@ const fuzzyMatchPart = require("./fuzzy_parts_engine")
 
 const VEHICLE_GENERATIONS = require("./data/vehicle_generations")
 
-const { detectVehicleAlias } = require("./vehicle_knowledge_graph")
+const { detectVehicle } = require("./vehicle_graph")
+
+const { detectPart } = require("./parts_graph")
 
 /* =====================================================
 NORMALIZE
@@ -70,9 +71,15 @@ return null
 PART DETECTION
 ===================================================== */
 
-function detectPart(text){
+function detectPartSmart(text){
 
-let part = semanticPartDetection(text)
+let part = detectPart(text)
+
+if(part){
+return part
+}
+
+part = semanticPartDetection(text)
 
 if(part){
 return part
@@ -92,12 +99,12 @@ function buildQuery(data){
 
 let parts = []
 
-if(data.position){
-parts.push(data.position)
-}
-
 if(data.part){
 parts.push(data.part)
+}
+
+if(data.position){
+parts.push(data.position)
 }
 
 if(data.make){
@@ -124,33 +131,34 @@ function analyzeAutomotiveQuery(query){
 
 const text = normalize(query)
 
-/* Parse structured vehicle data */
+/* parse structured query */
 
 const parsed = parseQuery(text)
 
-/* Detect Pakistan vehicle aliases */
+/* detect vehicle alias */
 
-const aliasVehicle = detectVehicleAlias(text)
-
-/* Override vehicle info if alias detected */
+const vehicle = detectVehicle(text)
 
 let make = parsed.make
 let model = parsed.model
 let generation = null
 
-if(aliasVehicle){
+if(vehicle){
 
-make = aliasVehicle.make
-model = aliasVehicle.model
-generation = aliasVehicle.generation
+make = vehicle.make
+model = vehicle.model
+
+if(vehicle.generation){
+generation = vehicle.generation
+}
 
 }
 
-/* Detect automotive part */
+/* detect part */
 
-const part = detectPart(text)
+const part = detectPartSmart(text)
 
-/* Detect generation using year */
+/* detect generation from year */
 
 if(!generation){
 
@@ -164,7 +172,7 @@ parsed.year
 
 }
 
-/* Build search query */
+/* build final search query */
 
 const searchQuery = buildQuery({
 
