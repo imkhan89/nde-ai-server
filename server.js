@@ -322,8 +322,7 @@ WhatsApp
 +92 321 4222294
 
 or visit
-[www.ndestore.com`](http://www.ndestore.com`);
-
+www.ndestore.com
 }
 
 return `Please share details in the following format
