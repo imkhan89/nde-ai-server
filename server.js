@@ -1,12 +1,15 @@
+/* =====================================================
+NDESTORE WHATSAPP AI SERVER
+===================================================== */
+
 require("dotenv").config()
 
-const express=require("express")
-const bodyParser=require("body-parser")
+const express = require("express")
+const bodyParser = require("body-parser")
 
-const sessionManager=require("./sessions/sessionManager")
+const sessionManager = require("./sessions/sessionManager")
 
 const {
-
 mainMenu,
 processAutoParts,
 processAccessories,
@@ -14,76 +17,112 @@ processDecals,
 processOrderStatus,
 processChatSupport,
 processComplaint
-
-}=require("./conversation_engine")
+} = require("./conversation_engine")
 
 const { escalate } = require("./escalation_engine")
 
-const app=express()
+const app = express()
 
-app.use(bodyParser.urlencoded({extended:false}))
+app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
-const PORT=process.env.PORT || 3000
+const PORT = process.env.PORT || 3000
 
-const SESSION_TIMEOUT=60*60*1000
+/* =====================================================
+SESSION SETTINGS
+===================================================== */
 
-app.post("/whatsapp",async(req,res)=>{
+const SESSION_TIMEOUT = 60 * 60 * 1000
 
-const message=(req.body.Body || "").trim()
-const phone=req.body.From || ""
+/* =====================================================
+WHATSAPP WEBHOOK
+===================================================== */
 
-let session=sessionManager.getSession(phone)
+app.post("/whatsapp", async (req,res)=>{
+
+const message = (req.body.Body || "").trim()
+const phone = req.body.From || ""
+
+/* =====================================================
+SESSION LOAD
+===================================================== */
+
+let session = sessionManager.getSession(phone)
 
 if(!session){
-session=sessionManager.createSession(phone)
+
+session = sessionManager.createSession(phone)
+
 }
 
-if(Date.now()-session.lastActivity > SESSION_TIMEOUT){
+/* =====================================================
+SESSION TIMEOUT CHECK
+===================================================== */
+
+if(Date.now() - session.lastActivity > SESSION_TIMEOUT){
 
 sessionManager.resetSession(phone)
-session=sessionManager.createSession(phone)
+
+session = sessionManager.createSession(phone)
 
 }
 
-session.lastActivity=Date.now()
+session.lastActivity = Date.now()
 
-if(message==="#"){
+/* =====================================================
+RETURN TO MAIN MENU
+===================================================== */
 
-session.state="MENU"
+if(message === "#"){
+
+sessionManager.resetSession(phone)
+
+session = sessionManager.createSession(phone)
+
+session.state = "MENU"
+
 return res.send(mainMenu())
 
 }
+
+/* =====================================================
+FIRST MESSAGE
+===================================================== */
 
 if(!session.state){
 
-session.state="MENU"
+session.state = "MENU"
+
 return res.send(mainMenu())
 
 }
 
-/* MENU */
+/* =====================================================
+MAIN MENU
+===================================================== */
 
-if(session.state==="MENU"){
+if(session.state === "MENU"){
 
-if(message==="1"){
+if(message === "1"){
 
-session.state="AUTO_PARTS"
+session.state = "AUTO_PARTS"
 
-return res.send(`Share vehicle and part details
+return res.send(`Please share details in the following format
+
+Part Name + Vehicle Make + Vehicle Model + Model Year
 
 Example
-Honda Civic 2018 Brake Pad
+Brake Pad Toyota Corolla 2018
 
 # TO RETURN TO MAIN MENU`)
 
 }
 
-if(message==="2"){
+if(message === "2"){
 
-session.state="ACCESSORIES"
+session.state = "ACCESSORIES"
 
-return res.send(`Share accessory details
+return res.send(`Please share accessory details
 
 Example
 Toyota Revo Floor Mats
@@ -92,17 +131,17 @@ Toyota Revo Floor Mats
 
 }
 
-if(message==="3"){
+if(message === "3"){
 
 return res.send(processDecals())
 
 }
 
-if(message==="4"){
+if(message === "4"){
 
-session.state="ORDER_STATUS"
+session.state = "ORDER_STATUS"
 
-return res.send(`Please share your order number
+return res.send(`Please share your Order Number
 
 Example
 ND12345
@@ -111,9 +150,9 @@ ND12345
 
 }
 
-if(message==="5"){
+if(message === "5"){
 
-session.state="CHAT_SUPPORT"
+session.state = "CHAT_SUPPORT"
 
 return res.send(`How can we assist you today?
 
@@ -121,16 +160,16 @@ return res.send(`How can we assist you today?
 
 }
 
-if(message==="6"){
+if(message === "6"){
 
-session.state="COMPLAINT"
+session.state = "COMPLAINT"
 
 return res.send(`We regret the inconvenience caused.
 
-Kindly share
+Kindly share the following
 
 Order Number
-Details
+Details of the Issue
 
 # TO RETURN TO MAIN MENU`)
 
@@ -140,51 +179,81 @@ return res.send(mainMenu())
 
 }
 
-/* AUTO PARTS */
+/* =====================================================
+AUTO PARTS FLOW
+===================================================== */
 
-if(session.state==="AUTO_PARTS"){
+if(session.state === "AUTO_PARTS"){
 
-const response=await processAutoParts(message)
+const response = await processAutoParts(message)
+
 return res.send(response)
 
 }
 
-/* ACCESSORIES */
+/* =====================================================
+ACCESSORIES FLOW
+===================================================== */
 
-if(session.state==="ACCESSORIES"){
+if(session.state === "ACCESSORIES"){
 
-const response=await processAccessories(message)
+const response = await processAccessories(message)
+
 return res.send(response)
 
 }
 
-/* ORDER */
+/* =====================================================
+DECALS FLOW
+===================================================== */
 
-if(session.state==="ORDER_STATUS"){
+if(session.state === "DECALS"){
+
+return res.send(processDecals())
+
+}
+
+/* =====================================================
+ORDER STATUS FLOW
+===================================================== */
+
+if(session.state === "ORDER_STATUS"){
 
 return res.send(processOrderStatus(message))
 
 }
 
-/* CHAT */
+/* =====================================================
+CHAT SUPPORT FLOW
+===================================================== */
 
-if(session.state==="CHAT_SUPPORT"){
+if(session.state === "CHAT_SUPPORT"){
 
 return res.send(processChatSupport(message))
 
 }
 
-/* COMPLAINT */
+/* =====================================================
+COMPLAINT FLOW
+===================================================== */
 
-if(session.state==="COMPLAINT"){
+if(session.state === "COMPLAINT"){
 
 return res.send(processComplaint(message))
 
 }
 
+/* =====================================================
+FALLBACK
+===================================================== */
+
 return res.send(escalate())
 
 })
+
+/* =====================================================
+HEALTH CHECK
+===================================================== */
 
 app.get("/",(req,res)=>{
 
@@ -192,8 +261,12 @@ res.send("NDE AI Server Running")
 
 })
 
+/* =====================================================
+START SERVER
+===================================================== */
+
 app.listen(PORT,()=>{
 
-console.log("Server running on port",PORT)
+console.log("NDE AI Server running on port",PORT)
 
 })
