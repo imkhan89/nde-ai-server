@@ -2,7 +2,7 @@ const { vehicles: VEHICLE_DB } = require("./data/vehicle_database")
 const GENERATIONS = require("./data/vehicle_generations")
 
 const { learnQuery } = require("./learning_engine")
-const { resolveVehicle } = require("./fitment_engine")
+const { resolveVehicle, getCompatibleParts } = require("./fitment_engine")
 
 const parse = require("./data/parser")
 const { GLOBAL_PART_INDEX } = require("./data/automotive_intelligence")
@@ -32,9 +32,7 @@ if(g.aliases){
 for(const a of g.aliases){
 
 if(text.includes(a.toLowerCase())){
-
 return g
-
 }
 
 }
@@ -42,9 +40,7 @@ return g
 }
 
 if(year && g.years.includes(year)){
-
 return g
-
 }
 
 }
@@ -86,16 +82,54 @@ const year = parsed.year
 const part = parsed.part
 const application = parsed.position
 
+/* =====================================================
+ALIAS VEHICLE RESOLUTION
+===================================================== */
+
 const aliasVehicle = resolveVehicle(clean)
+
+let engine = null
+let compatibleParts = null
 
 if(aliasVehicle && !vehicle.model){
 
 vehicle.make = aliasVehicle.make
 vehicle.model = aliasVehicle.model
+engine = aliasVehicle.engine
 
 }
 
+/* =====================================================
+GENERATION DETECTION
+===================================================== */
+
 let generation = detectGeneration(vehicle.make,vehicle.model,year,clean)
+
+/* =====================================================
+FITMENT COMPATIBILITY LOOKUP
+===================================================== */
+
+if(vehicle.make && vehicle.model && engine && part){
+
+const fitment = getCompatibleParts(
+vehicle.make,
+vehicle.model,
+engine,
+part.replace(/\s/g,"_")
+)
+
+if(fitment){
+
+compatibleParts = fitment.parts
+engine = fitment.engine
+
+}
+
+}
+
+/* =====================================================
+BUILD SEARCH QUERY
+===================================================== */
 
 const query=[
 application,
@@ -107,14 +141,20 @@ year
 .filter(Boolean)
 .join(" ")
 
+/* =====================================================
+RETURN RESULT
+===================================================== */
+
 return{
 
 make:cap(vehicle.make),
 model:cap(vehicle.model),
 generation:generation ? generation.generation : "Not Specified",
 year:year || "Not Specified",
+engine:engine ? engine.toUpperCase() : "Not Specified",
 part:cap(part),
 application:cap(application),
+compatibleParts:compatibleParts || [],
 query,
 url:buildSearchURL(query)
 
@@ -130,8 +170,10 @@ make:"Not Specified",
 model:"Not Specified",
 generation:"Not Specified",
 year:"Not Specified",
+engine:"Not Specified",
 part:"Not Specified",
 application:"Not Specified",
+compatibleParts:[],
 query:message,
 url:buildSearchURL(message)
 
