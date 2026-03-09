@@ -1,137 +1,172 @@
-const fuzzyMatchPart = require("./fuzzy_parts_engine");
-
-/* ======================================================
+/* =====================================================
 AUTOMOTIVE QUERY PARSER
-Converts messy customer queries into structured search
-====================================================== */
+Detects:
+Vehicle Make
+Vehicle Model
+Vehicle Year
+Part Position
+Builds structured query for AI engine
+===================================================== */
+
+const VEHICLE_LIST = require("./data/vehicle_list.txt")
+
+/* =====================================================
+NORMALIZE
+===================================================== */
+
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
+}
+
+/* =====================================================
+KNOWN MAKES
+===================================================== */
 
 const MAKES = [
-  "toyota",
-  "honda",
-  "suzuki",
-  "kia",
-  "hyundai",
-  "haval",
-  "changan"
-];
 
-const MODELS = {
-  toyota: ["corolla","yaris","hilux"],
-  honda: ["civic","city","brv"],
-  suzuki: ["alto","cultus","swift","wagon r"],
-  kia: ["sportage","picanto"],
-  hyundai: ["elantra","tucson"],
-  haval: ["h6","jolion"]
-};
+"toyota",
+"honda",
+"suzuki",
+"kia",
+"hyundai",
+"nissan",
+"mitsubishi",
+"changan",
+"haval",
+"mg",
+"proton",
+"daihatsu"
 
-const PARTS = [
-  "air filter",
-  "oil filter",
-  "cabin filter",
-  "brake pad",
-  "spark plug",
-  "radiator coolant",
-  "wiper blade"
-];
+]
 
-/* ======================================================
-NORMALIZATION
-====================================================== */
+/* =====================================================
+POSITION DETECTION
+===================================================== */
 
-const SYNONYMS = {
-  "break pad": "brake pad",
-  "brakepads": "brake pad",
-  "pads": "brake pad",
-  "airfilter": "air filter",
-  "oilfilter": "oil filter"
-};
+const POSITION_WORDS = {
 
-function normalizeQuery(query){
+front:"front",
+rear:"rear",
+left:"left",
+right:"right",
 
-  query = query.toLowerCase();
+upper:"upper",
+lower:"lower",
 
-  Object.keys(SYNONYMS).forEach(word=>{
-    query = query.replace(word,SYNONYMS[word]);
-  });
-
-  return query;
+lh:"left",
+rh:"right"
 
 }
 
-/* ======================================================
-DETECTION
-====================================================== */
+/* =====================================================
+YEAR DETECTION
+===================================================== */
 
-function detectMake(query){
+function detectYear(text){
 
-  for(const make of MAKES){
-    if(query.includes(make)) return make;
-  }
+const yearMatch = text.match(/\b(19|20)\d{2}\b/)
 
-  return null;
+if(yearMatch){
 
-}
-
-function detectModel(query,make){
-
-  if(!make) return null;
-
-  const models = MODELS[make] || [];
-
-  for(const model of models){
-    if(query.includes(model)) return model;
-  }
-
-  return null;
+return parseInt(yearMatch[0])
 
 }
 
-function detectPart(query){
-
-  for(const part of parts){
-    if(query.includes(part)){
-      return part;
-    }
-  }
-
-  const fuzzy = fuzzyMatchPart(query);
-
-  if(fuzzy){
-    return fuzzy;
-  }
-
-  return null;
+return null
 
 }
 
-function detectYear(query){
+/* =====================================================
+MAKE DETECTION
+===================================================== */
 
-  const match = query.match(/\b(19|20)\d{2}\b/);
+function detectMake(text){
 
-  return match ? match[0] : null;
+for(const make of MAKES){
+
+if(text.includes(make)){
+return make
+}
 
 }
 
-/* ======================================================
+return null
+
+}
+
+/* =====================================================
+MODEL DETECTION
+===================================================== */
+
+function detectModel(text,make){
+
+if(!make) return null
+
+const words = text.split(" ")
+
+const makeIndex = words.indexOf(make)
+
+if(makeIndex >= 0 && words.length > makeIndex+1){
+
+return words[makeIndex+1]
+
+}
+
+return null
+
+}
+
+/* =====================================================
+POSITION DETECTION
+===================================================== */
+
+function detectPosition(text){
+
+const words = text.split(" ")
+
+for(const word of words){
+
+if(POSITION_WORDS[word]){
+return POSITION_WORDS[word]
+}
+
+}
+
+return null
+
+}
+
+/* =====================================================
 MAIN PARSER
-====================================================== */
+===================================================== */
 
 function parseQuery(query){
 
-  query = normalizeQuery(query);
+const text = normalize(query)
 
-  const make = detectMake(query);
-  const model = detectModel(query,make);
-  const part = detectPart(query);
-  const year = detectYear(query);
+const year = detectYear(text)
 
-  return {
-    make,
-    model,
-    part,
-    year
-  };
+const make = detectMake(text)
+
+const model = detectModel(text,make)
+
+const position = detectPosition(text)
+
+return {
+
+make,
+model,
+year,
+position
 
 }
 
-module.exports = parseQuery;
+}
+
+module.exports = parseQuery
