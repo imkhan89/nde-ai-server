@@ -2,14 +2,38 @@ const fs = require("fs")
 const axios = require("axios")
 
 const SESSION_TIMEOUT = 1 * 60 * 1000
-  const ADMIN_WHATSAPP = "923214222294"
+const ADMIN_WHATSAPP = "923214222294"
+
+const LOG_FILE = "./logs/session_history.log"
+const ERROR_FILE = "./logs/errors.log"
 
 const sessions = {}
 let sessionCounter = 1
 
 
+// Ensure log directory exists
+function ensureLogs(){
+
+if(!fs.existsSync("./logs")){
+fs.mkdirSync("./logs")
+}
+
+if(!fs.existsSync(LOG_FILE)){
+fs.writeFileSync(LOG_FILE,"")
+}
+
+if(!fs.existsSync(ERROR_FILE)){
+fs.writeFileSync(ERROR_FILE,"")
+}
+
+}
+
+ensureLogs()
+
+
 // Generate Serial ID 000001 → 999999
 function generateSessionId(){
+
 let id = String(sessionCounter).padStart(6,"0")
 
 sessionCounter++
@@ -19,6 +43,7 @@ sessionCounter = 1
 }
 
 return id
+
 }
 
 
@@ -35,6 +60,11 @@ message
 }catch(err){
 
 console.error("WhatsApp Send Error:",err.message)
+
+fs.appendFileSync(
+ERROR_FILE,
+`${new Date().toISOString()} WhatsApp Send Error: ${err.message}\n`
+)
 
 }
 
@@ -97,6 +127,11 @@ time:new Date().toISOString(),
 error
 })
 
+fs.appendFileSync(
+ERROR_FILE,
+`${new Date().toISOString()} ${phone} ERROR: ${error}\n`
+)
+
 }
 
 
@@ -127,7 +162,8 @@ if(!session) return
 try{
 
 // Send customer message
-await sendWhatsApp(phone,
+await sendWhatsApp(
+phone,
 "Session ended. Thank you for contacting ndestore.com 🚗"
 )
 
@@ -144,9 +180,9 @@ endedAt:new Date().toISOString()
 }
 
 
-// Save to file
+// Save session history
 fs.appendFileSync(
-"./session_history.log",
+LOG_FILE,
 JSON.stringify(report,null,2)+"\n"
 )
 
@@ -154,12 +190,20 @@ JSON.stringify(report,null,2)+"\n"
 // Send report to admin WhatsApp
 await sendWhatsApp(
 ADMIN_WHATSAPP,
-`Session ${session.sessionId} ended\nCustomer: ${phone}\nLogs: ${session.logs.length}\nErrors: ${session.errors.length}`
+`Session ${session.sessionId} ended
+Customer: ${phone}
+Logs: ${session.logs.length}
+Errors: ${session.errors.length}`
 )
 
 }catch(err){
 
 console.error("Session End Error:",err.message)
+
+fs.appendFileSync(
+ERROR_FILE,
+`${new Date().toISOString()} Session End Error: ${err.message}\n`
+)
 
 }
 
