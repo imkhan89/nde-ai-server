@@ -3,8 +3,14 @@ NDESTORE WHATSAPP AI CONVERSATION ENGINE
 ===================================================== */
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
-const { searchProducts } = require("./product_search_engine")
-const { buildShopifySearch } = require("./shopify_search_engine")
+
+const { generateSearch } = require("./shopify_search_engine")
+
+const {
+searchProducts,
+findBestMatch,
+buildProductURL
+} = require("./product_search_engine")
 
 const { generateTicket } = require("./complaint_ticket_engine")
 const { handleKnowledge } = require("./knowledge_engine")
@@ -38,21 +44,36 @@ async function processAutoParts(message){
 
 const analysis = analyzeAutomotiveQuery(message)
 
-const query = analysis.query
+const searchURL = generateSearch(analysis)
 
-const searchURL = buildShopifySearch(query)
+const bestProduct = findBestMatch(analysis.query)
 
-return `Vehicle Detection
+let response = `Vehicle Detection
 
 Make: ${analysis.make || "Unknown"}
 Model: ${analysis.model || "Unknown"}
 Generation: ${analysis.generation || "Unknown"}
 Part: ${analysis.part || "Unknown"}
 
-Search Results
+`
+
+if(bestProduct){
+
+response += `Recommended Product
+
+${bestProduct.title}
+${buildProductURL(bestProduct.handle)}
+
+`
+
+}
+
+response += `Search Results
 ${searchURL}
 
 # TO RETURN TO MAIN MENU`
+
+return response
 
 }
 
@@ -62,7 +83,7 @@ ACCESSORIES
 
 async function processAccessories(message){
 
-const url = buildShopifySearch(message)
+const url = generateSearch({query:message})
 
 return `Accessory Search Results
 
@@ -106,7 +127,7 @@ return `Order Status
 Order Number
 ${orderNumber}
 
-Please track or check details at
+Track or check details at
 
 https://www.ndestore.com
 
@@ -130,7 +151,7 @@ return `${knowledge}
 
 }
 
-return `Our representative will assist you shortly.
+return `Our representative will assist you shortly
 
 WhatsApp
 +92 323 4954117
