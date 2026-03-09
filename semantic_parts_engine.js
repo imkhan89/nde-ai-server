@@ -1,130 +1,72 @@
 /* =====================================================
-AUTOMOTIVE SEMANTIC PARTS ENGINE
-Purpose: Detect correct automotive part names
-Fixes:
-disc pad -> brake pad
-disk pad -> brake pad
-pad -> brake pad
-disc -> brake rotor
+SEMANTIC PART DETECTION ENGINE
+Maps different user phrases to correct automotive part
 ===================================================== */
 
-function normalize(text){
+const PART_SYNONYMS = {
 
-return (text || "")
-.toLowerCase()
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim()
+"brake pad":[
+"brake pad",
+"brake pads",
+"disc pad",
+"disc pads",
+"brake disc pad",
+"brake disc pads",
+"brake disc",
+"pad"
+],
+
+"air filter":[
+"air filter",
+"engine air filter"
+],
+
+"oil filter":[
+"oil filter",
+"engine oil filter"
+],
+
+"cabin filter":[
+"cabin filter",
+"ac filter",
+"aircon filter"
+],
+
+"spark plug":[
+"spark plug",
+"spark plugs",
+"plug"
+],
+
+"brake shoe":[
+"brake shoe",
+"rear brake shoe"
+],
+
+"brake rotor":[
+"brake rotor",
+"disc rotor",
+"brake disc",
+"disc"
+]
 
 }
 
 /* =====================================================
-PHRASE MAP (Highest Priority)
+DETECT SEMANTIC PART
 ===================================================== */
 
-const PHRASE_MAP = {
+function semanticPartDetection(text){
 
-"disc pad":"brake pad",
-"disk pad":"brake pad",
-"disc brake pad":"brake pad",
-"brake disc pad":"brake pad",
+const query = (text || "").toLowerCase()
 
-"brake pad":"brake pad",
-"brake pads":"brake pad",
-"front pad":"brake pad",
-"rear pad":"brake pad",
+for(const part in PART_SYNONYMS){
 
-"disc rotor":"brake rotor",
-"disk rotor":"brake rotor",
-"brake disc":"brake rotor",
-"brake rotor":"brake rotor",
+for(const phrase of PART_SYNONYMS[part]){
 
-"engine oil":"engine oil",
-"gear oil":"gear oil",
-
-"air filter":"air filter",
-"engine air filter":"air filter",
-
-"oil filter":"oil filter",
-
-"ac filter":"cabin filter",
-"cabin filter":"cabin filter",
-
-"fuel filter":"fuel filter",
-
-"spark plug":"spark plug",
-"spark plugs":"spark plug",
-
-"radiator coolant":"coolant",
-"engine coolant":"coolant",
-"coolant":"coolant",
-
-"horn":"horn",
-"car horn":"horn",
-
-"wiper blade":"wiper blade",
-"wiper blades":"wiper blade",
-
-"floor mat":"floor mat",
-"floor mats":"floor mat"
-
+if(query.includes(phrase)){
+return part
 }
-
-/* =====================================================
-WORD MAP
-===================================================== */
-
-const WORD_MAP = {
-
-pad:"brake pad",
-pads:"brake pad",
-
-disc:"brake rotor",
-disk:"brake rotor",
-rotor:"brake rotor",
-
-filter:"filter",
-
-plug:"spark plug",
-
-coolant:"coolant",
-
-horn:"horn",
-
-mat:"floor mat",
-mats:"floor mat"
-
-}
-
-/* =====================================================
-SEMANTIC DETECTOR
-===================================================== */
-
-function semanticPartDetection(query){
-
-const text = normalize(query)
-
-/* phrase detection */
-
-for(const phrase in PHRASE_MAP){
-
-if(text.includes(phrase)){
-
-return PHRASE_MAP[phrase]
-
-}
-
-}
-
-/* word detection */
-
-const words = text.split(" ")
-
-for(const word of words){
-
-if(WORD_MAP[word]){
-
-return WORD_MAP[word]
 
 }
 
@@ -135,7 +77,5 @@ return null
 }
 
 module.exports = {
-
 semanticPartDetection
-
 }
