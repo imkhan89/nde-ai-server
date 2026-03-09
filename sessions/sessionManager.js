@@ -1,8 +1,8 @@
 const fs = require("fs")
 const axios = require("axios")
 
-const SESSION_TIMEOUT = 6 * 60 * 60 * 1000   // 6 hours
-const ADMIN_WHATSAPP = "923214222294"
+const SESSION_TIMEOUT = 1 * 60 * 1000
+  const ADMIN_WHATSAPP = "923214222294"
 
 const sessions = {}
 let sessionCounter = 1
