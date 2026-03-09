@@ -1,23 +1,36 @@
+/* =====================================================
+NDESTORE WHATSAPP AI SERVER
+===================================================== */
+
 require("dotenv").config()
 
 const express = require("express")
 const bodyParser = require("body-parser")
 
-const { mainMenu, processAutoParts } = require("./conversation_engine")
-const { generateTicket } = require("./complaint_ticket_engine")
-const { handleKnowledge } = require("./knowledge_engine")
-
 const sessionManager = require("./sessions/sessionManager")
+
+const {
+mainMenu,
+processAutoParts,
+processAccessories,
+processDecals,
+processCustomSticker,
+processOrderStatus,
+processChatSupport,
+processComplaint
+} = require("./conversation_engine")
+
+const { escalate } = require("./escalation_engine")
 
 const app = express()
 
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
 const PORT = process.env.PORT || 3000
 
 /* =====================================================
-SESSION CONFIG
+SESSION SETTINGS
 ===================================================== */
 
 const SESSION_TIMEOUT = 60 * 60 * 1000
@@ -26,23 +39,27 @@ const SESSION_TIMEOUT = 60 * 60 * 1000
 WHATSAPP WEBHOOK
 ===================================================== */
 
-app.post("/whatsapp", async (req, res) => {
+app.post("/whatsapp", async (req,res)=>{
 
 const message = (req.body.Body || "").trim()
-const from = req.body.From || ""
+const phone = req.body.From || ""
 
-let session = sessionManager.getSession(from)
+let session = sessionManager.getSession(phone)
 
-if (!session) {
+if(!session){
 
-session = sessionManager.createSession(from)
+session = sessionManager.createSession(phone)
 
 }
 
-if (Date.now() - session.lastActivity > SESSION_TIMEOUT) {
+/* =====================================================
+SESSION TIMEOUT
+===================================================== */
 
-sessionManager.resetSession(from)
-session = sessionManager.createSession(from)
+if(Date.now() - session.lastActivity > SESSION_TIMEOUT){
+
+sessionManager.resetSession(phone)
+session = sessionManager.createSession(phone)
 
 }
 
@@ -52,21 +69,22 @@ session.lastActivity = Date.now()
 RETURN TO MAIN MENU
 ===================================================== */
 
-if (message === "#") {
+if(message === "#"){
 
-session.state = "MENU"
+session.state="MENU"
 
 return res.send(mainMenu())
 
 }
 
 /* =====================================================
-STATE MACHINE
+FIRST MESSAGE
 ===================================================== */
 
-if (!session.state) {
+if(!session.state){
 
-session.state = "MENU"
+session.state="MENU"
+
 return res.send(mainMenu())
 
 }
@@ -75,103 +93,77 @@ return res.send(mainMenu())
 MAIN MENU
 ===================================================== */
 
-if (session.state === "MENU") {
+if(session.state==="MENU"){
 
-if (message === "1") {
+if(message==="1"){
 
-session.state = "AUTO_PARTS"
+session.state="AUTO_PARTS"
 
-return res.send(
-`Share the following details
-
-Vehicle Make
-Model Name
-Model Year
-Part Required
+return res.send(`Share vehicle and part details
 
 Example
 Honda Civic 2018 Brake Pad
 
-# TO RETURN TO MAIN MENU`
-)
+# TO RETURN TO MAIN MENU`)
 
 }
 
-if (message === "2") {
+if(message==="2"){
 
-session.state = "ACCESSORIES"
+session.state="ACCESSORIES"
 
-return res.send(
-`Please share
-
-Vehicle Make
-Model Name
-Model Year
-Accessory Required
+return res.send(`Share accessory details
 
 Example
-Toyota Revo 2021 Floor Mats
+Toyota Revo Floor Mats
 
-# TO RETURN TO MAIN MENU`
-)
-
-}
-
-if (message === "3") {
-
-return res.send(
-`Browse Stickers
-
-https://www.ndestore.com/collections/stickers-decal
-
-# TO RETURN TO MAIN MENU`
-)
+# TO RETURN TO MAIN MENU`)
 
 }
 
-if (message === "4") {
+if(message==="3"){
 
-session.state = "ORDER_STATUS"
+session.state="DECALS"
 
-return res.send(
-`Please share your Order Number
+return res.send(processDecals())
+
+}
+
+if(message==="4"){
+
+session.state="ORDER_STATUS"
+
+return res.send(`Please share your order number
 
 Example
 ND12345
 
-# TO RETURN TO MAIN MENU`
-)
+# TO RETURN TO MAIN MENU`)
 
 }
 
-if (message === "5") {
+if(message==="5"){
 
-session.state = "CHAT_SUPPORT"
+session.state="CHAT_SUPPORT"
 
-return res.send(
-`How can we assist you today?
+return res.send(`How can we assist you today?
 
-You may ask about auto parts, accessories, or decals.
-
-# TO RETURN TO MAIN MENU`
-)
+# TO RETURN TO MAIN MENU`)
 
 }
 
-if (message === "6") {
+if(message==="6"){
 
-session.state = "COMPLAINT"
+session.state="COMPLAINT"
 
-return res.send(
-`We regret the inconvenience caused.
+return res.send(`We regret the inconvenience caused.
 
-Kindly share the following information so our representative can assist you promptly.
+Kindly share the following information
 
-Order Number:
-Details of the Issue:
+Order Number
+Details
 
-# TO RETURN TO MAIN MENU`
-)
+# TO RETURN TO MAIN MENU`)
 
 }
 
@@ -180,137 +172,97 @@ return res.send(mainMenu())
 }
 
 /* =====================================================
-AUTO PARTS SEARCH
+AUTO PARTS FLOW
 ===================================================== */
 
-if (session.state === "AUTO_PARTS") {
+if(session.state==="AUTO_PARTS"){
 
-const result = processAutoParts(message)
+const response = await processAutoParts(message,phone)
 
-return res.send(
-`Vehicle Detected
-
-Make: ${result.analysis.make}
-Model: ${result.analysis.model}
-Year Range: ${result.analysis.generation}
-Part: ${result.analysis.part}
-
-Search Results
-${result.url}
-
-# TO RETURN TO MAIN MENU`
-)
+return res.send(response)
 
 }
 
 /* =====================================================
-ACCESSORIES SEARCH
+ACCESSORIES FLOW
 ===================================================== */
 
-if (session.state === "ACCESSORIES") {
+if(session.state==="ACCESSORIES"){
 
-const result = processAutoParts(message)
+const response = await processAccessories(message)
 
-return res.send(
-`Search Results
-
-${result.url}
-
-# TO RETURN TO MAIN MENU`
-)
+return res.send(response)
 
 }
 
 /* =====================================================
-ORDER STATUS
+DECALS FLOW
 ===================================================== */
 
-if (session.state === "ORDER_STATUS") {
+if(session.state==="DECALS"){
 
-return res.send(
-`Checking order status...
-
-Please visit
-
-https://www.ndestore.com
-
-# TO RETURN TO MAIN MENU`
-)
+return res.send(processDecals())
 
 }
 
 /* =====================================================
-CHAT SUPPORT
+ORDER STATUS FLOW
 ===================================================== */
 
-if (session.state === "CHAT_SUPPORT") {
+if(session.state==="ORDER_STATUS"){
 
-const knowledge = handleKnowledge(message)
-
-if (knowledge) {
-
-return res.send(
-`${knowledge}
-
-# TO RETURN TO MAIN MENU`
-)
-
-}
-
-return res.send(
-`Our representative will assist you shortly.
-
-WhatsApp
-+92 323 4954117
-
-# TO RETURN TO MAIN MENU`
-)
+return res.send(processOrderStatus(message))
 
 }
 
 /* =====================================================
-COMPLAINT SYSTEM
+CHAT SUPPORT FLOW
 ===================================================== */
 
-if (session.state === "COMPLAINT") {
+if(session.state==="CHAT_SUPPORT"){
 
-const lines = message.split("\n")
+const response = processChatSupport(message)
 
-const orderNumber = lines[0] || "UNKNOWN"
-
-const ticket = generateTicket(orderNumber)
-
-return res.send(
-`Complaint Registered
-
-Ticket Number: ${ticket}
-
-Our representative will contact you shortly.
-
-WhatsApp
-+92 323 4954117
-
-# TO RETURN TO MAIN MENU`
-)
+return res.send(response)
 
 }
 
-return res.send(mainMenu())
+/* =====================================================
+COMPLAINT FLOW
+===================================================== */
+
+if(session.state==="COMPLAINT"){
+
+const response = processComplaint(message)
+
+return res.send(response)
+
+}
+
+/* =====================================================
+FALLBACK
+===================================================== */
+
+return res.send(escalate())
 
 })
 
 /* =====================================================
-SERVER START
+HEALTH CHECK
 ===================================================== */
 
-app.get("/", (req, res) => {
+app.get("/",(req,res)=>{
 
 res.send("NDE AI Server Running")
 
 })
 
-app.listen(PORT, () => {
+/* =====================================================
+START SERVER
+===================================================== */
 
-console.log("Server running on port", PORT)
+app.listen(PORT,()=>{
+
+console.log("Server running on port",PORT)
 
 })
