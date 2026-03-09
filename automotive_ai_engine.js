@@ -1,5 +1,10 @@
 /* =====================================================
 AUTOMOTIVE AI CORE ENGINE
+Handles:
+Vehicle detection
+Year → generation conversion
+Part detection
+Shopify search query builder
 ===================================================== */
 
 const parseQuery = require("./automotive_query_parser")
@@ -16,9 +21,6 @@ function normalize(text){
 
 return (text || "")
 .toLowerCase()
-.replace(/\+/g," ")
-.replace(/-/g," ")
-.replace(/\//g," ")
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
 .trim()
@@ -26,20 +28,26 @@ return (text || "")
 }
 
 /* =====================================================
-GENERATION DETECTOR
+GENERATION DETECTION
 ===================================================== */
 
 function detectGeneration(make,model,year){
 
-if(!year) return null
+if(!make || !model || !year){
+return null
+}
 
-for(const v of VEHICLE_GENERATIONS){
+for(const vehicle of VEHICLE_GENERATIONS){
 
-if(v.make===make && v.model===model){
+if(vehicle.make === make && vehicle.model === model){
 
-if(v.years.includes(parseInt(year))){
+for(const range of vehicle.generations){
 
-return v.years[0] + "-" + v.years[v.years.length-1]
+if(year >= range.start && year <= range.end){
+
+return `${range.start}-${range.end}`
+
+}
 
 }
 
@@ -52,18 +60,52 @@ return null
 }
 
 /* =====================================================
-PART DETECTOR
+PART DETECTION
 ===================================================== */
 
-function detectPart(query){
+function detectPart(text){
 
-let part = semanticPartDetection(query)
+let part = semanticPartDetection(text)
 
-if(part) return part
+if(part){
+return part
+}
 
-part = fuzzyMatchPart(query)
+part = fuzzyMatchPart(text)
 
 return part
+
+}
+
+/* =====================================================
+QUERY BUILDER
+===================================================== */
+
+function buildQuery(data){
+
+let parts = []
+
+if(data.position){
+parts.push(data.position)
+}
+
+if(data.part){
+parts.push(data.part)
+}
+
+if(data.make){
+parts.push(data.make)
+}
+
+if(data.model){
+parts.push(data.model)
+}
+
+if(data.generation){
+parts.push(data.generation)
+}
+
+return parts.join(" ")
 
 }
 
@@ -77,30 +119,45 @@ const text = normalize(query)
 
 const parsed = parseQuery(text)
 
-const make = parsed.make || ""
-const model = parsed.model || ""
-const year = parsed.year || null
-
-const generation = detectGeneration(make,model,year)
-
 const part = detectPart(text)
 
-const finalQuery = `${part || ""} ${make} ${model} ${generation || ""}`.trim()
+const generation = detectGeneration(
 
-return{
+parsed.make,
+parsed.model,
+parsed.year
 
-query:finalQuery,
-make,
-model,
-year,
-generation,
-part
+)
+
+const searchQuery = buildQuery({
+
+position:parsed.position,
+part:part,
+make:parsed.make,
+model:parsed.model,
+generation:generation
+
+})
+
+return {
+
+query:searchQuery,
+
+make:parsed.make,
+model:parsed.model,
+year:parsed.year,
+
+generation:generation,
+
+position:parsed.position,
+
+part:part
 
 }
 
 }
 
-module.exports={
+module.exports = {
 
 analyzeAutomotiveQuery
 
