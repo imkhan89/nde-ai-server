@@ -1,6 +1,5 @@
 /* =====================================================
 NDESTORE WHATSAPP AI CONVERSATION ENGINE
-FAST VERSION (NO EXTERNAL API CALLS)
 ===================================================== */
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
@@ -27,9 +26,7 @@ Select one option to proceed
 5 Chat Support
 6 Complaints
 
-Reply with number
-
-# TO RETURN TO MAIN MENU`
+Reply with the number to continue`
 
 }
 
@@ -43,11 +40,9 @@ const analysis = analyzeAutomotiveQuery(message)
 
 const query = analysis.query
 
-const results = searchProducts(query)
-
 const searchURL = buildShopifySearch(query)
 
-let response = `Vehicle Detection
+return `Vehicle Detection
 
 Make: ${analysis.make || "Unknown"}
 Model: ${analysis.model || "Unknown"}
@@ -57,16 +52,12 @@ Part: ${analysis.part || "Unknown"}
 Search Results
 ${searchURL}
 
-`
-
-response += `# TO RETURN TO MAIN MENU`
-
-return response
+# TO RETURN TO MAIN MENU`
 
 }
 
 /* =====================================================
-ACCESSORIES SEARCH
+ACCESSORIES
 ===================================================== */
 
 async function processAccessories(message){
@@ -82,7 +73,7 @@ ${url}
 }
 
 /* =====================================================
-DECAL FLOW
+DECALS
 ===================================================== */
 
 function processDecals(){
@@ -93,7 +84,7 @@ https://www.ndestore.com/collections/stickers-decal
 
 For Custom Sticker
 
-Send:
+Send
 Image
 Required Dimensions
 
@@ -110,11 +101,13 @@ ORDER STATUS
 
 function processOrderStatus(orderNumber){
 
-return `Checking Order Status
+return `Order Status
 
-Order: ${orderNumber}
+Order Number
+${orderNumber}
 
-Visit
+Please track or check details at
+
 https://www.ndestore.com
 
 # TO RETURN TO MAIN MENU`
@@ -137,7 +130,7 @@ return `${knowledge}
 
 }
 
-return `Our representative will assist you shortly
+return `Our representative will assist you shortly.
 
 WhatsApp
 +92 323 4954117
@@ -147,7 +140,7 @@ WhatsApp
 }
 
 /* =====================================================
-COMPLAINT SYSTEM
+COMPLAINT
 ===================================================== */
 
 function processComplaint(message){
