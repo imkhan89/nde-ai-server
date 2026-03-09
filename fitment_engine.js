@@ -1,18 +1,18 @@
 /* =====================================================
 AUTOMOTIVE FITMENT ENGINE
-Verifies product compatibility with vehicle
+Verifies product compatibility
 ===================================================== */
 
 const fs = require("fs")
 const path = require("path")
 
-const FITMENT_DB = path.join(__dirname,"data","product_fitment.json")
+const FITMENT_PATH = path.join(__dirname,"data","vehicle_fitment.json")
 
 let FITMENTS=[]
 
 try{
 
-FITMENTS = JSON.parse(fs.readFileSync(FITMENT_DB,"utf8"))
+FITMENTS = JSON.parse(fs.readFileSync(FITMENT_PATH,"utf8"))
 
 }catch(e){
 
@@ -30,7 +30,7 @@ return (text || "")
 .toLowerCase()
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
-trim()
+.trim()
 
 }
 
@@ -38,12 +38,12 @@ trim()
 CHECK FITMENT
 ===================================================== */
 
-function checkFitment(vehicle){
+function checkFitment(data){
 
-const make = normalize(vehicle.make)
-const model = normalize(vehicle.model)
-const generation = normalize(vehicle.generation)
-const part = normalize(vehicle.part)
+const make = normalize(data.make)
+const model = normalize(data.model)
+const generation = normalize(data.generation)
+const part = normalize(data.part)
 
 for(const item of FITMENTS){
 
