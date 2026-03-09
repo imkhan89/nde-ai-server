@@ -1,20 +1,24 @@
+// automotive_ai_engine.js
+
 /* =====================================================
 AUTOMOTIVE AI CORE ENGINE
 Handles:
 Vehicle detection
-Alias detection (Pakistan vehicles)
+Pakistan vehicle alias detection
 Year → generation conversion
 Part detection
-Shopify search query builder
+Search query builder
 ===================================================== */
 
 const parseQuery = require("./automotive_query_parser")
+
 const { semanticPartDetection } = require("./semantic_parts_engine")
+
 const fuzzyMatchPart = require("./fuzzy_parts_engine")
 
 const VEHICLE_GENERATIONS = require("./data/vehicle_generations")
 
-const { detectVehicleAlias } = require("./vehicle_alias_engine")
+const { detectVehicleAlias } = require("./vehicle_knowledge_graph")
 
 /* =====================================================
 NORMALIZE
@@ -120,15 +124,15 @@ function analyzeAutomotiveQuery(query){
 
 const text = normalize(query)
 
-/* Parse Standard Query */
+/* Parse structured vehicle data */
 
 const parsed = parseQuery(text)
 
-/* Detect Pakistani Vehicle Alias */
+/* Detect Pakistan vehicle aliases */
 
 const aliasVehicle = detectVehicleAlias(text)
 
-/* Override vehicle if alias found */
+/* Override vehicle info if alias detected */
 
 let make = parsed.make
 let model = parsed.model
@@ -142,11 +146,11 @@ generation = aliasVehicle.generation
 
 }
 
-/* Detect Part */
+/* Detect automotive part */
 
 const part = detectPart(text)
 
-/* Detect Generation From Year */
+/* Detect generation using year */
 
 if(!generation){
 
@@ -160,7 +164,7 @@ parsed.year
 
 }
 
-/* Build Search Query */
+/* Build search query */
 
 const searchQuery = buildQuery({
 
@@ -189,6 +193,10 @@ part:part
 }
 
 }
+
+/* =====================================================
+EXPORT
+===================================================== */
 
 module.exports = {
 
