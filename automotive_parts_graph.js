@@ -1,79 +1,154 @@
 /* =====================================================
-AUTOMOTIVE PART KNOWLEDGE GRAPH
-Understands different customer part names
+AUTOMOTIVE PART INTELLIGENCE GRAPH
+Understands many variations of automotive parts
 ===================================================== */
 
 const PART_GRAPH = {
 
-"brake pad":[
-"brake pad",
-"brake pads",
-"disc pad",
-"disc pads",
-"brake disc pad",
+"brake pad":{
+keywords:[
 "pad",
 "pads",
-"brakepad",
-"break pad"
+"brake",
+"disc",
+"lining"
 ],
+priority:[
+"brake pad",
+"disc pad",
+"brake disc pad",
+"disc brake pad"
+]
+},
 
-"air filter":[
+"air filter":{
+keywords:[
+"air",
+"filter",
+"cleaner"
+],
+priority:[
 "air filter",
 "engine air filter",
-"airfilter",
 "air cleaner"
-],
+]
+},
 
-"oil filter":[
+"oil filter":{
+keywords:[
+"oil",
+"filter"
+],
+priority:[
 "oil filter",
-"engine oil filter",
-"oilfilter"
-],
+"engine oil filter"
+]
+},
 
-"cabin filter":[
+"cabin filter":{
+keywords:[
+"cabin",
+"ac",
+"aircon",
+"filter"
+],
+priority:[
 "cabin filter",
 "ac filter",
-"a c filter",
 "aircon filter"
-],
+]
+},
 
-"spark plug":[
-"spark plug",
-"spark plugs",
+"spark plug":{
+keywords:[
 "plug",
-"plugs"
+"spark"
 ],
+priority:[
+"spark plug"
+]
+},
 
-"brake rotor":[
+"brake rotor":{
+keywords:[
+"rotor",
+"disc",
+"brake"
+],
+priority:[
 "brake rotor",
 "disc rotor",
-"brake disc",
-"disc"
-],
+"brake disc"
+]
+},
 
-"brake shoe":[
+"brake shoe":{
+keywords:[
+"shoe",
+"brake"
+],
+priority:[
 "brake shoe",
 "rear brake shoe"
 ]
+}
 
 }
 
 /* =====================================================
-PART DETECTION
+NORMALIZE
+===================================================== */
+
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
+}
+
+/* =====================================================
+DETECT PART
 ===================================================== */
 
 function detectPartFromGraph(text){
 
-const query = (text || "").toLowerCase()
+const query = normalize(text)
+
+/* priority detection first */
 
 for(const part in PART_GRAPH){
 
-for(const keyword of PART_GRAPH[part]){
+for(const phrase of PART_GRAPH[part].priority){
 
-if(query.includes(keyword)){
+if(query.includes(phrase)){
 return part
 }
 
+}
+
+}
+
+/* keyword detection */
+
+const tokens = query.split(" ")
+
+for(const part in PART_GRAPH){
+
+let score = 0
+
+for(const keyword of PART_GRAPH[part].keywords){
+
+if(tokens.includes(keyword)){
+score++
+}
+
+}
+
+if(score >= 2){
+return part
 }
 
 }
