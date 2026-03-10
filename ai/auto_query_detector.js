@@ -38,7 +38,7 @@ const parts = [
 "brake hose rear",
 "abs wheel sensor",
 "abs pump",
-"abs control module"
+"abs control module",
 "engine air filter",
 "panel air filter",
 "sports air filter",
