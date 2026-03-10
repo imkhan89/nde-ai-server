@@ -4,7 +4,6 @@ Handles customer interaction flow
 ===================================================== */
 
 const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
-
 const { generateSearch } = require("./shopify_search_engine")
 
 const {
@@ -13,10 +12,9 @@ buildProductURL
 } = require("./product_search_engine")
 
 const { checkFitment } = require("./fitment_engine")
-
 const { generateTicket } = require("./complaint_ticket_engine")
-
 const { handleKnowledge } = require("./knowledge_engine")
+
 
 /* =====================================================
 MAIN MENU
@@ -39,6 +37,7 @@ Reply with the number to continue`
 
 }
 
+
 /* =====================================================
 AUTO PARTS PROCESSING
 ===================================================== */
@@ -46,6 +45,7 @@ AUTO PARTS PROCESSING
 async function processAutoParts(message){
 
 if(!message){
+
 return `Please share details in the following format
 
 Part Name + Vehicle Make + Vehicle Model + Model Year
@@ -54,6 +54,7 @@ Example
 Brake Pad Toyota Corolla 2018
 
 # TO RETURN TO MAIN MENU`
+
 }
 
 let analysis = {}
@@ -64,30 +65,54 @@ analysis = analyzeAutomotiveQuery(message)
 
 }catch(err){
 
+console.log("AI analysis error:",err)
 analysis = {}
 
 }
 
+
 /* =====================================================
-BUILD SEARCH QUERY
+SAFE QUERY BUILD
 ===================================================== */
 
-const searchURL = generateSearch(analysis || {query:message})
+const query = analysis.query || message
+
+let searchURL = ""
+
+try{
+
+searchURL = generateSearch({query})
+
+}catch(err){
+
+searchURL = `https://www.ndestore.com/search?q=${encodeURIComponent(query)}`
+
+}
+
+
+/* =====================================================
+PRODUCT SEARCH
+===================================================== */
 
 let bestProduct = null
 let fitment = null
 
 try{
 
-bestProduct = findBestMatch(analysis.query)
+bestProduct = findBestMatch(query)
 
-}catch(err){}
+}catch(err){
+console.log("Product search error:",err)
+}
 
 try{
 
 fitment = checkFitment(analysis)
 
-}catch(err){}
+}catch(err){
+console.log("Fitment check error:",err)
+}
+
 
 /* =====================================================
 RESPONSE BUILD
@@ -101,6 +126,7 @@ Generation: ${analysis.generation || "Unknown"}
 Part: ${analysis.part || "Unknown"}
 
 `
+
 
 /* =====================================================
 FITMENT MATCH
@@ -117,6 +143,7 @@ https://www.ndestore.com/products/${fitment.handle}
 
 }
 
+
 /* =====================================================
 LOCAL PRODUCT MATCH
 ===================================================== */
@@ -132,8 +159,9 @@ ${buildProductURL(bestProduct.handle)}
 
 }
 
+
 /* =====================================================
-SHOPIFY SEARCH FALLBACK
+SEARCH FALLBACK
 ===================================================== */
 
 response += `Search Results
@@ -144,6 +172,7 @@ ${searchURL}
 return response
 
 }
+
 
 /* =====================================================
 ACCESSORIES SEARCH
@@ -162,7 +191,17 @@ Toyota Revo Floor Mats
 
 }
 
-const url = generateSearch({query:message})
+let url = ""
+
+try{
+
+url = generateSearch({query:message})
+
+}catch(err){
+
+url = `https://www.ndestore.com/search?q=${encodeURIComponent(message)}`
+
+}
 
 return `Accessory Search Results
 
@@ -171,6 +210,7 @@ ${url}
 # TO RETURN TO MAIN MENU`
 
 }
+
 
 /* =====================================================
 DECAL STICKERS
@@ -194,6 +234,7 @@ Example
 # TO RETURN TO MAIN MENU`
 
 }
+
 
 /* =====================================================
 ORDER STATUS
@@ -225,13 +266,20 @@ https://www.ndestore.com
 
 }
 
+
 /* =====================================================
 CHAT SUPPORT
 ===================================================== */
 
 function processChatSupport(message){
 
-const knowledge = handleKnowledge(message)
+let knowledge = null
+
+try{
+
+knowledge = handleKnowledge(message)
+
+}catch(err){}
 
 if(knowledge){
 
@@ -249,6 +297,7 @@ WhatsApp
 # TO RETURN TO MAIN MENU`
 
 }
+
 
 /* =====================================================
 COMPLAINT SYSTEM
@@ -275,7 +324,13 @@ const lines = message.split("\n")
 
 const orderNumber = lines[0] || "UNKNOWN"
 
-const ticket = generateTicket(orderNumber)
+let ticket = "N/A"
+
+try{
+
+ticket = generateTicket(orderNumber)
+
+}catch(err){}
 
 return `Complaint Registered
 
@@ -292,6 +347,7 @@ WhatsApp
 # TO RETURN TO MAIN MENU`
 
 }
+
 
 /* =====================================================
 EXPORT
