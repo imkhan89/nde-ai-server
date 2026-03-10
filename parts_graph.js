@@ -104,11 +104,6 @@ const PARTS = {
 "windshield wiper blade"
 ],
 
-"timing belt":[
-"timing belt",
-"engine timing belt"
-],
-
 "serpentine belt":[
 "serpentine belt",
 "drive belt"
@@ -4504,11 +4499,6 @@ const PARTS = {
 "plug repair kit"
 ],
 
-"radiator coolant bottle":[
-"radiator coolant bottle",
-"coolant overflow bottle"
-],
-
 "coolant expansion tank":[
 "coolant expansion tank",
 "coolant tank"
@@ -4803,11 +4793,6 @@ const PARTS = {
 "oil separator",
 "engine oil separator"
 ]
-
-"transmission oil synthetic":[
-"synthetic transmission oil",
-"synthetic gear oil"
-],
 
 "automatic transmission oil":[
 "automatic transmission oil",
