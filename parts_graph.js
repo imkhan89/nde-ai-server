@@ -102,7 +102,7 @@ const PARTS = {
 "wiper blade":[
 "wiper blade",
 "windshield wiper blade"
-]
+],
 
 "timing belt":[
 "timing belt",
@@ -202,7 +202,7 @@ const PARTS = {
 "dipstick tube":[
 "dipstick tube",
 "oil dipstick tube"
-]
+],
 
 "brake caliper":[
 "brake caliper",
@@ -302,7 +302,7 @@ const PARTS = {
 "brake pedal pad":[
 "brake pedal pad",
 "brake rubber pad"
-]
+],
 
 "shock absorber":[
 "shock absorber",
@@ -402,7 +402,7 @@ const PARTS = {
 "lug nut":[
 "lug nut",
 "wheel nut"
-]
+],
 
 "headlight":[
 "headlight",
@@ -502,7 +502,7 @@ const PARTS = {
 "brake light switch":[
 "brake light switch",
 "stop light switch"
-]
+],
 
 "front bumper":[
 "front bumper",
@@ -602,7 +602,7 @@ const PARTS = {
 "door hinge":[
 "door hinge",
 "car door hinge"
-]
+],
 
 "door handle":[
 "door handle",
@@ -702,7 +702,7 @@ const PARTS = {
 "rear wiper":[
 "rear wiper",
 "rear wiper blade"
-]
+],
 
 "seat cover":[
 "seat cover",
@@ -802,7 +802,7 @@ const PARTS = {
 "antenna":[
 "car antenna",
 "radio antenna"
-]
+],
 
 "roof rack":[
 "roof rack",
@@ -902,7 +902,7 @@ const PARTS = {
 "engine cover":[
 "engine cover",
 "top engine cover"
-]
+],
 
 "key chain":[
 "car key chain",
@@ -1002,7 +1002,7 @@ const PARTS = {
 "car cover":[
 "car cover",
 "vehicle cover"
-]
+],
 
 "fuel pump":[
 "fuel pump",
@@ -1102,7 +1102,7 @@ const PARTS = {
 "intake manifold":[
 "intake manifold",
 "engine intake manifold"
-]
+],
 
 "intake hose":[
 "intake hose",
@@ -1202,7 +1202,7 @@ const PARTS = {
 "clutch kit":[
 "clutch kit",
 "clutch set"
-]
+],
 
 "clutch plate":[
 "clutch plate",
@@ -1302,7 +1302,7 @@ const PARTS = {
 "axle shaft":[
 "axle shaft",
 "drive shaft axle"
-]
+],
 
 "heater core":[
 "heater core",
@@ -1402,7 +1402,7 @@ const PARTS = {
 "ac clutch":[
 "ac clutch",
 "compressor clutch"
-]
+],
 
 "hood strut":[
 "hood strut",
@@ -1502,7 +1502,7 @@ const PARTS = {
 "window trim":[
 "window trim",
 "window molding"
-]
+],
 
 "seat belt":[
 "seat belt",
@@ -1602,7 +1602,7 @@ const PARTS = {
 "temperature gauge":[
 "temperature gauge",
 "engine temp gauge"
-]
+],
 
 "horn":[
 "car horn",
@@ -1702,7 +1702,7 @@ const PARTS = {
 "terminal connector":[
 "terminal connector",
 "wire terminal"
-]
+],
 
 "bumper reflector":[
 "bumper reflector",
@@ -1802,7 +1802,7 @@ const PARTS = {
 "tail light trim":[
 "tail light trim",
 "rear lamp trim"
-]
+],
 
 "car perfume":[
 "car perfume",
@@ -1902,7 +1902,7 @@ const PARTS = {
 "sound deadener":[
 "sound deadener",
 "noise insulation mat"
-]
+],
 
 "engine mount bracket":[
 "engine mount bracket",
@@ -2002,7 +2002,7 @@ const PARTS = {
 "relay cover":[
 "relay cover",
 "relay box cover"
-]
+],
 
 "engine valve":[
 "engine valve",
@@ -2102,7 +2102,7 @@ const PARTS = {
 "breather filter":[
 "breather filter",
 "engine breather filter"
-]
+],
 
 "fuel sender":[
 "fuel sender",
@@ -2202,7 +2202,7 @@ const PARTS = {
 "fuel pump bolt":[
 "fuel pump bolt",
 "pump mounting bolt"
-]
+],
 
 "radiator support":[
 "radiator support",
@@ -2302,7 +2302,7 @@ const PARTS = {
 "radiator mounting bolt":[
 "radiator mounting bolt",
 "radiator bolt"
-]
+],
 
 "door seal":[
 "door seal",
@@ -2402,7 +2402,7 @@ const PARTS = {
 "door trim fastener":[
 "door trim fastener",
 "panel fastener"
-]
+],
 
 "front seat":[
 "front seat",
@@ -2502,7 +2502,7 @@ const PARTS = {
 "seat clip":[
 "seat clip",
 "seat plastic clip"
-]
+],
 
 "steering wheel":[
 "steering wheel",
@@ -2602,7 +2602,7 @@ const PARTS = {
 "steering motor bracket":[
 "steering motor bracket",
 "motor bracket"
-]
+],
 
 "brake disc bolt":[
 "brake disc bolt",
@@ -2702,7 +2702,7 @@ const PARTS = {
 "brake reservoir bracket":[
 "brake reservoir bracket",
 "reservoir mount"
-]
+],
 
 "side step":[
 "side step",
@@ -2802,7 +2802,7 @@ const PARTS = {
 "tailgate sensor":[
 "tailgate sensor",
 "boot open sensor"
-]
+],
 
 "wheel rim":[
 "wheel rim",
@@ -2902,7 +2902,7 @@ const PARTS = {
 "wheel bearing grease":[
 "wheel bearing grease",
 "bearing grease"
-]
+],
 
 "car vacuum cleaner":[
 "car vacuum cleaner",
@@ -3002,7 +3002,7 @@ const PARTS = {
 "wash bucket":[
 "wash bucket",
 "car wash bucket"
-]
+],
 
 "sunroof motor":[
 "sunroof motor",
@@ -3102,7 +3102,7 @@ const PARTS = {
 "sunroof deflector":[
 "sunroof deflector",
 "roof wind deflector"
-]
+],
 
 "engine wiring":[
 "engine wiring",
@@ -3202,7 +3202,7 @@ const PARTS = {
 "wiring sleeve":[
 "wiring sleeve",
 "wire protection sleeve"
-]
+],
 
 "engine gasket":[
 "engine gasket",
@@ -3302,7 +3302,7 @@ const PARTS = {
 "oil seal":[
 "oil seal",
 "engine oil seal"
-]
+],
 
 "bumper reinforcement":[
 "bumper reinforcement",
@@ -3402,7 +3402,7 @@ const PARTS = {
 "hood trim":[
 "hood trim",
 "bonnet trim"
-]
+],
 
 "engine bay fuse":[
 "engine bay fuse",
@@ -3502,7 +3502,7 @@ const PARTS = {
 "steering ecu":[
 "steering ecu",
 "eps ecu"
-]
+],
 
 "mirror motor":[
 "mirror motor",
@@ -3602,7 +3602,7 @@ const PARTS = {
 "mirror gasket":[
 "mirror gasket",
 "mirror seal gasket"
-]
+],
 
 "engine cover clip":[
 "engine cover clip",
@@ -3702,7 +3702,7 @@ const PARTS = {
 "engine cover latch":[
 "engine cover latch",
 "cover latch"
-]
+],
 
 "license plate":[
 "license plate",
@@ -3802,7 +3802,7 @@ const PARTS = {
 "plate protector":[
 "plate protector",
 "plate guard"
-]
+],
 
 "cargo net":[
 "cargo net",
@@ -3902,7 +3902,7 @@ const PARTS = {
 "cargo floor":[
 "cargo floor",
 "trunk floor board"
-]
+],
 
 "car key":[
 "car key",
@@ -4002,7 +4002,7 @@ const PARTS = {
 "remote case":[
 "remote case",
 "key case"
-]
+],
 
 "carpet floor mat":[
 "carpet floor mat",
@@ -4102,7 +4102,7 @@ const PARTS = {
 "floor mat holder":[
 "floor mat holder",
 "mat holder"
-]
+],
 
 "trunk mat":[
 "trunk mat",
@@ -4202,7 +4202,7 @@ const PARTS = {
 "trunk mat clip":[
 "trunk mat clip",
 "boot mat clip"
-]
+],
 
 "door handle outer":[
 "outer door handle",
@@ -4302,7 +4302,7 @@ const PARTS = {
 "door handle insert":[
 "door handle insert",
 "handle insert trim"
-]
+],
 
 "door lock cylinder":[
 "door lock cylinder",
@@ -4402,7 +4402,7 @@ const PARTS = {
 "door lock cap":[
 "door lock cap",
 "lock cover cap"
-]
+],
 
 "spark plug iridium":[
 "iridium spark plug",
@@ -4602,7 +4602,7 @@ const PARTS = {
 "coolant drain valve":[
 "coolant drain valve",
 "radiator drain valve"
-]
+],
 
 "windshield glass":[
 "windshield glass",
@@ -4702,7 +4702,7 @@ const PARTS = {
 "windshield washer connector":[
 "washer connector",
 "washer wiring connector"
-]
+],
 
 "engine oil synthetic":[
 "synthetic engine oil",
@@ -4902,7 +4902,7 @@ const PARTS = {
 "gearbox oil temperature sensor":[
 "gearbox oil temperature sensor",
 "transmission temp sensor"
-]
+],
 
 "car button sticker":[
 "car button sticker",
