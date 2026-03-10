@@ -1,5 +1,3 @@
-// conversation_engine.js
-
 /* =====================================================
 NDESTORE WHATSAPP AI CONVERSATION ENGINE
 Handles customer interaction flow
@@ -47,13 +45,53 @@ AUTO PARTS PROCESSING
 
 async function processAutoParts(message){
 
-const analysis = analyzeAutomotiveQuery(message)
+if(!message){
+return `Please share details in the following format
 
-const searchURL = generateSearch(analysis)
+Part Name + Vehicle Make + Vehicle Model + Model Year
 
-const bestProduct = findBestMatch(analysis.query)
+Example
+Brake Pad Toyota Corolla 2018
 
-const fitment = checkFitment(analysis)
+# TO RETURN TO MAIN MENU`
+}
+
+let analysis = {}
+
+try{
+
+analysis = analyzeAutomotiveQuery(message)
+
+}catch(err){
+
+analysis = {}
+
+}
+
+/* =====================================================
+BUILD SEARCH QUERY
+===================================================== */
+
+const searchURL = generateSearch(analysis || {query:message})
+
+let bestProduct = null
+let fitment = null
+
+try{
+
+bestProduct = findBestMatch(analysis.query)
+
+}catch(err){}
+
+try{
+
+fitment = checkFitment(analysis)
+
+}catch(err){}
+
+/* =====================================================
+RESPONSE BUILD
+===================================================== */
 
 let response = `Vehicle Detection
 
@@ -95,7 +133,7 @@ ${buildProductURL(bestProduct.handle)}
 }
 
 /* =====================================================
-SHOPIFY SEARCH
+SHOPIFY SEARCH FALLBACK
 ===================================================== */
 
 response += `Search Results
@@ -112,6 +150,17 @@ ACCESSORIES SEARCH
 ===================================================== */
 
 async function processAccessories(message){
+
+if(!message){
+
+return `Please share accessory details
+
+Example
+Toyota Revo Floor Mats
+
+# TO RETURN TO MAIN MENU`
+
+}
 
 const url = generateSearch({query:message})
 
@@ -151,6 +200,17 @@ ORDER STATUS
 ===================================================== */
 
 function processOrderStatus(orderNumber){
+
+if(!orderNumber){
+
+return `Please share your order number
+
+Example
+ND12345
+
+# TO RETURN TO MAIN MENU`
+
+}
 
 return `Order Status
 
@@ -195,6 +255,21 @@ COMPLAINT SYSTEM
 ===================================================== */
 
 function processComplaint(message){
+
+if(!message){
+
+return `Please share the following
+
+Order Number
+Details of the Issue
+
+Example
+ND12345
+Product damaged
+
+# TO RETURN TO MAIN MENU`
+
+}
 
 const lines = message.split("\n")
 
