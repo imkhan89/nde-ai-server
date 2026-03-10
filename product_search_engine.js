@@ -1,7 +1,6 @@
 /* =====================================================
 PRODUCT SEARCH ENGINE
 Fast local product index search
-Verifies results before sending Shopify link
 ===================================================== */
 
 const fs = require("fs")
@@ -17,11 +16,20 @@ LOAD PRODUCT INDEX
 
 try{
 
-PRODUCTS = JSON.parse(fs.readFileSync(INDEX_PATH))
+if(fs.existsSync(INDEX_PATH)){
+
+const raw = fs.readFileSync(INDEX_PATH,"utf8")
+
+if(raw){
+PRODUCTS = JSON.parse(raw)
+}
+
+}
 
 }catch(e){
 
-console.log("Product index not found")
+console.log("Product index loading error:",e.message)
+PRODUCTS = []
 
 }
 
@@ -51,7 +59,11 @@ let results = []
 
 for(const p of PRODUCTS){
 
-if(p.searchable.includes(q)){
+if(!p) continue
+
+const searchable = normalize(p.searchable || p.title || "")
+
+if(searchable.includes(q)){
 
 results.push(p)
 
@@ -75,10 +87,8 @@ function findBestMatch(query){
 
 const results = searchProducts(query)
 
-if(results.length){
-
+if(results.length > 0){
 return results[0]
-
 }
 
 return null
@@ -93,11 +103,7 @@ function verifySearch(query){
 
 const results = searchProducts(query)
 
-if(results.length > 0){
-return true
-}
-
-return false
+return results.length > 0
 
 }
 
@@ -106,6 +112,8 @@ BUILD PRODUCT URL
 ===================================================== */
 
 function buildProductURL(handle){
+
+if(!handle) return ""
 
 return `https://www.ndestore.com/products/${handle}`
 
