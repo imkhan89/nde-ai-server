@@ -1,7 +1,3 @@
-/* =====================================================
-NDESTORE WHATSAPP AI SERVER
-===================================================== */
-
 require("dotenv").config()
 
 const express = require("express")
@@ -31,32 +27,27 @@ app.use(bodyParser.json())
 const PORT = process.env.PORT || 3000
 
 /* =====================================================
-HELPER FUNCTION (SEND WHATSAPP MESSAGE)
+SEND WHATSAPP MESSAGE
 ===================================================== */
 
 function sendMessage(res,text){
 
-const xml = `
-<Response>
+const xml = `<Response>
 <Message>${text}</Message>
 </Response>`
 
 res.set("Content-Type","text/xml")
-return res.send(xml)
+res.send(xml)
 
 }
-
-/* =====================================================
-SESSION SETTINGS
-===================================================== */
-
-const SESSION_TIMEOUT = 60 * 60 * 1000
 
 /* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
 
 app.post("/whatsapp", async (req,res)=>{
+
+try{
 
 const message = (req.body.Body || "").trim()
 const phone = req.body.From || ""
@@ -67,35 +58,16 @@ if(!session){
 session = sessionManager.createSession(phone)
 }
 
-if(!session.lastActivity){
-session.lastActivity = Date.now()
-}
-
-/* =====================================================
-SESSION TIMEOUT
-===================================================== */
-
-if(Date.now() - session.lastActivity > SESSION_TIMEOUT){
-
-sessionManager.resetSession(phone)
-session = sessionManager.createSession(phone)
-
-}
-
-session.lastActivity = Date.now()
-
 const text = message.toLowerCase()
 
 /* =====================================================
-RETURN TO MENU
+RESET MENU
 ===================================================== */
 
 if(message === "#"){
 
 sessionManager.resetSession(phone)
 session = sessionManager.createSession(phone)
-
-session.state = "MENU"
 
 return sendMessage(res, mainMenu())
 
@@ -105,28 +77,19 @@ return sendMessage(res, mainMenu())
 GREETING
 ===================================================== */
 
-if(
-text === "hi" ||
-text === "hello" ||
-text === "assalamualaikum" ||
-text === "salam"
-){
-
-session.state = "MENU"
+if(text === "hi" || text === "hello" || text === "salam"){
 
 return sendMessage(res, mainMenu())
 
 }
 
 /* =====================================================
-AUTO AI SEARCH
+AUTO SEARCH
 ===================================================== */
 
 try{
 
-const autoSearch = detectAutoQuery(text)
-
-if(autoSearch){
+if(detectAutoQuery(text)){
 
 const result = await processAutoParts(text)
 
@@ -138,12 +101,12 @@ return sendMessage(res,result)
 
 }catch(err){
 
-console.log("AI error:",err)
+console.log("AI search error",err)
 
 }
 
 /* =====================================================
-FIRST MESSAGE
+DEFAULT MENU
 ===================================================== */
 
 if(!session.state){
@@ -155,7 +118,7 @@ return sendMessage(res, mainMenu())
 }
 
 /* =====================================================
-MAIN MENU
+MENU
 ===================================================== */
 
 if(session.state === "MENU"){
@@ -164,14 +127,16 @@ if(message === "1"){
 
 session.state = "AUTO_PARTS"
 
-return sendMessage(res,`Please share details in the following format
+return sendMessage(res,
+`Please share details in the following format
 
-Part Name + Vehicle Make + Vehicle Model + Model Year
+Part Name + Vehicle Make + Model + Year
 
 Example
 Brake Pad Toyota Corolla 2018
 
-# TO RETURN TO MAIN MENU`)
+# TO RETURN TO MAIN MENU`
+)
 
 }
 
@@ -179,31 +144,31 @@ if(message === "2"){
 
 session.state = "ACCESSORIES"
 
-return sendMessage(res,`Please share accessory details
+return sendMessage(res,
+`Please share accessory details
 
 Example
 Toyota Revo Floor Mats
 
-# TO RETURN TO MAIN MENU`)
+# TO RETURN TO MAIN MENU`
+)
 
 }
 
 if(message === "3"){
-
 return sendMessage(res,processDecals())
-
 }
 
 if(message === "4"){
 
 session.state = "ORDER_STATUS"
 
-return sendMessage(res,`Please share your Order Number
+return sendMessage(res,
+`Please share your Order Number
 
 Example
-ND12345
-
-# TO RETURN TO MAIN MENU`)
+ND12345`
+)
 
 }
 
@@ -211,9 +176,9 @@ if(message === "5"){
 
 session.state = "CHAT_SUPPORT"
 
-return sendMessage(res,`How can we assist you today?
-
-# TO RETURN TO MAIN MENU`)
+return sendMessage(res,
+`How can we assist you today?`
+)
 
 }
 
@@ -221,14 +186,9 @@ if(message === "6"){
 
 session.state = "COMPLAINT"
 
-return sendMessage(res,`We regret the inconvenience caused.
-
-Kindly share the following
-
-Order Number
-Details of the Issue
-
-# TO RETURN TO MAIN MENU`)
+return sendMessage(res,
+`Please share Order Number and Issue`
+)
 
 }
 
@@ -237,27 +197,12 @@ return sendMessage(res, mainMenu())
 }
 
 /* =====================================================
-AUTO PARTS FLOW
+AUTO PARTS
 ===================================================== */
 
 if(session.state === "AUTO_PARTS"){
 
 const response = await processAutoParts(text)
-
-if(!response){
-
-return sendMessage(res,`We could not understand your request.
-
-Please use this format
-
-Part Name + Vehicle Make + Model + Year
-
-Example
-Brake Pad Toyota Corolla 2018
-
-# TO RETURN TO MAIN MENU`)
-
-}
 
 return sendMessage(res,response)
 
@@ -272,16 +217,6 @@ if(session.state === "ACCESSORIES"){
 const response = await processAccessories(text)
 
 return sendMessage(res,response)
-
-}
-
-/* =====================================================
-DECALS
-===================================================== */
-
-if(session.state === "DECALS"){
-
-return sendMessage(res,processDecals())
 
 }
 
@@ -321,6 +256,14 @@ FALLBACK
 
 return sendMessage(res, escalate())
 
+}catch(err){
+
+console.log("Webhook error:",err)
+
+return sendMessage(res,"System temporarily unavailable")
+
+}
+
 })
 
 /* =====================================================
@@ -339,6 +282,6 @@ START SERVER
 
 app.listen(PORT,()=>{
 
-console.log("NDE AI Server running on port",PORT)
+console.log("Server running on port",PORT)
 
 })
