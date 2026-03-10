@@ -4502,7 +4502,7 @@ const PARTS = {
 "spark plug repair kit":[
 "spark plug repair kit",
 "plug repair kit"
-]
+],
 
 "radiator coolant bottle":[
 "radiator coolant bottle",
