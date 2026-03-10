@@ -45,6 +45,23 @@ return res.send(xml)
 
 
 /* =====================================================
+NORMALIZE + FORMAT INPUT
+(Handles + separator format)
+===================================================== */
+
+function normalizeInput(text){
+
+if(!text) return ""
+
+return text
+.replace(/\+/g," ")
+.replace(/\s+/g," ")
+.trim()
+
+}
+
+
+/* =====================================================
 WHATSAPP WEBHOOK
 ===================================================== */
 
@@ -54,12 +71,14 @@ try{
 
 console.log("Incoming Request:",req.body)
 
-const message = (req.body.Body || "").trim()
+let message = (req.body.Body || "").trim()
 const phone = req.body.From || ""
 
 if(!message){
 return sendMessage(res,mainMenu())
 }
+
+message = normalizeInput(message)
 
 let session = sessionManager.getSession(phone)
 
@@ -109,7 +128,6 @@ return sendMessage(res,mainMenu())
 
 /* =====================================================
 AI AUTO PARTS DETECTION
-(works even without selecting menu)
 ===================================================== */
 
 const aiQuery = detectAutoQuery(message)
@@ -204,14 +222,14 @@ if(message === "1"){
 session.state = "AUTO_PARTS"
 
 return sendMessage(res,
-`Please share details in the following format
+`Send request in this format:
 
-Part Name + Vehicle Make + Vehicle Model + Model Year
+Part + Make + Model + Year
 
 Example
-Brake Pad Toyota Corolla 2018
+Oil Filter + Toyota + Corolla + 2018
 
-# TO RETURN TO MAIN MENU`)
+Type # for Main Menu.`)
 
 }
 
@@ -225,7 +243,7 @@ return sendMessage(res,
 Example
 Toyota Revo Floor Mats
 
-# TO RETURN TO MAIN MENU`)
+Type # for Main Menu.`)
 
 }
 
