@@ -52,8 +52,14 @@ app.post("/whatsapp", async (req,res)=>{
 
 try{
 
+console.log("Incoming Request:",req.body)
+
 const message = (req.body.Body || "").trim()
 const phone = req.body.From || ""
+
+if(!message){
+return sendMessage(res,mainMenu())
+}
 
 let session = sessionManager.getSession(phone)
 
@@ -62,6 +68,9 @@ session = sessionManager.createSession(phone)
 }
 
 const text = message.toLowerCase()
+
+console.log("Message:",message)
+console.log("Session:",session)
 
 
 /* =====================================================
@@ -73,6 +82,8 @@ if(message === "#"){
 sessionManager.resetSession(phone)
 session = sessionManager.createSession(phone)
 
+session.state = "MENU"
+
 return sendMessage(res,mainMenu())
 
 }
@@ -82,7 +93,12 @@ return sendMessage(res,mainMenu())
 GREETING
 ===================================================== */
 
-if(text === "hi" || text === "hello" || text === "salam" || text === "assalamualaikum"){
+if(
+text === "hi" ||
+text === "hello" ||
+text === "salam" ||
+text === "assalamualaikum"
+){
 
 session.state = "MENU"
 
@@ -92,7 +108,25 @@ return sendMessage(res,mainMenu())
 
 
 /* =====================================================
-AUTO PARTS FLOW  (CHECK FIRST)
+AI AUTO PARTS DETECTION
+(works even without selecting menu)
+===================================================== */
+
+const aiQuery = detectAutoQuery(message)
+
+if(aiQuery){
+
+session.state = "AUTO_PARTS"
+
+const response = await processAutoParts(message)
+
+return sendMessage(res,response)
+
+}
+
+
+/* =====================================================
+AUTO PARTS FLOW
 ===================================================== */
 
 if(session.state === "AUTO_PARTS"){
@@ -151,7 +185,7 @@ return sendMessage(res,processComplaint(message))
 
 
 /* =====================================================
-DEFAULT MENU STATE
+DEFAULT SESSION STATE
 ===================================================== */
 
 if(!session.state){
@@ -237,10 +271,10 @@ return sendMessage(res,mainMenu())
 
 
 /* =====================================================
-FALLBACK
+FINAL FALLBACK
 ===================================================== */
 
-return sendMessage(res,escalate())
+return sendMessage(res,mainMenu())
 
 }catch(err){
 
