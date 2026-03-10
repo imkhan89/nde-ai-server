@@ -21,6 +21,8 @@ processComplaint
 
 const { escalate } = require("./escalation_engine")
 
+const detectAutoQuery = require("./ai/auto_query_detector")
+
 const app = express()
 
 app.use(bodyParser.urlencoded({ extended:false }))
@@ -43,10 +45,6 @@ app.post("/whatsapp", async (req,res)=>{
 const message = (req.body.Body || "").trim()
 const phone = req.body.From || ""
 
-/* =====================================================
-SESSION LOAD
-===================================================== */
-
 let session = sessionManager.getSession(phone)
 
 if(!session){
@@ -56,32 +54,67 @@ session = sessionManager.createSession(phone)
 }
 
 /* =====================================================
-SESSION TIMEOUT CHECK
+SESSION TIMEOUT
 ===================================================== */
 
 if(Date.now() - session.lastActivity > SESSION_TIMEOUT){
 
 sessionManager.resetSession(phone)
-
 session = sessionManager.createSession(phone)
 
 }
 
 session.lastActivity = Date.now()
 
+const text = message.toLowerCase()
+
 /* =====================================================
-RETURN TO MAIN MENU
+RETURN TO MENU
 ===================================================== */
 
 if(message === "#"){
 
 sessionManager.resetSession(phone)
-
 session = sessionManager.createSession(phone)
 
 session.state = "MENU"
 
 return res.send(mainMenu())
+
+}
+
+/* =====================================================
+GREETING DETECTION
+===================================================== */
+
+if(
+text === "hi" ||
+text === "hello" ||
+text === "assalamualaikum" ||
+text === "salam"
+){
+
+session.state = "MENU"
+
+return res.send(mainMenu())
+
+}
+
+/* =====================================================
+AUTO AI SEARCH (DIRECT SEARCH WITHOUT MENU)
+===================================================== */
+
+const autoSearch = detectAutoQuery(text)
+
+if(autoSearch){
+
+const result = await processAutoParts(text)
+
+if(result){
+
+return res.send(result)
+
+}
 
 }
 
@@ -185,7 +218,22 @@ AUTO PARTS FLOW
 
 if(session.state === "AUTO_PARTS"){
 
-const response = await processAutoParts(message)
+const response = await processAutoParts(text)
+
+if(!response){
+
+return res.send(`We could not understand your request.
+
+Please use this format
+
+Part Name + Vehicle Make + Model + Year
+
+Example
+Brake Pad Toyota Corolla 2018
+
+# TO RETURN TO MAIN MENU`)
+
+}
 
 return res.send(response)
 
@@ -197,14 +245,14 @@ ACCESSORIES FLOW
 
 if(session.state === "ACCESSORIES"){
 
-const response = await processAccessories(message)
+const response = await processAccessories(text)
 
 return res.send(response)
 
 }
 
 /* =====================================================
-DECALS FLOW
+DECALS
 ===================================================== */
 
 if(session.state === "DECALS"){
@@ -214,32 +262,32 @@ return res.send(processDecals())
 }
 
 /* =====================================================
-ORDER STATUS FLOW
+ORDER STATUS
 ===================================================== */
 
 if(session.state === "ORDER_STATUS"){
 
-return res.send(processOrderStatus(message))
+return res.send(processOrderStatus(text))
 
 }
 
 /* =====================================================
-CHAT SUPPORT FLOW
+CHAT SUPPORT
 ===================================================== */
 
 if(session.state === "CHAT_SUPPORT"){
 
-return res.send(processChatSupport(message))
+return res.send(processChatSupport(text))
 
 }
 
 /* =====================================================
-COMPLAINT FLOW
+COMPLAINT
 ===================================================== */
 
 if(session.state === "COMPLAINT"){
 
-return res.send(processComplaint(message))
+return res.send(processComplaint(text))
 
 }
 
