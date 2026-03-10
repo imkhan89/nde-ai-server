@@ -6,9 +6,6 @@ require("dotenv").config()
 
 const express = require("express")
 const bodyParser = require("body-parser")
-const twilio = require("twilio")
-
-const MessagingResponse = twilio.twiml.MessagingResponse
 
 const sessionManager = require("./sessions/sessionManager")
 
@@ -34,6 +31,22 @@ app.use(bodyParser.json())
 const PORT = process.env.PORT || 3000
 
 /* =====================================================
+HELPER FUNCTION (SEND WHATSAPP MESSAGE)
+===================================================== */
+
+function sendMessage(res,text){
+
+const xml = `
+<Response>
+<Message>${text}</Message>
+</Response>`
+
+res.set("Content-Type","text/xml")
+return res.send(xml)
+
+}
+
+/* =====================================================
 SESSION SETTINGS
 ===================================================== */
 
@@ -47,8 +60,6 @@ app.post("/whatsapp", async (req,res)=>{
 
 const message = (req.body.Body || "").trim()
 const phone = req.body.From || ""
-
-const twiml = new MessagingResponse()
 
 let session = sessionManager.getSession(phone)
 
@@ -86,13 +97,12 @@ session = sessionManager.createSession(phone)
 
 session.state = "MENU"
 
-twiml.message(mainMenu())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res, mainMenu())
 
 }
 
 /* =====================================================
-GREETING DETECTION
+GREETING
 ===================================================== */
 
 if(
@@ -104,8 +114,7 @@ text === "salam"
 
 session.state = "MENU"
 
-twiml.message(mainMenu())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res, mainMenu())
 
 }
 
@@ -122,17 +131,14 @@ if(autoSearch){
 const result = await processAutoParts(text)
 
 if(result){
-
-twiml.message(result)
-return res.type("text/xml").send(twiml.toString())
-
+return sendMessage(res,result)
 }
 
 }
 
 }catch(err){
 
-console.log("AI search error:",err)
+console.log("AI error:",err)
 
 }
 
@@ -144,8 +150,7 @@ if(!session.state){
 
 session.state = "MENU"
 
-twiml.message(mainMenu())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res, mainMenu())
 
 }
 
@@ -159,7 +164,7 @@ if(message === "1"){
 
 session.state = "AUTO_PARTS"
 
-twiml.message(`Please share details in the following format
+return sendMessage(res,`Please share details in the following format
 
 Part Name + Vehicle Make + Vehicle Model + Model Year
 
@@ -168,29 +173,24 @@ Brake Pad Toyota Corolla 2018
 
 # TO RETURN TO MAIN MENU`)
 
-return res.type("text/xml").send(twiml.toString())
-
 }
 
 if(message === "2"){
 
 session.state = "ACCESSORIES"
 
-twiml.message(`Please share accessory details
+return sendMessage(res,`Please share accessory details
 
 Example
 Toyota Revo Floor Mats
 
 # TO RETURN TO MAIN MENU`)
 
-return res.type("text/xml").send(twiml.toString())
-
 }
 
 if(message === "3"){
 
-twiml.message(processDecals())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,processDecals())
 
 }
 
@@ -198,14 +198,12 @@ if(message === "4"){
 
 session.state = "ORDER_STATUS"
 
-twiml.message(`Please share your Order Number
+return sendMessage(res,`Please share your Order Number
 
 Example
 ND12345
 
 # TO RETURN TO MAIN MENU`)
-
-return res.type("text/xml").send(twiml.toString())
 
 }
 
@@ -213,11 +211,9 @@ if(message === "5"){
 
 session.state = "CHAT_SUPPORT"
 
-twiml.message(`How can we assist you today?
+return sendMessage(res,`How can we assist you today?
 
 # TO RETURN TO MAIN MENU`)
-
-return res.type("text/xml").send(twiml.toString())
 
 }
 
@@ -225,7 +221,7 @@ if(message === "6"){
 
 session.state = "COMPLAINT"
 
-twiml.message(`We regret the inconvenience caused.
+return sendMessage(res,`We regret the inconvenience caused.
 
 Kindly share the following
 
@@ -234,12 +230,9 @@ Details of the Issue
 
 # TO RETURN TO MAIN MENU`)
 
-return res.type("text/xml").send(twiml.toString())
-
 }
 
-twiml.message(mainMenu())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res, mainMenu())
 
 }
 
@@ -253,7 +246,7 @@ const response = await processAutoParts(text)
 
 if(!response){
 
-twiml.message(`We could not understand your request.
+return sendMessage(res,`We could not understand your request.
 
 Please use this format
 
@@ -264,25 +257,21 @@ Brake Pad Toyota Corolla 2018
 
 # TO RETURN TO MAIN MENU`)
 
-return res.type("text/xml").send(twiml.toString())
-
 }
 
-twiml.message(response)
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,response)
 
 }
 
 /* =====================================================
-ACCESSORIES FLOW
+ACCESSORIES
 ===================================================== */
 
 if(session.state === "ACCESSORIES"){
 
 const response = await processAccessories(text)
 
-twiml.message(response)
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,response)
 
 }
 
@@ -292,8 +281,7 @@ DECALS
 
 if(session.state === "DECALS"){
 
-twiml.message(processDecals())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,processDecals())
 
 }
 
@@ -303,8 +291,7 @@ ORDER STATUS
 
 if(session.state === "ORDER_STATUS"){
 
-twiml.message(processOrderStatus(text))
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,processOrderStatus(text))
 
 }
 
@@ -314,8 +301,7 @@ CHAT SUPPORT
 
 if(session.state === "CHAT_SUPPORT"){
 
-twiml.message(processChatSupport(text))
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,processChatSupport(text))
 
 }
 
@@ -325,8 +311,7 @@ COMPLAINT
 
 if(session.state === "COMPLAINT"){
 
-twiml.message(processComplaint(text))
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res,processComplaint(text))
 
 }
 
@@ -334,8 +319,7 @@ return res.type("text/xml").send(twiml.toString())
 FALLBACK
 ===================================================== */
 
-twiml.message(escalate())
-return res.type("text/xml").send(twiml.toString())
+return sendMessage(res, escalate())
 
 })
 
@@ -344,7 +328,9 @@ HEALTH CHECK
 ===================================================== */
 
 app.get("/",(req,res)=>{
+
 res.send("NDE AI Server Running")
+
 })
 
 /* =====================================================
@@ -352,5 +338,7 @@ START SERVER
 ===================================================== */
 
 app.listen(PORT,()=>{
+
 console.log("NDE AI Server running on port",PORT)
+
 })
