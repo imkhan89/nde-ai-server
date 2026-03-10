@@ -1,31 +1,17 @@
 /* =====================================================
-AUTOMOTIVE PARTS KNOWLEDGE GRAPH
+AUTOMOTIVE PARTS GRAPH
 ===================================================== */
 
-const PARTS_GRAPH = {
+const PARTS = {
 
-"brake pad":[
-"pad",
-"pads",
-"disc pad",
-"brake disc pad",
-"brake pad"
-],
-
-"brake rotor":[
-"disc rotor",
-"rotor",
-"brake disc"
+"oil filter":[
+"oil filter",
+"engine oil filter"
 ],
 
 "air filter":[
 "air filter",
-"air cleaner",
 "engine air filter"
-],
-
-"oil filter":[
-"oil filter"
 ],
 
 "cabin filter":[
@@ -34,59 +20,36 @@ const PARTS_GRAPH = {
 "aircon filter"
 ],
 
+"fuel filter":[
+"fuel filter"
+],
+
+"brake pad":[
+"brake pad",
+"brake pads"
+],
+
+"brake disc":[
+"brake disc",
+"brake rotor"
+],
+
 "spark plug":[
 "spark plug",
-"plug"
-],
-
-"radiator":[
-"radiator"
-],
-
-"radiator cap":[
-"radiator cap"
-],
-
-"clutch plate":[
-"clutch plate",
-"clutch disc"
-],
-
-"shock absorber":[
-"shock",
-"shock absorber",
-"suspension shock"
-],
-
-"control arm":[
-"control arm",
-"lower arm"
-],
-
-"ball joint":[
-"ball joint"
-],
-
-"wheel bearing":[
-"wheel bearing",
-"bearing"
+"spark plugs"
 ]
 
 }
 
-/* =====================================================
-DETECT PART
-===================================================== */
-
 function detectPart(text){
 
-const query = (text || "").toLowerCase()
+text = text.toLowerCase()
 
-for(const part in PARTS_GRAPH){
+for(const part in PARTS){
 
-for(const keyword of PARTS_GRAPH[part]){
+for(const keyword of PARTS[part]){
 
-if(query.includes(keyword)){
+if(text.includes(keyword)){
 return part
 }
 
@@ -98,6 +61,4 @@ return null
 
 }
 
-module.exports = {
-detectPart
-}
+module.exports = {detectPart}
