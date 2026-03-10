@@ -22,18 +22,18 @@ MAIN MENU
 
 function mainMenu(){
 
-return `Welcome to NDESTORE.COM
+return `Welcome to ndestore.com
 
-Select one option to proceed
+Choose an option:
 
 1 Auto Parts
 2 Accessories
 3 Decal Stickers
 4 Order Status
-5 Chat Support
+5 Support
 6 Complaints
 
-Reply with the number to continue`
+Reply with a number to continue.`
 
 }
 
@@ -46,14 +46,14 @@ async function processAutoParts(message){
 
 if(!message){
 
-return `Please share details in the following format
+return `Send request in this format:
 
-Part Name + Vehicle Make + Vehicle Model + Model Year
+Part + Make + Model + Year
 
 Example
-Brake Pad Toyota Corolla 2018
+Oil Filter + Toyota + Corolla + 2018
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -167,7 +167,7 @@ SEARCH FALLBACK
 response += `Search Results
 ${searchURL}
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 return response
 
@@ -187,7 +187,7 @@ return `Please share accessory details
 Example
 Toyota Revo Floor Mats
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -207,7 +207,7 @@ return `Accessory Search Results
 
 ${url}
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -231,7 +231,7 @@ Required Dimensions
 Example
 10 inch x 4 inch
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -249,7 +249,7 @@ return `Please share your order number
 Example
 ND12345
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -262,7 +262,7 @@ Track or check details at
 
 https://www.ndestore.com
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -285,7 +285,7 @@ if(knowledge){
 
 return `${knowledge}
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -294,7 +294,7 @@ return `Our representative will assist you shortly
 WhatsApp
 +92 323 4954117
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -316,7 +316,7 @@ Example
 ND12345
 Product damaged
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
@@ -344,7 +344,7 @@ Our representative will contact you shortly.
 WhatsApp
 +92 323 4954117
 
-# TO RETURN TO MAIN MENU`
+Type # for Main Menu.`
 
 }
 
