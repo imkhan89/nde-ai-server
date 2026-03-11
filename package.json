@@ -1,31 +1,13 @@
 {
-  "name": "nde-ai-server",
+  "name": "automotive-ai-engine",
   "version": "1.0.0",
-  "description": "Automotive AI assistant for ndestore.com handling WhatsApp automotive parts inquiries, vehicle detection, and intelligent product search.",
-  "main": "server.js",
-  "type": "commonjs",
+  "description": "Automotive AI search engine",
+  "main": "AI/server.js",
   "scripts": {
-    "start": "node server.js",
-    "build:index": "node buildProductIndex.js && node buildSearchIndex.js"
-  },
-  "keywords": [
-    "automotive",
-    "ai",
-    "whatsapp",
-    "chatbot",
-    "vehicle",
-    "auto-parts",
-    "nde-store"
-  ],
-  "author": "ndestore.com",
-  "license": "MIT",
-  "engines": {
-    "node": ">=18"
+    "start": "node AI/server.js"
   },
   "dependencies": {
-    "axios": "^1.6.7",
-    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "fuse.js": "^7.0.0"
+    "body-parser": "^1.20.2"
   }
 }
