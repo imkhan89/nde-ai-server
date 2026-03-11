@@ -8,7 +8,6 @@ Year → generation detection
 Part detection
 Position detection
 Search query builder
-
 ===================================================== */
 
 const parseQuery = require("./automotive_query_parser")
@@ -23,8 +22,9 @@ const { detectVehicle } = require("./vehicle_graph")
 
 const { detectPart } = require("./parts_graph")
 
+
 /* =====================================================
-NORMALIZE
+NORMALIZE INPUT
 ===================================================== */
 
 function normalize(text){
@@ -40,11 +40,12 @@ return text
 
 }
 
+
 /* =====================================================
 GENERATION DETECTION
 ===================================================== */
 
-function detectGeneration(make,model,year){
+function detectGeneration(make, model, year){
 
 if(!make || !model || !year){
 return null
@@ -72,6 +73,7 @@ return null
 
 }
 
+
 /* =====================================================
 SMART PART DETECTION
 Priority:
@@ -79,26 +81,33 @@ Priority:
 1 Direct graph match
 2 Semantic match
 3 Fuzzy fallback
-
 ===================================================== */
 
 function detectPartSmart(text){
 
 if(!text) return null
 
-let part = detectPart(text)
+let part = null
+
+try{
+part = detectPart(text)
+}catch(err){}
 
 if(part){
 return part
 }
 
+try{
 part = semanticPartDetection(text)
+}catch(err){}
 
 if(part){
 return part
 }
 
+try{
 part = fuzzyMatchPart(text)
+}catch(err){}
 
 if(part){
 return part
@@ -107,6 +116,7 @@ return part
 return null
 
 }
+
 
 /* =====================================================
 QUERY BUILDER
@@ -117,12 +127,12 @@ function buildQuery(data){
 
 let parts = []
 
-if(data.part){
-parts.push(data.part)
-}
-
 if(data.position){
 parts.push(data.position)
+}
+
+if(data.part){
+parts.push(data.part)
 }
 
 if(data.make){
@@ -133,6 +143,10 @@ if(data.model){
 parts.push(data.model)
 }
 
+if(data.year){
+parts.push(data.year)
+}
+
 if(data.generation){
 parts.push(data.generation)
 }
@@ -140,6 +154,7 @@ parts.push(data.generation)
 return parts.join(" ").trim()
 
 }
+
 
 /* =====================================================
 MAIN ANALYZER
@@ -150,22 +165,46 @@ function analyzeAutomotiveQuery(query){
 const text = normalize(query)
 
 if(!text){
+
 return {
-query:null
+query:null,
+make:null,
+model:null,
+year:null,
+generation:null,
+position:null,
+part:null
 }
+
 }
 
-/* parse structured query */
 
-const parsed = parseQuery(text) || {}
+/* =====================================================
+PARSE STRUCTURED QUERY
+===================================================== */
 
-/* detect vehicle alias */
+let parsed = {}
 
-const vehicle = detectVehicle(text)
+try{
+parsed = parseQuery(text) || {}
+}catch(err){
+parsed = {}
+}
+
+
+/* =====================================================
+VEHICLE DETECTION
+===================================================== */
 
 let make = parsed.make || null
 let model = parsed.model || null
 let generation = null
+
+let vehicle = null
+
+try{
+vehicle = detectVehicle(text)
+}catch(err){}
 
 if(vehicle){
 
@@ -178,11 +217,17 @@ generation = vehicle.generation
 
 }
 
-/* detect part */
+
+/* =====================================================
+PART DETECTION
+===================================================== */
 
 const part = detectPartSmart(text)
 
-/* detect generation from year */
+
+/* =====================================================
+GENERATION FROM YEAR
+===================================================== */
 
 if(!generation){
 
@@ -194,7 +239,10 @@ parsed.year
 
 }
 
-/* build final search query */
+
+/* =====================================================
+BUILD FINAL SEARCH QUERY
+===================================================== */
 
 const searchQuery = buildQuery({
 
@@ -202,13 +250,32 @@ position:parsed.position,
 part:part,
 make:make,
 model:model,
+year:parsed.year,
 generation:generation
 
 })
 
+
+/* =====================================================
+FALLBACK QUERY
+===================================================== */
+
+let finalQuery = searchQuery
+
+if(!finalQuery || finalQuery.length < 3){
+
+finalQuery = text
+
+}
+
+
+/* =====================================================
+RETURN RESULT
+===================================================== */
+
 return {
 
-query:searchQuery,
+query:finalQuery,
 
 make:make,
 model:model,
@@ -223,6 +290,7 @@ part:part || null
 }
 
 }
+
 
 /* =====================================================
 EXPORT
