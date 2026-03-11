@@ -7,26 +7,33 @@ const POSITION_KEYWORDS = {
 
 front:[
 "front",
-"fr",
-"front side"
+"front side",
+"front left",
+"front right",
+"fr"
 ],
 
 rear:[
 "rear",
 "back",
-"rear side"
+"rear side",
+"rear left",
+"rear right",
+"rr"
 ],
 
 left:[
 "left",
 "lh",
-"left hand"
+"left hand",
+"driver side"
 ],
 
 right:[
 "right",
 "rh",
-"right hand"
+"right hand",
+"passenger side"
 ]
 
 }
@@ -61,8 +68,20 @@ for(const pos in POSITION_KEYWORDS){
 
 for(const keyword of POSITION_KEYWORDS[pos]){
 
-if(words.includes(keyword)){
+const parts = keyword.split(" ")
+
+if(parts.length === 1){
+
+if(words.includes(parts[0])){
 return pos
+}
+
+}else{
+
+if(query.includes(keyword)){
+return pos
+}
+
 }
 
 }
