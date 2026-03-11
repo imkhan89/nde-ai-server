@@ -17,23 +17,39 @@ const { handleKnowledge } = require("./knowledge_engine")
 
 
 /* =====================================================
+COMMON FOOTER
+===================================================== */
+
+function footer(){
+
+return `Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`
+
+}
+
+
+/* =====================================================
 MAIN MENU
 ===================================================== */
 
 function mainMenu(){
 
-return `Welcome to ndestore.com
+return `Welcome to ndestore.com AI Support
 
-Choose an option:
+Please choose an option:
 
 1 Auto Parts
-2 Accessories
-3 Decal Stickers
+2 Car Accessories
+3 Sticker Decals
 4 Order Status
-5 Support
+5 Chat Support
 6 Complaints
 
-Reply with a number to continue.`
+Reply with 1, 2, 3, 4, 5 or 6 to continue.
+
+${footer()}`
 
 }
 
@@ -46,16 +62,30 @@ async function processAutoParts(message){
 
 if(!message){
 
-return `Send request in this format:
+return `Parts Inquiry
+
+Please share the following details:
+
+Part Description (e.g. Air Filter)
+Vehicle Make (e.g. Suzuki)
+Vehicle Model (e.g. Swift)
+Model Year (e.g. 2021)
+
+Or send in this format:
 
 Part + Make + Model + Year
 
-Example
-Oil Filter + Toyota + Corolla + 2018
+Example:
+Air Filter Suzuki Swift 2021
 
-Type # for Main Menu.`
+${footer()}`
 
 }
+
+
+/* =====================================================
+AI ANALYSIS
+===================================================== */
 
 let analysis = {}
 
@@ -118,12 +148,12 @@ console.log("Fitment check error:",err)
 RESPONSE BUILD
 ===================================================== */
 
-let response = `Vehicle Detection
+let response = `Vehicle Details
 
-Make: ${analysis.make || "Unknown"}
-Model: ${analysis.model || "Unknown"}
-Generation: ${analysis.generation || "Unknown"}
-Part: ${analysis.part || "Unknown"}
+Part Description: ${analysis.part || "Unknown"}
+Vehicle Make: ${analysis.make || "Unknown"}
+Vehicle Model: ${analysis.model || "Unknown"}
+Model Year: ${analysis.year || "Unknown"}
 
 `
 
@@ -164,10 +194,11 @@ ${buildProductURL(bestProduct.handle)}
 SEARCH FALLBACK
 ===================================================== */
 
-response += `Search Results
+response += `Kindly visit the following URL:
+
 ${searchURL}
 
-Type # for Main Menu.`
+${footer()}`
 
 return response
 
@@ -182,12 +213,14 @@ async function processAccessories(message){
 
 if(!message){
 
-return `Please share accessory details
+return `Car Accessories
 
-Example
-Toyota Revo Floor Mats
+Please share accessory details.
 
-Type # for Main Menu.`
+Example:
+Floor Mat Suzuki Swift
+
+${footer()}`
 
 }
 
@@ -207,7 +240,7 @@ return `Accessory Search Results
 
 ${url}
 
-Type # for Main Menu.`
+${footer()}`
 
 }
 
@@ -218,20 +251,15 @@ DECAL STICKERS
 
 function processDecals(){
 
-return `Browse Decal Stickers
+return `Sticker Decals
 
-https://www.ndestore.com/collections/stickers-decal
+Please select an option:
 
-For Custom Sticker
+1 Sticker Collection
+2 Sticker Themes
+3 Customized Stickers
 
-Send
-Image
-Required Dimensions
-
-Example
-10 inch x 4 inch
-
-Type # for Main Menu.`
+${footer()}`
 
 }
 
@@ -244,25 +272,26 @@ function processOrderStatus(orderNumber){
 
 if(!orderNumber){
 
-return `Please share your order number
+return `Order Status
 
-Example
+Please share your Order ID.
+
+Example:
 ND12345
 
-Type # for Main Menu.`
+${footer()}`
 
 }
 
-return `Order Status
+return `Order Details
 
-Order Number
-${orderNumber}
+Order ID: ${orderNumber}
 
-Track or check details at
+Please check the following link:
 
 https://www.ndestore.com
 
-Type # for Main Menu.`
+${footer()}`
 
 }
 
@@ -285,16 +314,17 @@ if(knowledge){
 
 return `${knowledge}
 
-Type # for Main Menu.`
+${footer()}`
 
 }
 
-return `Our representative will assist you shortly
+return `Our representative will assist you shortly.
 
-WhatsApp
-+92 323 4954117
+For immediate support please contact:
 
-Type # for Main Menu.`
+WhatsApp +92 308 7643288
+
+${footer()}`
 
 }
 
@@ -307,16 +337,18 @@ function processComplaint(message){
 
 if(!message){
 
-return `Please share the following
+return `Complaint Registration
 
-Order Number
-Details of the Issue
+Please share the following:
 
-Example
+Order ID
+Describe the Issue
+
+Example:
 ND12345
 Product damaged
 
-Type # for Main Menu.`
+${footer()}`
 
 }
 
@@ -332,19 +364,13 @@ ticket = generateTicket(orderNumber)
 
 }catch(err){}
 
-return `Complaint Registered
+return `Complaint Submitted
 
-Ticket Number
-${ticket}
+Ticket Number: ${ticket}
 
-We regret the inconvenience caused.
+Our support team will review your complaint and respond.
 
-Our representative will contact you shortly.
-
-WhatsApp
-+92 323 4954117
-
-Type # for Main Menu.`
+${footer()}`
 
 }
 
