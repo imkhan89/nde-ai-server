@@ -127,13 +127,19 @@ function buildQuery(data){
 
 let parts = []
 
-if(data.position){
-parts.push(data.position)
-}
+/* PART FIRST */
 
 if(data.part){
 parts.push(data.part)
 }
+
+/* POSITION AFTER PART */
+
+if(data.position){
+parts.push(data.position)
+}
+
+/* VEHICLE */
 
 if(data.make){
 parts.push(data.make)
@@ -143,9 +149,13 @@ if(data.model){
 parts.push(data.model)
 }
 
+/* YEAR */
+
 if(data.year){
 parts.push(data.year)
 }
+
+/* GENERATION */
 
 if(data.generation){
 parts.push(data.generation)
@@ -246,8 +256,8 @@ BUILD FINAL SEARCH QUERY
 
 const searchQuery = buildQuery({
 
-position:parsed.position,
 part:part,
+position:parsed.position,
 make:make,
 model:model,
 year:parsed.year,
