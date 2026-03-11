@@ -5,6 +5,22 @@ Extracts make, model, year and position
 
 const { detectPosition } = require("./position_detection_engine")
 
+
+/* =====================================================
+NORMALIZE
+===================================================== */
+
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/[^\w\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
+}
+
+
 /* =====================================================
 KNOWN MAKES
 ===================================================== */
@@ -18,9 +34,15 @@ const MAKES = [
 "hyundai",
 "daihatsu",
 "mitsubishi",
-"nissan"
+"nissan",
+"mg",
+"changan",
+"dfsk",
+"proton",
+"haval"
 
 ]
+
 
 /* =====================================================
 KNOWN MODELS
@@ -29,19 +51,32 @@ KNOWN MODELS
 const MODELS = [
 
 "civic",
-"corolla",
 "city",
+"corolla",
 "yaris",
 "cultus",
 "alto",
 "wagonr",
 "swift",
+"mehran",
 "hilux",
+"fortuner",
+"prado",
 "sportage",
+"picanto",
 "elantra",
-"mehran"
+"tucson",
+"sonata",
+"hs",
+"zs",
+"alsvin",
+"oshan",
+"saga",
+"x70",
+"h6"
 
 ]
+
 
 /* =====================================================
 YEAR DETECTION
@@ -58,6 +93,7 @@ return parseInt(match[0])
 return null
 
 }
+
 
 /* =====================================================
 MAKE DETECTION
@@ -77,6 +113,7 @@ return null
 
 }
 
+
 /* =====================================================
 MODEL DETECTION
 ===================================================== */
@@ -95,11 +132,25 @@ return null
 
 }
 
+
 /* =====================================================
 MAIN PARSER
 ===================================================== */
 
-function parseQuery(text){
+function parseQuery(input){
+
+const text = normalize(input)
+
+if(!text){
+
+return {
+make:null,
+model:null,
+year:null,
+position:null
+}
+
+}
 
 const make = detectMake(text)
 
@@ -107,7 +158,13 @@ const model = detectModel(text)
 
 const year = detectYear(text)
 
-const position = detectPosition(text)
+let position = null
+
+try{
+position = detectPosition(text)
+}catch(err){
+position = null
+}
 
 return {
 
@@ -119,5 +176,10 @@ position
 }
 
 }
+
+
+/* =====================================================
+EXPORT
+===================================================== */
 
 module.exports = parseQuery
