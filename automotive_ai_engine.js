@@ -3,11 +3,9 @@ AUTOMOTIVE AI CORE ENGINE
 Handles:
 
 Vehicle detection
-Vehicle alias intelligence
-Year → generation detection
 Part detection
 Position detection
-Search query builder
+Fast product search
 ===================================================== */
 
 const parseQuery = require("./automotive_query_parser")
@@ -16,11 +14,11 @@ const { semanticPartDetection } = require("./semantic_parts_engine")
 
 const fuzzyMatchPart = require("./fuzzy_parts_engine")
 
-const VEHICLE_GENERATIONS = require("./data/vehicle_generations")
-
 const { detectVehicle } = require("./vehicle_graph")
 
 const { detectPart } = require("./parts_graph")
+
+const { searchProducts } = require("./product_search_engine")
 
 
 /* =====================================================
@@ -42,45 +40,7 @@ return text
 
 
 /* =====================================================
-GENERATION DETECTION
-===================================================== */
-
-function detectGeneration(make, model, year){
-
-if(!make || !model || !year){
-return null
-}
-
-for(const vehicle of VEHICLE_GENERATIONS){
-
-if(vehicle.make === make && vehicle.model === model){
-
-for(const range of vehicle.generations){
-
-if(year >= range.start && year <= range.end){
-
-return `${range.start}-${range.end}`
-
-}
-
-}
-
-}
-
-}
-
-return null
-
-}
-
-
-/* =====================================================
 SMART PART DETECTION
-Priority:
-
-1 Direct graph match
-2 Semantic match
-3 Fuzzy fallback
 ===================================================== */
 
 function detectPartSmart(text){
@@ -93,25 +53,19 @@ try{
 part = detectPart(text)
 }catch(err){}
 
-if(part){
-return part
-}
+if(part) return part
 
 try{
 part = semanticPartDetection(text)
 }catch(err){}
 
-if(part){
-return part
-}
+if(part) return part
 
 try{
 part = fuzzyMatchPart(text)
 }catch(err){}
 
-if(part){
-return part
-}
+if(part) return part
 
 return null
 
@@ -119,49 +73,24 @@ return null
 
 
 /* =====================================================
-QUERY BUILDER
-Builds Shopify / search friendly query
+PAKISTAN VEHICLE DEFAULTS
 ===================================================== */
 
-function buildQuery(data){
+function applyPakistanVehicleDefaults(make, model){
 
-let parts = []
-
-/* PART FIRST */
-
-if(data.part){
-parts.push(data.part)
+if(make === "toyota" && !model){
+model = "corolla"
 }
 
-/* POSITION AFTER PART */
-
-if(data.position){
-parts.push(data.position)
+if(make === "honda" && !model){
+model = "civic"
 }
 
-/* VEHICLE */
-
-if(data.make){
-parts.push(data.make)
+if(make === "suzuki" && !model){
+model = "alto"
 }
 
-if(data.model){
-parts.push(data.model)
-}
-
-/* YEAR */
-
-if(data.year){
-parts.push(data.year)
-}
-
-/* GENERATION */
-
-if(data.generation){
-parts.push(data.generation)
-}
-
-return parts.join(" ").trim()
+return { make, model }
 
 }
 
@@ -180,10 +109,9 @@ return {
 query:null,
 make:null,
 model:null,
-year:null,
-generation:null,
+part:null,
 position:null,
-part:null
+products:[]
 }
 
 }
@@ -208,7 +136,6 @@ VEHICLE DETECTION
 
 let make = parsed.make || null
 let model = parsed.model || null
-let generation = null
 
 let vehicle = null
 
@@ -221,11 +148,17 @@ if(vehicle){
 make = vehicle.make || make
 model = vehicle.model || model
 
-if(vehicle.generation){
-generation = vehicle.generation
 }
 
-}
+
+/* =====================================================
+PAKISTAN DEFAULT VEHICLES
+===================================================== */
+
+const vehicleDefaults = applyPakistanVehicleDefaults(make, model)
+
+make = vehicleDefaults.make
+model = vehicleDefaults.model
 
 
 /* =====================================================
@@ -236,45 +169,42 @@ const part = detectPartSmart(text)
 
 
 /* =====================================================
-GENERATION FROM YEAR
+POSITION
 ===================================================== */
 
-if(!generation){
-
-generation = detectGeneration(
-make,
-model,
-parsed.year
-)
-
-}
+const position = parsed.position || null
 
 
 /* =====================================================
-BUILD FINAL SEARCH QUERY
+BUILD SEARCH QUERY
 ===================================================== */
 
-const searchQuery = buildQuery({
+let searchQuery = ""
 
-part:part,
-position:parsed.position,
-make:make,
-model:model,
-year:parsed.year,
-generation:generation
+if(part) searchQuery += part + " "
 
-})
+if(position) searchQuery += position + " "
+
+if(make) searchQuery += make + " "
+
+if(model) searchQuery += model + " "
+
+searchQuery = searchQuery.trim()
 
 
 /* =====================================================
-FALLBACK QUERY
+FAST PRODUCT SEARCH
 ===================================================== */
 
-let finalQuery = searchQuery
+let products = []
 
-if(!finalQuery || finalQuery.length < 3){
+try{
 
-finalQuery = text
+products = searchProducts(searchQuery)
+
+}catch(err){
+
+products = []
 
 }
 
@@ -285,17 +215,17 @@ RETURN RESULT
 
 return {
 
-query:finalQuery,
+query:searchQuery,
 
-make:make,
-model:model,
-year:parsed.year || null,
+make:make || null,
 
-generation:generation,
+model:model || null,
 
-position:parsed.position || null,
+part:part || null,
 
-part:part || null
+position:position || null,
+
+products:products
 
 }
 
