@@ -3,6 +3,7 @@ SHOPIFY SEARCH ENGINE
 Builds Shopify search URLs exactly like store search
 ===================================================== */
 
+
 /* =====================================================
 NORMALIZE
 ===================================================== */
@@ -10,12 +11,14 @@ NORMALIZE
 function normalize(text){
 
 return (text || "")
+.toString()
 .toLowerCase()
 .replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
 .trim()
 
 }
+
 
 /* =====================================================
 BUILD SEARCH QUERY
@@ -29,11 +32,12 @@ if(!normalized){
 return ""
 }
 
-/* convert spaces to + */
+/* convert spaces to + for URL */
 
 return normalized.split(" ").join("+")
 
 }
+
 
 /* =====================================================
 GENERATE SEARCH URL
@@ -41,7 +45,7 @@ GENERATE SEARCH URL
 
 function generateSearch(input){
 
-let query=""
+let query = ""
 
 if(typeof input === "string"){
 
@@ -55,17 +59,22 @@ query = input.query
 
 }
 
-const formatted = buildQuery(query)
+/* normalize query */
 
-if(!formatted){
+query = normalize(query)
+
+if(!query){
 
 return "https://www.ndestore.com/search"
 
 }
 
+const formatted = buildQuery(query)
+
 return `https://www.ndestore.com/search?q=${formatted}`
 
 }
+
 
 /* =====================================================
 EXPORT
