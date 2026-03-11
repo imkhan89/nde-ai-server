@@ -17,6 +17,23 @@ const { handleKnowledge } = require("./knowledge_engine")
 
 
 /* =====================================================
+TEXT FORMATTER
+===================================================== */
+
+function capitalize(text){
+
+if(!text) return ""
+
+return text
+.toString()
+.split(" ")
+.map(word => word.charAt(0).toUpperCase() + word.slice(1))
+.join(" ")
+
+}
+
+
+/* =====================================================
 COMMON FOOTER
 ===================================================== */
 
@@ -150,9 +167,9 @@ RESPONSE BUILD
 
 let response = `Vehicle Details
 
-Part Description: ${analysis.part || "Unknown"}
-Vehicle Make: ${analysis.make || "Unknown"}
-Vehicle Model: ${analysis.model || "Unknown"}
+Part Description: ${capitalize(analysis.part) || "Unknown"}
+Vehicle Make: ${capitalize(analysis.make) || "Unknown"}
+Vehicle Model: ${capitalize(analysis.model) || "Unknown"}
 Model Year: ${analysis.year || "Unknown"}
 
 `
