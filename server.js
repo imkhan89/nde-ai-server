@@ -45,8 +45,7 @@ return res.send(xml)
 
 
 /* =====================================================
-NORMALIZE + FORMAT INPUT
-(Handles + separator format)
+NORMALIZE INPUT
 ===================================================== */
 
 function normalizeInput(text){
@@ -170,7 +169,7 @@ return sendMessage(res,response)
 
 
 /* =====================================================
-ORDER STATUS
+ORDER STATUS FLOW
 ===================================================== */
 
 if(session.state === "ORDER_STATUS"){
@@ -181,7 +180,7 @@ return sendMessage(res,processOrderStatus(message))
 
 
 /* =====================================================
-CHAT SUPPORT
+CHAT SUPPORT FLOW
 ===================================================== */
 
 if(session.state === "CHAT_SUPPORT"){
@@ -192,7 +191,7 @@ return sendMessage(res,processChatSupport(message))
 
 
 /* =====================================================
-COMPLAINT
+COMPLAINT FLOW
 ===================================================== */
 
 if(session.state === "COMPLAINT"){
@@ -222,14 +221,26 @@ if(message === "1"){
 session.state = "AUTO_PARTS"
 
 return sendMessage(res,
-`Send request in this format:
+`1 Auto Parts
+
+Parts Inquiry, Please share the following details:
+
+Part Description (e.g. Air Filter)
+Vehicle Make (e.g. Suzuki)
+Vehicle Model (e.g. Swift)
+Model Year (e.g. 2021)
+
+Or send in this format:
 
 Part + Make + Model + Year
 
-Example
-Oil Filter + Toyota + Corolla + 2018
+Example:
+Air Filter Suzuki Swift 2021
 
-Type # for Main Menu.`)
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`)
 
 }
 
@@ -238,18 +249,37 @@ if(message === "2"){
 session.state = "ACCESSORIES"
 
 return sendMessage(res,
-`Please share accessory details
+`2 Car Accessories
 
-Example
-Toyota Revo Floor Mats
+Please share accessory details.
 
-Type # for Main Menu.`)
+Example:
+Floor Mat Suzuki Swift
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`)
 
 }
 
 if(message === "3"){
 
-return sendMessage(res,processDecals())
+return sendMessage(res,
+`3 Sticker Decals
+
+Please select an option:
+
+1 Sticker Collection
+2 Sticker Themes
+3 Customized Stickers
+
+Reply with 1, 2 or 3 to continue.
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`)
 
 }
 
@@ -258,10 +288,14 @@ if(message === "4"){
 session.state = "ORDER_STATUS"
 
 return sendMessage(res,
-`Please share your Order Number
+`4 Order Status
 
-Example
-ND12345`)
+Kindly share your Order ID.
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`)
 
 }
 
@@ -270,7 +304,16 @@ if(message === "5"){
 session.state = "CHAT_SUPPORT"
 
 return sendMessage(res,
-`How can we assist you today?`)
+`5 Chat Support
+
+You are now connected with AI Support.
+
+Please describe your inquiry.
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`)
 
 }
 
@@ -279,7 +322,17 @@ if(message === "6"){
 session.state = "COMPLAINT"
 
 return sendMessage(res,
-`Please share Order Number and Issue`)
+`6 Complaints
+
+Kindly share the following:
+
+Order ID
+Describe the Issue
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`)
 
 }
 
