@@ -1,3 +1,8 @@
+/*
+AUTO PARTS INTELLIGENT PARSER
+ndestore AI Automotive Engine
+*/
+
 function normalize(text){
 
 return (text || "")
@@ -8,6 +13,21 @@ return (text || "")
 .trim()
 
 }
+
+/* CAPITALIZE WORDS */
+
+function capitalize(text){
+
+if(!text) return ""
+
+return text
+.split(" ")
+.map(w => w.charAt(0).toUpperCase() + w.slice(1))
+.join(" ")
+
+}
+
+/* DETECT YEAR */
 
 function detectYear(tokens){
 
@@ -22,6 +42,8 @@ return t
 return ""
 
 }
+
+/* EXTRACT PART / MAKE / MODEL */
 
 function extract(tokens,year){
 
@@ -39,7 +61,7 @@ model = words[words.length-1]
 
 }
 
-if(words.length === 2){
+else if(words.length === 2){
 
 part = words[0]
 make = words[1]
@@ -50,15 +72,58 @@ return {part,make,model}
 
 }
 
+/* VEHICLE YEAR RANGE DETECTION */
+
+function detectYearRange(year){
+
+if(!year) return ""
+
+const y = parseInt(year)
+
+/*
+Common Pakistan vehicle ranges
+Expand as database grows
+*/
+
+const ranges = [
+
+{start:2021,end:2026},
+{start:2017,end:2021},
+{start:2012,end:2017},
+{start:2008,end:2012},
+{start:2003,end:2008}
+
+]
+
+for(const r of ranges){
+
+if(y >= r.start && y <= r.end){
+
+return `${r.start}-${r.end}`
+
+}
+
+}
+
+return year
+
+}
+
+/* BUILD SHOPIFY SEARCH QUERY */
+
 function buildQuery(part,make,model,year){
 
 if(year){
+
 return `${part} for ${make} ${model} ${year}`
+
 }
 
 return `${part} for ${make} ${model}`
 
 }
+
+/* BUILD SEARCH URL */
 
 function buildURL(query){
 
@@ -66,6 +131,8 @@ return "https://www.ndestore.com/search?q=" +
 encodeURIComponent(query)
 
 }
+
+/* MAIN PARSER */
 
 function parseAutoParts(message){
 
@@ -75,7 +142,9 @@ const clean = normalize(message)
 
 const tokens = clean.split(" ")
 
-if(tokens.length < 2) return null
+if(tokens.length < 2){
+return null
+}
 
 const year = detectYear(tokens)
 
@@ -85,18 +154,21 @@ if(!part || !make){
 return null
 }
 
-const query = buildQuery(part,make,model,year)
+const yearRange = detectYearRange(year)
+
+const query = buildQuery(part,make,model,yearRange)
 
 const url = buildURL(query)
 
 return {
 
-part,
-make,
-model,
-year,
-query,
-url
+part: capitalize(part),
+make: capitalize(make),
+model: capitalize(model),
+year: year || "",
+yearRange: yearRange || "",
+query: query,
+url: url
 
 }
 
