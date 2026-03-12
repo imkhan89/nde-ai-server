@@ -1,4 +1,4 @@
-const detectVehicle = require("./vehicle_intelligence_engine")
+const detectRange = require("./vehicle_year_range_engine")
 
 function capitalize(text){
 
@@ -15,29 +15,19 @@ function buildSearchQuery(parsed){
 
 if(!parsed) return null
 
-const vehicle = detectVehicle(
-`${parsed.make} ${parsed.model} ${parsed.year}`
-)
+let make = capitalize(parsed.make)
+let model = capitalize(parsed.model)
+let part = capitalize(parsed.part)
 
-let make = parsed.make
-let model = parsed.model
 let year = parsed.year
 
-if(vehicle){
-
-make = vehicle.make
-model = vehicle.model
-year = vehicle.range || vehicle.year
-
-}
-
-const part = capitalize(parsed.part)
+const range = detectRange(make,model,parseInt(year))
 
 let query = ""
 
-if(year){
+if(range){
 
-query = `${part} for ${make} ${model} ${year}`
+query = `${part} for ${make} ${model} ${range}`
 
 }else{
 
@@ -51,13 +41,13 @@ encodeURIComponent(query)
 
 return {
 
-part: part,
-make: make,
-model: model,
-year: parsed.year || "",
-range: year,
-query: query,
-url: url
+part,
+make,
+model,
+year,
+range,
+query,
+url
 
 }
 
