@@ -1,6 +1,5 @@
 const parseAutoParts = require("./ai/auto_parts_parser")
-
-const sessionManager = require("./sessions/sessionManager");
+const sessionManager = require("./sessions/sessionManager")
 
 const MAIN_MENU = `
 Welcome to ndestore.com AI Support. Please choose an option:
@@ -16,7 +15,7 @@ Reply with 1, 2, 3, 4, 5, or 6 to continue.
 
 For a Live Agent:
 WhatsApp +92 308 7643288
-`;
+`
 
 const AUTO_PARTS_MENU = `
 1 Auto Parts
@@ -39,49 +38,44 @@ Reply # to return to the Main Menu.
 
 For a Live Agent:
 WhatsApp +92 308 7643288
-`;
+`
 
 function conversationEngine(message, from){
 
 if(!message){
-return { reply: MAIN_MENU };
+return { reply: MAIN_MENU }
 }
 
-const text = message.trim().toLowerCase();
+const text = message.trim().toLowerCase()
 
-/* LOAD SESSION */
+let session = sessionManager.getSession(from)
 
-let session = sessionManager.getSession(from);
-
-/* CREATE SESSION IF NOT EXISTS */
+/* CREATE SESSION */
 
 if(!session){
 
-sessionManager.createSession(from,"MAIN_MENU");
-
-session = sessionManager.getSession(from);
+sessionManager.createSession(from,"MAIN_MENU")
+session = sessionManager.getSession(from)
 
 }
 
-/* RESET MENU */
+/* RESET */
 
 if(text === "#"){
 
-sessionManager.updateSession(from,"MAIN_MENU");
-
-return { reply: MAIN_MENU };
+sessionManager.updateSession(from,"MAIN_MENU")
+return { reply: MAIN_MENU }
 
 }
 
-/* MAIN MENU STATE */
+/* MAIN MENU */
 
 if(session.state === "MAIN_MENU"){
 
 if(text === "1"){
 
-sessionManager.updateSession(from,"AUTO_PARTS");
-
-return { reply: AUTO_PARTS_MENU };
+sessionManager.updateSession(from,"AUTO_PARTS")
+return { reply: AUTO_PARTS_MENU }
 
 }
 
@@ -100,7 +94,7 @@ Reply # to return to the Main Menu.
 
 For a Live Agent:
 WhatsApp +92 308 7643288`
-};
+}
 
 }
 
@@ -118,13 +112,13 @@ Reply with 1, 2, or 3 to continue.
 
 For a Live Agent:
 WhatsApp +92 308 7643288`
-};
+}
 
 }
 
 if(text === "4"){
 
-sessionManager.updateSession(from,"ORDER_STATUS");
+sessionManager.updateSession(from,"ORDER_STATUS")
 
 return {
 reply:
@@ -138,13 +132,13 @@ Reply # to return to the Main Menu.
 
 For a Live Agent:
 WhatsApp +92 308 7643288`
-};
+}
 
 }
 
 if(text === "5"){
 
-sessionManager.updateSession(from,"CHAT_SUPPORT");
+sessionManager.updateSession(from,"CHAT_SUPPORT")
 
 return {
 reply:
@@ -156,13 +150,13 @@ Reply # to return to the Main Menu.
 
 For a Live Agent:
 WhatsApp +92 308 7643288`
-};
+}
 
 }
 
 if(text === "6"){
 
-sessionManager.updateSession(from,"COMPLAINT");
+sessionManager.updateSession(from,"COMPLAINT")
 
 return {
 reply:
@@ -177,24 +171,48 @@ Reply # to return to the Main Menu.
 
 For a Live Agent:
 WhatsApp +92 308 7643288`
-};
+}
 
 }
 
-return { reply: MAIN_MENU };
+return { reply: MAIN_MENU }
 
 }
 
-/* AUTO PARTS STATE */
+/* AUTO PARTS */
 
 if(session.state === "AUTO_PARTS"){
 
-return { reply: AUTO_PARTS_MENU };
+const parsed = parseAutoParts(message)
+
+if(!parsed){
+
+return { reply: AUTO_PARTS_MENU }
 
 }
 
-return { reply: MAIN_MENU };
+return {
+
+reply:
+`Part Description: ${parsed.part}
+Vehicle Make: ${parsed.make}
+Vehicle Model: ${parsed.model}
+Model Year: ${parsed.year || "Not Provided"}
+
+Kindly visit the following URL:
+${parsed.url}
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`
 
 }
 
-module.exports = conversationEngine;
+}
+
+return { reply: MAIN_MENU }
+
+}
+
+module.exports = conversationEngine
