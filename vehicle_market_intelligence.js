@@ -644,21 +644,39 @@ engine:"electric"
 DETECT VEHICLE FROM MARKET NAME
 ===================================================== */
 
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/[^a-z0-9\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
+}
+
 function detectMarketVehicle(text){
 
-text = text.toLowerCase()
+const query = normalize(text)
+
+let detected = null
+let longestMatch = 0
 
 for(const name in VEHICLE_MARKET_NAMES){
 
-if(text.includes(name)){
+if(query.includes(name)){
 
-return VEHICLE_MARKET_NAMES[name]
+if(name.length > longestMatch){
+
+detected = VEHICLE_MARKET_NAMES[name]
+longestMatch = name.length
 
 }
 
 }
 
-return null
+}
+
+return detected
 
 }
 
