@@ -1,243 +1,73 @@
-/* =====================================================
-AUTOMOTIVE AI CORE ENGINE
-Handles:
+const fs = require("fs");
+const path = require("path");
 
-Vehicle detection
-Part detection
-Position detection
-Fast product search
-===================================================== */
+const fuzzyMatchPart = require("./fuzzy_parts_engine");
 
-const parseQuery = require("./automotive_query_parser")
+const vehicles = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "data", "vehicle_graph.json"),
+    "utf8"
+  )
+);
 
-const { semanticPartDetection } = require("./semantic_parts_engine")
-
-const fuzzyMatchPart = require("./fuzzy_parts_engine")
-
-const { detectVehicle } = require("./vehicle_graph")
-
-const { detectPart } = require("./parts_graph")
-
-const { searchProducts } = require("./product_search_engine")
-
-
-/* =====================================================
-NORMALIZE INPUT
-===================================================== */
-
-function normalize(text){
-
-if(!text) return ""
-
-return text
-.toString()
-.toLowerCase()
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim()
-
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
+function detectVehicle(query) {
 
-/* =====================================================
-SMART PART DETECTION
-===================================================== */
+  const q = normalize(query);
 
-function detectPartSmart(text){
+  for (const vehicle of vehicles) {
 
-if(!text) return null
+    const brand = vehicle.brand.toLowerCase();
+    const model = vehicle.model.toLowerCase();
 
-let part = null
+    if (q.includes(brand) && q.includes(model)) {
+      return vehicle;
+    }
 
-try{
-part = detectPart(text)
-}catch(err){}
+    if (q.includes(model)) {
+      return vehicle;
+    }
 
-if(part) return part
+  }
 
-try{
-part = semanticPartDetection(text)
-}catch(err){}
-
-if(part) return part
-
-try{
-part = fuzzyMatchPart(text)
-}catch(err){}
-
-if(part) return part
-
-return null
-
+  return null;
 }
 
+function extractYear(query) {
 
-/* =====================================================
-PAKISTAN VEHICLE DEFAULTS
-===================================================== */
+  const match = query.match(/\b(19|20)\d{2}\b/);
 
-function applyPakistanVehicleDefaults(make, model){
+  if (!match) return null;
 
-if(make === "toyota" && !model){
-model = "corolla"
+  return match[0];
 }
 
-if(make === "honda" && !model){
-model = "civic"
+function automotiveAI(query) {
+
+  if (!query || typeof query !== "string") {
+    return null;
+  }
+
+  const clean = normalize(query);
+
+  const vehicle = detectVehicle(clean);
+
+  const part = fuzzyMatchPart(clean);
+
+  const year = extractYear(clean);
+
+  return {
+    vehicle,
+    part,
+    year
+  };
 }
 
-if(make === "suzuki" && !model){
-model = "alto"
-}
-
-return { make, model }
-
-}
-
-
-/* =====================================================
-MAIN ANALYZER
-===================================================== */
-
-function analyzeAutomotiveQuery(query){
-
-const text = normalize(query)
-
-if(!text){
-
-return {
-query:null,
-make:null,
-model:null,
-part:null,
-position:null,
-products:[]
-}
-
-}
-
-
-/* =====================================================
-PARSE STRUCTURED QUERY
-===================================================== */
-
-let parsed = {}
-
-try{
-parsed = parseQuery(text) || {}
-}catch(err){
-parsed = {}
-}
-
-
-/* =====================================================
-VEHICLE DETECTION
-===================================================== */
-
-let make = parsed.make || null
-let model = parsed.model || null
-
-let vehicle = null
-
-try{
-vehicle = detectVehicle(text)
-}catch(err){}
-
-if(vehicle){
-
-make = vehicle.make || make
-model = vehicle.model || model
-
-}
-
-
-/* =====================================================
-PAKISTAN DEFAULT VEHICLES
-===================================================== */
-
-const vehicleDefaults = applyPakistanVehicleDefaults(make, model)
-
-make = vehicleDefaults.make
-model = vehicleDefaults.model
-
-
-/* =====================================================
-PART DETECTION
-===================================================== */
-
-const part = detectPartSmart(text)
-
-
-/* =====================================================
-POSITION
-===================================================== */
-
-const position = parsed.position || null
-
-
-/* =====================================================
-BUILD SEARCH QUERY
-===================================================== */
-
-let searchQuery = ""
-
-if(part) searchQuery += part + " "
-
-if(position) searchQuery += position + " "
-
-if(make) searchQuery += make + " "
-
-if(model) searchQuery += model + " "
-
-searchQuery = searchQuery.trim()
-
-
-/* =====================================================
-FAST PRODUCT SEARCH
-===================================================== */
-
-let products = []
-
-try{
-
-products = searchProducts(searchQuery)
-
-}catch(err){
-
-products = []
-
-}
-
-
-/* =====================================================
-RETURN RESULT
-===================================================== */
-
-return {
-
-query:searchQuery,
-
-make:make || null,
-
-model:model || null,
-
-part:part || null,
-
-position:position || null,
-
-products:products
-
-}
-
-}
-
-
-/* =====================================================
-EXPORT
-===================================================== */
-
-module.exports = {
-
-analyzeAutomotiveQuery
-
-}
+module.exports = automotiveAI;
