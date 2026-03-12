@@ -1,61 +1,64 @@
-/* =====================================================
-CHAT RESPONSE BUILDER
-Formats AI search results into customer reply
-===================================================== */
+/*
+Professional Response Builder
+Formats replies sent to WhatsApp
+*/
 
-function buildProductMessage(products){
+function capitalize(text){
 
-if(!products || products.length === 0){
+if(!text) return ""
 
-return "I could not find an exact match. Please send your car model and year so I can help you better."
-
-}
-
-let message = "I found compatible parts:\n\n"
-
-let count = 1
-
-for(const product of products){
-
-message += count + "️⃣ " + product.title + "\n"
-message += product.url + "\n\n"
-
-count++
+return text
+.split(" ")
+.map(w => w.charAt(0).toUpperCase() + w.slice(1))
+.join(" ")
 
 }
 
-return message
+function buildPartsResponse(data){
+
+if(!data){
+
+return `
+We are unable to understand your inquiry.
+
+Kindly reply in the following format:
+
+Part Description (e.g. Air Filter)
+Vehicle Make (e.g. Suzuki)
+Vehicle Model (e.g. Swift)
+Model Year (e.g. 2021)
+
+Example:
+Air Filter Suzuki Swift 2021
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288
+`
 
 }
 
+const part = capitalize(data.part)
+const make = capitalize(data.make)
+const model = capitalize(data.model)
+const year = data.year || "Not Provided"
 
-/* =====================================================
-MAIN RESPONSE BUILDER
-===================================================== */
+return `
+Part Description: ${part}
+Vehicle Make: ${make}
+Vehicle Model: ${model}
+Model Year: ${year}
 
-function buildChatResponse(aiResult){
+Kindly visit the following URL:
+${data.url}
 
-if(!aiResult){
+Reply # to return to the Main Menu.
 
-return "Please send the vehicle details so I can help you."
-
-}
-
-const products = aiResult.products || []
-
-const productMessage = buildProductMessage(products)
-
-return productMessage
-
-}
-
-
-/* =====================================================
-EXPORT
-===================================================== */
-
-module.exports = {
-
-buildChatResponse
+For a Live Agent:
+WhatsApp +92 308 7643288
+`
 
 }
+
+module.exports = buildPartsResponse
