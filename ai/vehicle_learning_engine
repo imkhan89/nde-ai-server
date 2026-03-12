@@ -1,6 +1,6 @@
 /*
 Vehicle Learning Engine
-Central vehicle intelligence memory for AI system
+Learns vehicle ranges from product titles
 */
 
 const fs = require("fs")
@@ -8,6 +8,9 @@ const path = require("path")
 
 const MEMORY_FILE =
 path.join(__dirname,"../data/vehicle_range_memory.json")
+
+const PRODUCT_INDEX =
+path.join(__dirname,"../data/product_index.json")
 
 let memory = {}
 
@@ -63,7 +66,7 @@ return (text || "")
 
 }
 
-/* LEARN VEHICLE RANGE */
+/* LEARN VEHICLE */
 
 function learn(make,model,range){
 
@@ -122,6 +125,32 @@ learn(brand,model,range)
 
 }
 
+/* LEARN FROM PRODUCT INDEX */
+
+function learnFromProducts(){
+
+try{
+
+if(!fs.existsSync(PRODUCT_INDEX)) return
+
+const raw =
+fs.readFileSync(PRODUCT_INDEX,"utf8")
+
+const products =
+JSON.parse(raw || "[]")
+
+for(const p of products){
+
+const title = p.title || ""
+
+learnFromTitle(title)
+
+}
+
+}catch(e){}
+
+}
+
 /* DETECT RANGE */
 
 function detectRange(make,model){
@@ -141,12 +170,11 @@ return null
 
 }
 
-/* EXPORT */
-
 module.exports = {
 
 learn,
 learnFromTitle,
+learnFromProducts,
 detectRange
 
 }
