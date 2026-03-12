@@ -80,15 +80,25 @@ function detectVehicle(text){
 
 const query = normalize(text)
 
+let detected = null
+let longestMatch = 0
+
 for(const alias in VEHICLE_GRAPH){
 
 if(query.includes(alias)){
-return VEHICLE_GRAPH[alias]
+
+if(alias.length > longestMatch){
+
+detected = VEHICLE_GRAPH[alias]
+longestMatch = alias.length
+
+}
+
 }
 
 }
 
-return null
+return detected
 
 }
 
