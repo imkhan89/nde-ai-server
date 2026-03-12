@@ -2,28 +2,15 @@ const Fuse = require("./fuse");
 const fs = require("fs");
 const path = require("path");
 
-const parts = JSON.parse(
-  fs.readFileSync(
-    path.join(__dirname, "data", "parts_dictionary.json"),
-    "utf8"
-  )
-);
+const partsPath = path.join(__dirname, "data", "parts_dictionary.json");
 
-const options = {
-  includeScore: true,
-  threshold: 0.35,
-  keys: [
-    "name",
-    "part",
-    "keyword",
-    "keywords",
-    "alias",
-    "aliases"
-  ]
-};
+let parts = [];
 
-const fuse = new Fuse(parts, options);
-
+try {
+  parts = JSON.parse(fs.readFileSync(partsPath, "utf8"));
+} catch (e) {
+  console.error("Parts dictionary load error:", e);
+}
 
 function normalize(text) {
   return text
@@ -32,6 +19,42 @@ function normalize(text) {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+function expandPartsDictionary(list) {
+
+  const expanded = [];
+
+  for (const item of list) {
+
+    if (typeof item === "string") {
+      expanded.push({ name: item });
+      continue;
+    }
+
+    expanded.push(item);
+
+    if (item.aliases && Array.isArray(item.aliases)) {
+      for (const alias of item.aliases) {
+        expanded.push({
+          ...item,
+          name: alias
+        });
+      }
+    }
+
+  }
+
+  return expanded;
+
+}
+
+const expandedParts = expandPartsDictionary(parts);
+
+const fuse = new Fuse(expandedParts, {
+  includeScore: true,
+  threshold: 0.32,
+  keys: ["name", "part", "keyword", "keywords", "alias", "aliases"]
+});
 
 
 function fuzzyMatchPart(query) {
@@ -42,14 +65,13 @@ function fuzzyMatchPart(query) {
 
   const cleanQuery = normalize(query);
 
-  const result = fuse.search(cleanQuery);
+  const results = fuse.search(cleanQuery);
 
-  if (!result || !result.length) {
+  if (!results || !results.length) {
     return null;
   }
 
-  return result[0].item;
+  return results[0].item;
 }
-
 
 module.exports = fuzzyMatchPart;
