@@ -5,65 +5,37 @@ Pakistan vehicle intelligence
 
 const VEHICLE_ALIASES = {
 
-reborn:{
-make:"honda",
-model:"civic",
-generation:"2006-2011"
-},
+reborn:{ make:"honda", model:"civic", generation:"2006-2011" },
+rebirth:{ make:"honda", model:"civic", generation:"2012-2015" },
+turbo:{ make:"honda", model:"civic", generation:"2016-2021" },
 
-rebirth:{
-make:"honda",
-model:"civic",
-generation:"2012-2015"
-},
+grande:{ make:"toyota", model:"corolla", generation:"2014-2019" },
+altis:{ make:"toyota", model:"corolla", generation:"2014-2019" },
+gli:{ make:"toyota", model:"corolla", generation:"2014-2019" },
+xli:{ make:"toyota", model:"corolla", generation:"2014-2019" },
 
-turbo:{
-make:"honda",
-model:"civic",
-generation:"2016-2021"
-},
+vigo:{ make:"toyota", model:"hilux", generation:"2005-2015" },
+revo:{ make:"toyota", model:"hilux", generation:"2016-present" },
+rocco:{ make:"toyota", model:"hilux", generation:"2020-present" },
 
-grande:{
-make:"toyota",
-model:"corolla",
-generation:"2014-2019"
-},
+aspire:{ make:"honda", model:"city", generation:"2013-2021" },
 
-altis:{
-make:"toyota",
-model:"corolla",
-generation:"2014-2019"
-},
+sportage:{ make:"kia", model:"sportage", generation:"2019-present" },
+tucson:{ make:"hyundai", model:"tucson", generation:"2020-present" }
 
-gli:{
-make:"toyota",
-model:"corolla",
-generation:"2014-2019"
-},
-
-xli:{
-make:"toyota",
-model:"corolla",
-generation:"2014-2019"
-},
-
-vigo:{
-make:"toyota",
-model:"hilux",
-generation:"2005-2015"
-},
-
-revo:{
-make:"toyota",
-model:"hilux",
-generation:"2016-present"
-},
-
-aspire:{
-make:"honda",
-model:"city",
-generation:"2013-2021"
 }
+
+/* =====================================================
+NORMALIZE
+===================================================== */
+
+function normalize(text){
+
+return (text || "")
+.toLowerCase()
+.replace(/[^a-z0-9\s]/g," ")
+.replace(/\s+/g," ")
+.trim()
 
 }
 
@@ -73,19 +45,33 @@ ALIAS DETECTION
 
 function detectVehicleAlias(text){
 
-const query = (text || "").toLowerCase()
+const query = normalize(text)
+
+let detected = null
+let longestMatch = 0
 
 for(const alias in VEHICLE_ALIASES){
 
 if(query.includes(alias)){
-return VEHICLE_ALIASES[alias]
+
+if(alias.length > longestMatch){
+
+detected = VEHICLE_ALIASES[alias]
+longestMatch = alias.length
+
+}
+
 }
 
 }
 
-return null
+return detected
 
 }
+
+/* =====================================================
+EXPORT
+===================================================== */
 
 module.exports = {
 detectVehicleAlias
