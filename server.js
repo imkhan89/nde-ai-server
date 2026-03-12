@@ -7,59 +7,43 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-/* =========================
-HEALTH CHECK
-========================= */
-
 app.get("/", (req, res) => {
-res.send("Automotive AI Engine Running");
+  res.send("ndestore WhatsApp AI running");
 });
 
+app.post("/whatsapp", async (req, res) => {
 
-/* =========================
-WHATSAPP WEBHOOK
-========================= */
-
-app.post("/whatsapp", (req, res) => {
-
-let incomingMessage = "";
+let message = "";
+let from = "";
 
 try {
 
-incomingMessage =
-req.body?.Body ||
-req.body?.message ||
-req.body?.text ||
-"";
+message = req.body.Body || "";
+from = req.body.From || "";
 
-} catch(error){
+console.log("Incoming message:", message);
 
-console.error("Incoming message error:", error);
+} catch (error) {
+
+console.error("Incoming parsing error:", error);
 
 }
 
-let response = null;
+let reply = "";
 
 try {
 
-response = conversationEngine(incomingMessage);
+const result = await conversationEngine(message, from);
 
-} catch(error){
+reply = result.reply;
+
+} catch (error) {
 
 console.error("Conversation engine error:", error);
 
-response = {
-reply: "System processing error. Please try again."
-};
+reply = "System is temporarily unavailable. Please try again.";
 
 }
-
-const reply = response?.reply || "Please send vehicle and part details.";
-
-
-/* =========================
-TWILIO RESPONSE
-========================= */
 
 res.set("Content-Type", "text/xml");
 
@@ -70,11 +54,6 @@ res.send(`
 `);
 
 });
-
-
-/* =========================
-SERVER START
-========================= */
 
 const PORT = process.env.PORT || 3000;
 
