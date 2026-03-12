@@ -3,6 +3,8 @@ const path = require("path");
 
 const SESSION_FILE = path.join(__dirname, "sessions.json");
 
+const SESSION_TIMEOUT = 60 * 60 * 1000; // 60 minutes
+
 let sessions = {};
 
 /* LOAD SESSIONS */
@@ -31,7 +33,7 @@ sessions = {};
 
 loadSessions();
 
-/* SAVE SESSIONS */
+/* SAVE */
 
 function saveSessions(){
 
@@ -51,7 +53,25 @@ console.log("Session save error:",e.message);
 
 function getSession(phone){
 
-return sessions[phone] || null;
+const session = sessions[phone];
+
+if(!session) return null;
+
+/* CHECK EXPIRY */
+
+const now = Date.now();
+
+if(now - session.lastActive > SESSION_TIMEOUT){
+
+delete sessions[phone];
+
+saveSessions();
+
+return null;
+
+}
+
+return session;
 
 }
 
@@ -61,8 +81,8 @@ function createSession(phone,state){
 
 sessions[phone] = {
 
-state:state,
-lastActive:Date.now()
+state: state,
+lastActive: Date.now()
 
 };
 
