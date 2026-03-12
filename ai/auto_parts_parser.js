@@ -20,9 +20,7 @@ if(tokens.length < 2){
 return null
 }
 
-/* SIMPLE EXTRACTION */
-
-let part = []
+let part = ""
 let make = ""
 let model = ""
 let year = ""
@@ -37,11 +35,7 @@ year = t
 
 }
 
-/* REMOVE YEAR */
-
 const words = tokens.filter(t => t !== year)
-
-/* BASIC LOGIC */
 
 if(words.length >= 3){
 
