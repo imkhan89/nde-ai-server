@@ -1,64 +1,30 @@
-/*
-Professional Response Builder
-Formats replies sent to WhatsApp
-*/
+const correctSpelling = require("./spelling_intelligence_engine")
+const parseAutoParts = require("./auto_parts_parser")
+const buildSearchQuery = require("./search_query_builder")
+const buildPartsResponse = require("./response_builder")
 
-function capitalize(text){
+function handleChat(message){
 
-if(!text) return ""
+if(!message) return null
 
-return text
-.split(" ")
-.map(w => w.charAt(0).toUpperCase() + w.slice(1))
-.join(" ")
+/* SPELLING CORRECTION */
 
-}
+const corrected = correctSpelling(message)
 
-function buildPartsResponse(data){
+/* PARSE QUERY */
 
-if(!data){
+const parsed = parseAutoParts(corrected)
 
-return `
-We are unable to understand your inquiry.
+if(!parsed) return null
 
-Kindly reply in the following format:
+/* BUILD SEARCH */
 
-Part Description (e.g. Air Filter)
-Vehicle Make (e.g. Suzuki)
-Vehicle Model (e.g. Swift)
-Model Year (e.g. 2021)
+const search = buildSearchQuery(parsed)
 
-Example:
-Air Filter Suzuki Swift 2021
+/* BUILD RESPONSE */
 
-Reply # to return to the Main Menu.
-
-For a Live Agent:
-WhatsApp +92 308 7643288
-`
+return buildPartsResponse(search)
 
 }
 
-const part = capitalize(data.part)
-const make = capitalize(data.make)
-const model = capitalize(data.model)
-const year = data.year || "Not Provided"
-
-return `
-Part Description: ${part}
-Vehicle Make: ${make}
-Vehicle Model: ${model}
-Model Year: ${year}
-
-Kindly visit the following URL:
-${data.url}
-
-Reply # to return to the Main Menu.
-
-For a Live Agent:
-WhatsApp +92 308 7643288
-`
-
-}
-
-module.exports = buildPartsResponse
+module.exports = handleChat
