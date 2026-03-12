@@ -8,14 +8,15 @@ let parts = [];
 
 try {
   parts = JSON.parse(fs.readFileSync(partsPath, "utf8"));
-} catch (e) {
-  console.error("Parts dictionary load error:", e);
+} catch (error) {
+  console.error("Parts dictionary load error:", error);
+  parts = [];
 }
 
 function normalize(text) {
-  return text
+  return (text || "")
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -34,12 +35,16 @@ function expandPartsDictionary(list) {
     expanded.push(item);
 
     if (item.aliases && Array.isArray(item.aliases)) {
+
       for (const alias of item.aliases) {
+
         expanded.push({
           ...item,
           name: alias
         });
+
       }
+
     }
 
   }
@@ -50,16 +55,29 @@ function expandPartsDictionary(list) {
 
 const expandedParts = expandPartsDictionary(parts);
 
-const fuse = new Fuse(expandedParts, {
-  includeScore: true,
-  threshold: 0.32,
-  keys: ["name", "part", "keyword", "keywords", "alias", "aliases"]
-});
+let fuse = null;
 
+try {
+
+  fuse = new Fuse(expandedParts, {
+    includeScore: true,
+    threshold: 0.32,
+    keys: ["name", "part", "keyword", "keywords", "alias", "aliases"]
+  });
+
+} catch (error) {
+
+  console.error("Fuse initialization failed:", error);
+
+}
 
 function fuzzyMatchPart(query) {
 
   if (!query || typeof query !== "string") {
+    return null;
+  }
+
+  if (!fuse) {
     return null;
   }
 
@@ -72,6 +90,7 @@ function fuzzyMatchPart(query) {
   }
 
   return results[0].item;
+
 }
 
 module.exports = fuzzyMatchPart;
