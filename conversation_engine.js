@@ -9,7 +9,16 @@ let text = "";
 if(vehicle.brand) text += vehicle.brand + " ";
 if(vehicle.model) text += vehicle.model + " ";
 if(vehicle.variant) text += vehicle.variant + " ";
-if(vehicle.years) text += "(" + vehicle.years + ")";
+
+if(vehicle.years){
+
+if(Array.isArray(vehicle.years)){
+text += "(" + vehicle.years.join(", ") + ")";
+}else{
+text += "(" + vehicle.years + ")";
+}
+
+}
 
 return text.trim();
 
@@ -18,10 +27,12 @@ return text.trim();
 
 function conversationEngine(message){
 
-if(!message){
+if(!message || typeof message !== "string"){
+
 return {
-reply:"Please send vehicle and part details."
+reply:"Please send vehicle and required part.\n\nExample:\nCivic 2018 brake pads"
 }
+
 }
 
 let ai = null;
@@ -40,9 +51,17 @@ reply:"System processing error. Please try again."
 
 }
 
-const vehicle = ai?.vehicle || null;
-const part = ai?.part || null;
-const year = ai?.year || null;
+if(!ai){
+
+return {
+reply:"Please provide vehicle and required part."
+}
+
+}
+
+const vehicle = ai.vehicle || null;
+const part = ai.part || null;
+const year = ai.year || null;
 
 const vehicleText = buildVehicleText(vehicle);
 
@@ -54,8 +73,10 @@ NO DATA DETECTED
 if(!vehicle && !part){
 
 return {
+
 reply:
 "Please provide vehicle and required part.\n\nExample:\nCivic 2018 brake pads"
+
 }
 
 }
@@ -68,11 +89,14 @@ ONLY VEHICLE DETECTED
 if(vehicle && !part){
 
 return {
+
 vehicle,
+
 reply:
 "Vehicle detected:\n"+
 vehicleText+
 "\n\nPlease tell the required part."
+
 }
 
 }
@@ -85,11 +109,14 @@ ONLY PART DETECTED
 if(!vehicle && part){
 
 return {
+
 part,
+
 reply:
 "Part detected: "+
 (part.name || part.part || "Part")+
 "\n\nPlease provide vehicle details."
+
 }
 
 }
@@ -115,6 +142,17 @@ vehicleText+
 "\n\nSearching availability..."
 
 }
+
+}
+
+
+/* =========================
+FINAL FALLBACK
+========================= */
+
+return {
+
+reply:"Please provide vehicle and required part."
 
 }
 
