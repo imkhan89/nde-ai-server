@@ -1,187 +1,183 @@
-const automotiveAI = require("./automotive_ai_engine")
-const productSearch = require("./product_search_engine")
+const sessionManager = require("./sessions/sessionManager");
 
-function buildVehicleText(vehicle){
+const MAIN_MENU = `
+Welcome to ndestore.com AI Support. Please choose an option:
 
-if(!vehicle) return ""
+1 Auto Parts
+2 Car Accessories
+3 Sticker Decals
+4 Order Status
+5 Chat Support
+6 Complaints
 
-let text = ""
+Reply with 1, 2, 3, 4, 5, or 6 to continue.
 
-if(vehicle.brand) text += vehicle.brand + " "
-if(vehicle.model) text += vehicle.model + " "
-if(vehicle.variant) text += vehicle.variant + " "
+For a Live Agent:
+WhatsApp +92 308 7643288
+`;
 
-return text.trim()
+const AUTO_PARTS_MENU = `
+1 Auto Parts
 
-}
+Parts Inquiry, Please share the following details:
 
+Part Description: (e.g. Air Filter)
+Vehicle Make: (e.g. Suzuki)
+Vehicle Model: (e.g. Swift)
+Model Year: (e.g. 2021)
 
-function conversationEngine(message){
+Or send in this format:
 
-if(!message || typeof message !== "string"){
+Part + Make + Model + Year
 
-return {
-reply:"Please send vehicle and required part.\n\nExample:\nCivic 2018 brake pads"
-}
+Example:
+Air Filter Suzuki Swift 2021
 
-}
+Reply # to return to the Main Menu.
 
-let ai = null
+For a Live Agent:
+WhatsApp +92 308 7643288
+`;
 
-try{
+function conversationEngine(message, from){
 
-ai = automotiveAI(message)
+if(!message){
 
-}catch(error){
-
-console.error("AI engine error:",error)
-
-return {
-reply:"System processing error. Please try again."
-}
-
-}
-
-if(!ai){
-
-return {
-reply:"Please provide vehicle and required part."
-}
+return { reply: MAIN_MENU };
 
 }
 
-const vehicle = ai.vehicle || null
-const part = ai.part || null
-const year = ai.year || null
+const text = message.trim().toLowerCase();
 
-const vehicleText = buildVehicleText(vehicle)
+let session = sessionManager.getSession(from);
 
+if(!session){
 
-/* =========================
-NO DATA
-========================= */
+sessionManager.createSession(from,"MAIN_MENU");
+return { reply: MAIN_MENU };
 
-if(!vehicle && !part){
+}
+
+if(text === "#"){
+
+sessionManager.updateSession(from,"MAIN_MENU");
+
+return { reply: MAIN_MENU };
+
+}
+
+if(session.state === "MAIN_MENU"){
+
+if(text === "1"){
+
+sessionManager.updateSession(from,"AUTO_PARTS");
+
+return { reply: AUTO_PARTS_MENU };
+
+}
+
+if(text === "2"){
 
 return {
 reply:
-"Please provide vehicle and required part.\n\nExample:\nCivic 2018 brake pads"
-}
+`2 Car Accessories
+
+Please describe the accessory you require.
+
+Example:
+Floor Mat Suzuki Swift
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`
+};
 
 }
 
-
-/* =========================
-ONLY VEHICLE
-========================= */
-
-if(vehicle && !part){
+if(text === "3"){
 
 return {
-vehicle,
 reply:
-"Vehicle detected:\n"+
-vehicleText+
-"\n\nPlease tell the required part."
-}
+`3 Sticker Decals
+
+1 Sticker Collection
+2 Sticker Themes
+3 Customized Stickers
+
+Reply with 1, 2, or 3 to continue.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`
+};
 
 }
 
+if(text === "4"){
 
-/* =========================
-ONLY PART
-========================= */
-
-if(!vehicle && part){
+sessionManager.updateSession(from,"ORDER_STATUS");
 
 return {
-part,
 reply:
-"Part detected: "+
-(part.name || part.part || "Part")+
-"\n\nPlease provide vehicle details."
-}
+`4 Order Status
+
+Kindly share the following:
+
+Order ID:
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`
+};
 
 }
 
+if(text === "5"){
 
-/* =========================
-VEHICLE + PART
-========================= */
-
-if(vehicle && part){
-
-const searchQuery = `${vehicle.brand} ${vehicle.model} ${part.name || part.part}`
-
-let products = []
-
-try{
-
-products = productSearch.searchProducts(searchQuery)
-
-}catch(e){
-
-console.log("Product search error:",e.message)
-
-}
-
-if(!products || products.length === 0){
+sessionManager.updateSession(from,"CHAT_SUPPORT");
 
 return {
-
-vehicle,
-part,
-year,
-
 reply:
-"Vehicle: "+vehicleText+
-"\nPart: "+(part.name || part.part)+
-"\n\nSorry, no products found in inventory."
+`5 Chat Support
+
+Please write your query and our AI assistant will help you.
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288`
+};
 
 }
 
-}
+if(text === "6"){
 
-
-/* =========================
-BUILD PRODUCT RESPONSE
-========================= */
-
-let reply =
-"Vehicle: "+vehicleText+
-"\nPart: "+(part.name || part.part)+
-"\n\nAvailable Products:\n\n"
-
-for(const p of products){
-
-const url = productSearch.buildProductURL(p.handle)
-
-reply +=
-"• "+p.title+
-"\nPKR "+(p.price || "")+
-"\n"+url+
-"\n\n"
-
-}
+sessionManager.updateSession(from,"COMPLAINT");
 
 return {
+reply:
+`6 Complaints
 
-vehicle,
-part,
-year,
-products,
+Kindly share the following:
 
-reply
+Order ID:
+Describe the Issue:
 
-}
+Reply # to return to the Main Menu.
 
-}
-
-
-return {
-reply:"Please provide vehicle and required part."
-}
+For a Live Agent:
+WhatsApp +92 308 7643288`
+};
 
 }
 
-module.exports = conversationEngine
+return { reply: MAIN_MENU };
+
+}
+
+return { reply: MAIN_MENU };
+
+}
+
+module.exports = conversationEngine;
