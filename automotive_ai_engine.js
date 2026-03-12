@@ -1,14 +1,5 @@
-const fs = require("fs");
-const path = require("path");
-
+const detectVehicle = require("./vehicle_detection_engine");
 const fuzzyMatchPart = require("./fuzzy_parts_engine");
-
-const vehicles = JSON.parse(
-  fs.readFileSync(
-    path.join(__dirname, "data", "vehicle_graph.json"),
-    "utf8"
-  )
-);
 
 function normalize(text) {
   return text
@@ -16,28 +7,6 @@ function normalize(text) {
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function detectVehicle(query) {
-
-  const q = normalize(query);
-
-  for (const vehicle of vehicles) {
-
-    const brand = vehicle.brand.toLowerCase();
-    const model = vehicle.model.toLowerCase();
-
-    if (q.includes(brand) && q.includes(model)) {
-      return vehicle;
-    }
-
-    if (q.includes(model)) {
-      return vehicle;
-    }
-
-  }
-
-  return null;
 }
 
 function extractYear(query) {
