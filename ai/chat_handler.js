@@ -1,74 +1,64 @@
-/* =====================================================
-CHAT HANDLER
-Main entry point for customer messages
-===================================================== */
+/*
+Professional Response Builder
+Formats replies sent to WhatsApp
+*/
 
-const { analyzeAutomotiveQuery } = require("./automotive_ai_engine")
-const { buildChatResponse } = require("./response_builder")
-const { cachedSearch } = require("./query_cache_search")
-const { buildSearchQuery } = require("./search_query_builder")
+function capitalize(text){
 
+if(!text) return ""
 
-async function handleCustomerMessage(message){
-
-if(!message){
-
-return "Please send the vehicle and part details."
+return text
+.split(" ")
+.map(w => w.charAt(0).toUpperCase() + w.slice(1))
+.join(" ")
 
 }
 
+function buildPartsResponse(data){
 
-/* =====================================================
-ANALYZE CUSTOMER QUERY
-===================================================== */
+if(!data){
 
-const aiResult = analyzeAutomotiveQuery(message)
+return `
+We are unable to understand your inquiry.
 
+Kindly reply in the following format:
 
-/* =====================================================
-BUILD SEARCH QUERY
-===================================================== */
+Part Description (e.g. Air Filter)
+Vehicle Make (e.g. Suzuki)
+Vehicle Model (e.g. Swift)
+Model Year (e.g. 2021)
 
-const searchQuery = buildSearchQuery(aiResult)
+Example:
+Air Filter Suzuki Swift 2021
 
+Reply # to return to the Main Menu.
 
-/* =====================================================
-SEARCH PRODUCTS (CACHED)
-===================================================== */
-
-let products = []
-
-try{
-
-products = cachedSearch(searchQuery)
-
-}catch(err){
-
-products = []
+For a Live Agent:
+WhatsApp +92 308 7643288
+`
 
 }
 
+const part = capitalize(data.part)
+const make = capitalize(data.make)
+const model = capitalize(data.model)
+const year = data.year || "Not Provided"
 
-/* =====================================================
-ATTACH PRODUCTS TO AI RESULT
-===================================================== */
+return `
+Part Description: ${part}
+Vehicle Make: ${make}
+Vehicle Model: ${model}
+Model Year: ${year}
 
-aiResult.products = products
+Kindly visit the following URL:
+${data.url}
 
+Reply # to return to the Main Menu.
 
-/* =====================================================
-BUILD FINAL RESPONSE
-===================================================== */
-
-const response = buildChatResponse(aiResult)
-
-return response
-
-}
-
-
-module.exports = {
-
-handleCustomerMessage
+For a Live Agent:
+WhatsApp +92 308 7643288
+`
 
 }
+
+module.exports = buildPartsResponse
