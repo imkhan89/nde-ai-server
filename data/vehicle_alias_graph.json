@@ -1,0 +1,38 @@
+[
+  {
+    "alias": "reborn",
+    "vehicle": {
+      "brand": "Honda",
+      "model": "Civic",
+      "variant": "Reborn",
+      "years": "2007-2012"
+    }
+  },
+  {
+    "alias": "rebirth",
+    "vehicle": {
+      "brand": "Honda",
+      "model": "Civic",
+      "variant": "Rebirth",
+      "years": "2013-2016"
+    }
+  },
+  {
+    "alias": "grande",
+    "vehicle": {
+      "brand": "Toyota",
+      "model": "Corolla",
+      "variant": "Altis Grande",
+      "years": "2017-2024"
+    }
+  },
+  {
+    "alias": "rocco",
+    "vehicle": {
+      "brand": "Toyota",
+      "model": "Hilux",
+      "variant": "Revo Rocco",
+      "years": "2020-2024"
+    }
+  }
+]
