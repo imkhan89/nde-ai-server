@@ -1,104 +1,38 @@
-/* =====================================================
-PAKISTAN VEHICLE ALIAS INTELLIGENCE
-===================================================== */
+const aliases = {
 
-const VEHICLE_ALIASES = {
+corolla:["gli","altis"],
+civic:["reborn","rebirth","x","xi"],
+cultus:["new cultus"],
+alto:["alto 660"],
+city:["city aspire"]
 
-reborn:{
-make:"honda",
-model:"civic",
-generation:"2006-2011"
-},
+}
 
-rebirth:{
-make:"honda",
-model:"civic",
-generation:"2012-2015"
-},
+function detectAlias(query){
 
-turbo:{
-make:"honda",
-model:"civic",
-generation:"2016-2021"
-},
+if(!query || typeof query !== "string"){
+return null
+}
 
-civicx:{
-make:"honda",
-model:"civic",
-generation:"2016-2021"
-},
+const q = query.toLowerCase()
 
-grande:{
-make:"toyota",
-model:"corolla",
-generation:"2014-2024"
-},
+for(const model in aliases){
 
-altis:{
-make:"toyota",
-model:"corolla",
-generation:"2014-2024"
-},
+const list = aliases[model]
 
-gli:{
-make:"toyota",
-model:"corolla",
-generation:"2009-2019"
-},
+for(const alias of list){
 
-xli:{
-make:"toyota",
-model:"corolla",
-generation:"2009-2019"
-},
+if(q.includes(alias)){
 
-vigo:{
-make:"toyota",
-model:"hilux",
-generation:"2005-2015"
-},
-
-revo:{
-make:"toyota",
-model:"hilux",
-generation:"2016-present"
-},
-
-rocco:{
-make:"toyota",
-model:"hilux",
-generation:"2020-present"
-},
-
-sportage:{
-make:"kia",
-model:"sportage",
-generation:"2019-present"
-},
-
-tucson:{
-make:"hyundai",
-model:"tucson",
-generation:"2020-present"
+return {
+brand:"",
+model:model,
+variant:"",
+years:[]
 }
 
 }
 
-/* =====================================================
-DETECT ALIAS
-===================================================== */
-
-function detectVehicleAlias(text){
-
-const query = (text || "")
-.toLowerCase()
-.replace(/[^a-z0-9\s]/g,"")
-.trim()
-
-for(const alias in VEHICLE_ALIASES){
-
-if(query.includes(alias)){
-return VEHICLE_ALIASES[alias]
 }
 
 }
@@ -107,6 +41,4 @@ return null
 
 }
 
-module.exports = {
-detectVehicleAlias
-}
+module.exports = detectAlias
