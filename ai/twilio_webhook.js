@@ -1,69 +1,85 @@
-/* =====================================================
-TWILIO WHATSAPP WEBHOOK
-Receives WhatsApp messages and sends AI replies
-===================================================== */
-
 const express = require("express")
 const bodyParser = require("body-parser")
-const { handleCustomerMessage } = require("./chat_handler")
 
-const app = express()
+const conversationEngine = require("../conversation_engine")
+const handleChat = require("./chat_handler")
 
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
+const router = express.Router()
 
-/* =====================================================
-TWILIO MESSAGE ENDPOINT
-===================================================== */
+router.use(bodyParser.urlencoded({ extended: false }))
+router.use(bodyParser.json())
 
-app.post("/whatsapp", async (req, res) => {
+router.post("/whatsapp", async (req,res)=>{
 
-try {
+let incoming = ""
+let from = ""
 
-const incomingMsg = req.body.Body || ""
-const sender = req.body.From || ""
+try{
 
-if(!incomingMsg){
+incoming = req.body.Body || ""
+from = req.body.From || ""
 
-return res.send("<Response></Response>")
+}catch(e){}
+
+let reply = ""
+
+/* MENU SYSTEM */
+
+try{
+
+const menu = await conversationEngine(incoming,from)
+
+if(menu && menu.reply){
+reply = menu.reply
+}
+
+}catch(e){}
+
+/* AI CHAT */
+
+if(!reply){
+
+const ai = handleChat(incoming)
+
+if(ai){
+reply = ai
+}
 
 }
 
-const reply = await handleCustomerMessage(incomingMsg)
+/* FALLBACK */
 
-const twiml = `
+if(!reply){
+
+reply = `
+We are unable to understand your inquiry.
+
+Please share:
+
+Part Description
+Vehicle Make
+Vehicle Model
+Model Year
+
+Example:
+Air Filter Suzuki Swift 2021
+
+Reply # to return to the Main Menu.
+
+For a Live Agent:
+WhatsApp +92 308 7643288
+`
+
+}
+
+res.set("Content-Type","text/xml")
+
+res.send(`
 <Response>
 <Message>${reply}</Message>
 </Response>
-`
-
-res.set("Content-Type", "text/xml")
-res.send(twiml)
-
-} catch(err){
-
-const twiml = `
-<Response>
-<Message>Sorry, something went wrong. Please try again.</Message>
-</Response>
-`
-
-res.set("Content-Type", "text/xml")
-res.send(twiml)
-
-}
+`)
 
 })
 
-
-/* =====================================================
-SERVER START
-===================================================== */
-
-const PORT = process.env.PORT || 3000
-
-app.listen(PORT, () => {
-
-console.log("Twilio WhatsApp webhook running on port " + PORT)
-
-})
+module.exports = router
