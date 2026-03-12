@@ -1,11 +1,31 @@
+const express = require("express")
+
 const vehicleLearning =
 require("./ai/vehicle_learning_engine")
 
+const twilioWebhook =
+require("./ai/twilio_webhook")
+
+/* START VEHICLE LEARNING */
+
+try{
+
+if(vehicleLearning &&
+typeof vehicleLearning.learnFromProducts === "function"){
+
 vehicleLearning.learnFromProducts()
 
-const express = require("express")
+console.log("Vehicle intelligence loaded")
 
-const twilioWebhook = require("./ai/twilio_webhook")
+}
+
+}catch(err){
+
+console.log("Vehicle learning skipped:",err.message)
+
+}
+
+/* EXPRESS SERVER */
 
 const app = express()
 
@@ -15,7 +35,11 @@ res.send("ndestore AI Server Running")
 
 })
 
+/* TWILIO WEBHOOK */
+
 app.use("/",twilioWebhook)
+
+/* START SERVER */
 
 const PORT = process.env.PORT || 3000
 
