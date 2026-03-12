@@ -1,48 +1,66 @@
-/* =====================================================
-SEARCH QUERY BUILDER
-===================================================== */
+const detectVehicle = require("./vehicle_intelligence_engine")
 
-function buildSearchQuery(data){
+function capitalize(text){
 
-let parts = []
+if(!text) return ""
 
-if(data.part){
-
-parts.push(data.part)
-
-}
-
-if(data.position){
-
-parts.push(data.position)
+return text
+.split(" ")
+.map(w => w.charAt(0).toUpperCase() + w.slice(1))
+.join(" ")
 
 }
 
-if(data.make){
+function buildSearchQuery(parsed){
 
-parts.push(data.make)
+if(!parsed) return null
 
-}
+const vehicle = detectVehicle(
+`${parsed.make} ${parsed.model} ${parsed.year}`
+)
 
-if(data.model){
+let make = parsed.make
+let model = parsed.model
+let year = parsed.year
 
-parts.push(data.model)
+if(vehicle){
 
-}
-
-if(data.year){
-
-parts.push(data.year)
-
-}
-
-return parts.join(" ").trim()
+make = vehicle.make
+model = vehicle.model
+year = vehicle.range || vehicle.year
 
 }
 
+const part = capitalize(parsed.part)
 
-module.exports = {
+let query = ""
 
-buildSearchQuery
+if(year){
+
+query = `${part} for ${make} ${model} ${year}`
+
+}else{
+
+query = `${part} for ${make} ${model}`
 
 }
+
+const url =
+"https://www.ndestore.com/search?q=" +
+encodeURIComponent(query)
+
+return {
+
+part: part,
+make: make,
+model: model,
+year: parsed.year || "",
+range: year,
+query: query,
+url: url
+
+}
+
+}
+
+module.exports = buildSearchQuery
