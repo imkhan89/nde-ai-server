@@ -12,8 +12,9 @@ HEALTH CHECK
 ========================= */
 
 app.get("/", (req, res) => {
-  res.send("Automotive AI Engine Running");
+res.send("Automotive AI Engine Running");
 });
+
 
 /* =========================
 WHATSAPP WEBHOOK
@@ -33,7 +34,7 @@ req.body?.text ||
 
 } catch(error){
 
-console.error("Incoming message error:",error);
+console.error("Incoming message error:", error);
 
 }
 
@@ -45,28 +46,31 @@ response = conversationEngine(incomingMessage);
 
 } catch(error){
 
-console.error("Conversation engine error:",error);
+console.error("Conversation engine error:", error);
 
 response = {
-reply:"System processing error. Please try again."
+reply: "System processing error. Please try again."
 };
 
 }
 
 const reply = response?.reply || "Please send vehicle and part details.";
 
+
 /* =========================
-RESPONSE
+TWILIO RESPONSE
 ========================= */
 
-res.json({
-reply: reply,
-vehicle: response?.vehicle || null,
-part: response?.part || null,
-year: response?.year || null
-});
+res.set("Content-Type", "text/xml");
+
+res.send(`
+<Response>
+<Message>${reply}</Message>
+</Response>
+`);
 
 });
+
 
 /* =========================
 SERVER START
