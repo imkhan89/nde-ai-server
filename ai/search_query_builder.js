@@ -1,3 +1,5 @@
+const shopifyVehicle =
+require("./shopify_vehicle_learning_engine")
 const detectRange = require("./vehicle_year_range_engine")
 
 function capitalize(text){
