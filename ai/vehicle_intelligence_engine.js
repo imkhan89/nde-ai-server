@@ -1,11 +1,10 @@
 /*
 Vehicle Intelligence Engine
-ndestore Automotive AI System
-Detects Make, Model, and Year Range
+Detects vehicle make, model and year range
+Works with auto_parts_parser and search_query_builder
 */
 
-const VEHICLE_DATABASE = [
-
+const VEHICLES = [
 {
 make:"Suzuki",
 models:[
@@ -16,7 +15,6 @@ models:[
 {name:"Wagonr",range:"2014-2023"}
 ]
 },
-
 {
 make:"Toyota",
 models:[
@@ -27,7 +25,6 @@ models:[
 {name:"Revo",range:"2016-2024"}
 ]
 },
-
 {
 make:"Honda",
 models:[
@@ -37,7 +34,6 @@ models:[
 {name:"Civic",range:"2022-2025"}
 ]
 },
-
 {
 make:"Kia",
 models:[
@@ -45,7 +41,6 @@ models:[
 {name:"Picanto",range:"2019-2024"}
 ]
 },
-
 {
 make:"Hyundai",
 models:[
@@ -53,7 +48,6 @@ models:[
 {name:"Elantra",range:"2021-2024"}
 ]
 },
-
 {
 make:"Mg",
 models:[
@@ -61,10 +55,9 @@ models:[
 {name:"Zs",range:"2021-2024"}
 ]
 }
-
 ]
 
-/* NORMALIZE TEXT */
+/* NORMALIZE */
 
 function normalize(text){
 
@@ -91,9 +84,9 @@ return text
 
 /* DETECT YEAR */
 
-function detectYear(text){
+function detectYear(message){
 
-const match = text.match(/\b(19|20)\d{2}\b/)
+const match = message.match(/\b(19|20)\d{2}\b/)
 
 if(match){
 return parseInt(match[0])
@@ -103,9 +96,9 @@ return null
 
 }
 
-/* CHECK YEAR RANGE */
+/* YEAR RANGE CHECK */
 
-function withinRange(year,range){
+function inRange(year,range){
 
 if(!year) return true
 
@@ -118,23 +111,23 @@ return year >= start && year <= end
 
 }
 
-/* DETECT VEHICLE */
+/* VEHICLE DETECTION */
 
 function detectVehicle(message){
 
-const clean = normalize(message)
+const text = normalize(message)
 
-const year = detectYear(clean)
+const year = detectYear(text)
 
-for(const brand of VEHICLE_DATABASE){
+for(const brand of VEHICLES){
 
-if(clean.includes(brand.make.toLowerCase())){
+if(text.includes(brand.make.toLowerCase())){
 
 for(const m of brand.models){
 
-if(clean.includes(m.name.toLowerCase())){
+if(text.includes(m.name.toLowerCase())){
 
-if(withinRange(year,m.range)){
+if(inRange(year,m.range)){
 
 return {
 
