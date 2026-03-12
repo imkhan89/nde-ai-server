@@ -33,7 +33,7 @@ sessions = {};
 
 loadSessions();
 
-/* SAVE */
+/* SAVE SESSIONS */
 
 function saveSessions(){
 
@@ -57,9 +57,9 @@ const session = sessions[phone];
 
 if(!session) return null;
 
-/* CHECK EXPIRY */
-
 const now = Date.now();
+
+/* SESSION EXPIRED */
 
 if(now - session.lastActive > SESSION_TIMEOUT){
 
@@ -71,7 +71,13 @@ return null;
 
 }
 
-return session;
+/* REFRESH TIMER */
+
+sessions[phone].lastActive = now;
+
+saveSessions();
+
+return sessions[phone];
 
 }
 
@@ -111,12 +117,23 @@ saveSessions();
 
 }
 
+/* CLEAR SESSION */
+
+function clearSession(phone){
+
+delete sessions[phone];
+
+saveSessions();
+
+}
+
 /* EXPORT */
 
 module.exports = {
 
 getSession,
 createSession,
-updateSession
+updateSession,
+clearSession
 
 };
