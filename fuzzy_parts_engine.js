@@ -12,7 +12,7 @@ const parts = JSON.parse(
 const options = {
   includeScore: true,
   threshold: 0.35,
-  keys: ["name", "part", "keyword"]
+  keys: ["name", "part", "keyword", "keywords"]
 };
 
 const fuse = new Fuse(parts, options);
