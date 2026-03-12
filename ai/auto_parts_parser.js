@@ -3,39 +3,33 @@ function normalize(text){
 return (text || "")
 .toLowerCase()
 .replace(/[,+]/g," ")
+.replace(/[^\w\s]/g," ")
 .replace(/\s+/g," ")
 .trim()
 
 }
 
-function parseAutoParts(message){
-
-if(!message) return null
-
-const clean = normalize(message)
-
-const tokens = clean.split(" ")
-
-if(tokens.length < 2){
-return null
-}
-
-let part = ""
-let make = ""
-let model = ""
-let year = ""
-
-/* DETECT YEAR */
+function detectYear(tokens){
 
 for(const t of tokens){
 
 if(/^(19|20)\d{2}$/.test(t)){
-year = t
+return t
 }
 
 }
+
+return ""
+
+}
+
+function extract(tokens,year){
 
 const words = tokens.filter(t => t !== year)
+
+let part = ""
+let make = ""
+let model = ""
 
 if(words.length >= 3){
 
@@ -52,17 +46,48 @@ make = words[1]
 
 }
 
+return {part,make,model}
+
+}
+
+function buildQuery(part,make,model,year){
+
+if(year){
+return `${part} for ${make} ${model} ${year}`
+}
+
+return `${part} for ${make} ${model}`
+
+}
+
+function buildURL(query){
+
+return "https://www.ndestore.com/search?q=" +
+encodeURIComponent(query)
+
+}
+
+function parseAutoParts(message){
+
+if(!message) return null
+
+const clean = normalize(message)
+
+const tokens = clean.split(" ")
+
+if(tokens.length < 2) return null
+
+const year = detectYear(tokens)
+
+const {part,make,model} = extract(tokens,year)
+
 if(!part || !make){
 return null
 }
 
-const query = year
-? `${part} for ${make} ${model} ${year}`
-: `${part} for ${make} ${model}`
+const query = buildQuery(part,make,model,year)
 
-const url =
-`https://www.ndestore.com/search?q=` +
-encodeURIComponent(query)
+const url = buildURL(query)
 
 return {
 
