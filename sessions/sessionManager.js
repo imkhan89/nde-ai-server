@@ -1,103 +1,102 @@
-/* =====================================================
-SESSION MANAGER
-Stable session management for WhatsApp AI
-===================================================== */
+const fs = require("fs");
+const path = require("path");
 
-const sessions = {}
+const SESSION_FILE = path.join(__dirname, "sessions.json");
 
-const SESSION_TIMEOUT = 6 * 60 * 60 * 1000
+let sessions = {};
 
+/* LOAD SESSIONS */
 
-/* =====================================================
-CREATE SESSION
-===================================================== */
+function loadSessions(){
 
-function createSession(phone){
+try{
 
-const session = {
+if(fs.existsSync(SESSION_FILE)){
 
-phone:phone,
-state:"MENU",
-lastActivity:Date.now()
+const raw = fs.readFileSync(SESSION_FILE,"utf8");
+
+sessions = JSON.parse(raw || "{}");
 
 }
 
-sessions[phone] = session
+}catch(e){
 
-return session
+console.log("Session load error:",e.message);
+
+sessions = {};
 
 }
 
+}
 
-/* =====================================================
-GET SESSION
-===================================================== */
+loadSessions();
+
+/* SAVE SESSIONS */
+
+function saveSessions(){
+
+try{
+
+fs.writeFileSync(SESSION_FILE,JSON.stringify(sessions,null,2));
+
+}catch(e){
+
+console.log("Session save error:",e.message);
+
+}
+
+}
+
+/* GET SESSION */
 
 function getSession(phone){
 
-return sessions[phone] || null
+return sessions[phone] || null;
 
 }
 
+/* CREATE SESSION */
 
-/* =====================================================
-RESET SESSION
-===================================================== */
+function createSession(phone,state){
 
-function resetSession(phone){
+sessions[phone] = {
 
-delete sessions[phone]
+state:state,
+lastActive:Date.now()
 
-}
+};
 
+saveSessions();
 
-/* =====================================================
-UPDATE ACTIVITY
-===================================================== */
-
-function updateSession(phone){
-
-if(sessions[phone]){
-
-sessions[phone].lastActivity = Date.now()
+return sessions[phone];
 
 }
 
-}
+/* UPDATE SESSION */
 
+function updateSession(phone,state){
 
-/* =====================================================
-SESSION CLEANUP
-===================================================== */
+if(!sessions[phone]){
 
-setInterval(()=>{
+createSession(phone,state);
 
-const now = Date.now()
-
-for(const phone in sessions){
-
-const session = sessions[phone]
-
-if(now - session.lastActivity > SESSION_TIMEOUT){
-
-delete sessions[phone]
+return;
 
 }
 
+sessions[phone].state = state;
+sessions[phone].lastActive = Date.now();
+
+saveSessions();
+
 }
 
-},60000)
-
-
-/* =====================================================
-EXPORT
-===================================================== */
+/* EXPORT */
 
 module.exports = {
 
-createSession,
 getSession,
-resetSession,
+createSession,
 updateSession
 
-}
+};
