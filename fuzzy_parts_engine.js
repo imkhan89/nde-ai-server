@@ -12,10 +12,27 @@ const parts = JSON.parse(
 const options = {
   includeScore: true,
   threshold: 0.35,
-  keys: ["name", "part", "keyword", "keywords"]
+  keys: [
+    "name",
+    "part",
+    "keyword",
+    "keywords",
+    "alias",
+    "aliases"
+  ]
 };
 
 const fuse = new Fuse(parts, options);
+
+
+function normalize(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 
 function fuzzyMatchPart(query) {
 
@@ -23,7 +40,9 @@ function fuzzyMatchPart(query) {
     return null;
   }
 
-  const result = fuse.search(query);
+  const cleanQuery = normalize(query);
+
+  const result = fuse.search(cleanQuery);
 
   if (!result || !result.length) {
     return null;
@@ -31,5 +50,6 @@ function fuzzyMatchPart(query) {
 
   return result[0].item;
 }
+
 
 module.exports = fuzzyMatchPart;
