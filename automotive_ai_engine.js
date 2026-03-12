@@ -1,4 +1,5 @@
 const detectVehicle = require("./vehicle_detection_engine");
+const detectAlias = require("./vehicle_alias_engine");
 const fuzzyMatchPart = require("./fuzzy_parts_engine");
 
 function normalize(text) {
@@ -26,7 +27,11 @@ function automotiveAI(query) {
 
   const clean = normalize(query);
 
-  const vehicle = detectVehicle(clean);
+  let vehicle = detectVehicle(clean);
+
+  if (!vehicle) {
+    vehicle = detectAlias(clean);
+  }
 
   const part = fuzzyMatchPart(clean);
 
