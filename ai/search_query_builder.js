@@ -1,8 +1,13 @@
 const shopifyVehicle =
 require("./shopify_vehicle_learning_engine")
 
+const webVehicle =
+require("./vehicle_web_learning_engine")
+
 const detectRange =
 require("./vehicle_year_range_engine")
+
+/* CAPITALIZE WORDS */
 
 function capitalize(text){
 
@@ -15,7 +20,7 @@ return text
 
 }
 
-/* BUILD SEARCH QUERY */
+/* BUILD SHOPIFY SEARCH QUERY */
 
 function buildSearchQuery(parsed){
 
@@ -29,11 +34,19 @@ let year = parsed.year
 
 let range = ""
 
-/* FIRST TRY SHOPIFY LEARNED VEHICLE RANGES */
+/* 1️⃣ SHOPIFY LEARNED VEHICLE RANGE */
 
 range = shopifyVehicle.detectRange(make,model)
 
-/* IF NOT FOUND THEN USE STATIC RANGE ENGINE */
+/* 2️⃣ WEBSITE LEARNED RANGE */
+
+if(!range){
+
+range = webVehicle.detectRange(make,model)
+
+}
+
+/* 3️⃣ STATIC RANGE ENGINE */
 
 if(!range && year){
 
@@ -45,7 +58,7 @@ parseInt(year)
 
 }
 
-/* FALLBACK TO CUSTOMER YEAR */
+/* 4️⃣ FALLBACK TO CUSTOMER YEAR */
 
 if(!range && year){
 
@@ -53,7 +66,7 @@ range = year
 
 }
 
-/* BUILD QUERY */
+/* BUILD SEARCH QUERY */
 
 let query = ""
 
@@ -69,13 +82,13 @@ query =
 
 }
 
-/* BUILD SHOPIFY SEARCH URL */
+/* BUILD SHOPIFY URL */
 
 const url =
 "https://www.ndestore.com/search?q=" +
 encodeURIComponent(query)
 
-/* RETURN RESULT */
+/* RETURN STRUCTURED RESULT */
 
 return {
 
