@@ -1,3 +1,8 @@
+const vehicleLearning =
+require("./ai/vehicle_learning_engine")
+
+vehicleLearning.learnFromProducts()
+
 const express = require("express")
 
 const twilioWebhook = require("./ai/twilio_webhook")
