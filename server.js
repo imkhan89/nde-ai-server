@@ -1,62 +1,21 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const conversationEngine = require("./conversation_engine");
+const express = require("express")
 
-const app = express();
+const twilioWebhook = require("./ai/twilio_webhook")
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+const app = express()
 
-app.get("/", (req, res) => {
-  res.send("ndestore WhatsApp AI running");
-});
+app.get("/",(req,res)=>{
 
-app.post("/whatsapp", async (req, res) => {
+res.send("ndestore AI Server Running")
 
-let message = "";
-let from = "";
+})
 
-try {
+app.use("/",twilioWebhook)
 
-message = req.body.Body || "";
-from = req.body.From || "";
+const PORT = process.env.PORT || 3000
 
-console.log("Incoming message:", message);
+app.listen(PORT,()=>{
 
-} catch (error) {
+console.log("Server running on port",PORT)
 
-console.error("Incoming parsing error:", error);
-
-}
-
-let reply = "";
-
-try {
-
-const result = await conversationEngine(message, from);
-
-reply = result.reply;
-
-} catch (error) {
-
-console.error("Conversation engine error:", error);
-
-reply = "System is temporarily unavailable. Please try again.";
-
-}
-
-res.set("Content-Type", "text/xml");
-
-res.send(`
-<Response>
-<Message>${reply}</Message>
-</Response>
-`);
-
-});
-
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-console.log("Server running on port", PORT);
-});
+})
