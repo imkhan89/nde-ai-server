@@ -1,3 +1,5 @@
+const parseAutoParts = require("./ai/auto_parts_parser")
+
 const sessionManager = require("./sessions/sessionManager");
 
 const MAIN_MENU = `
