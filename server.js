@@ -9,6 +9,9 @@ require("./ai/twilio_webhook")
 const adminReport =
 require("./ai/admin_whatsapp_report")
 
+const reportScheduler =
+require("./ai/admin_auto_report_scheduler")
+
 try{
 
 require("./ai/search_index_builder")
@@ -47,6 +50,18 @@ res.send("ndestore AI Server Running")
 app.use("/",twilioWebhook)
 
 app.use("/",adminReport)
+
+try{
+
+reportScheduler.startScheduler()
+
+console.log("AI report scheduler started")
+
+}catch(err){
+
+console.log("Report scheduler failed:",err.message)
+
+}
 
 const PORT = process.env.PORT || 3000
 
