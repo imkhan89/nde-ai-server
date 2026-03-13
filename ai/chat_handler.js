@@ -10,6 +10,7 @@ const complaints = require("./complaint_engine")
 const liveAgent = require("./live_agent_forwarder")
 const testEngine = require("./test_message_engine")
 const serviceEngine = require("./smart_service_recommendation_engine")
+const vinDecoder = require("./vin_decoder_engine")
 
 function cleanUrl(url){
 
@@ -39,6 +40,37 @@ insights.trackChat(phone,message)
 
 const text = message.toLowerCase()
 
+/* VIN DETECTION */
+
+if(vinDecoder.isVIN(message)){
+
+const vehicle = vinDecoder.decodeVIN(message)
+
+vehicleMemory.saveCustomerVehicle(phone,{
+make:vehicle.make,
+model:vehicle.model
+})
+
+return `
+Vehicle detected from VIN
+
+Make: ${vehicle.make}
+Model: ${vehicle.model}
+
+You can now search parts.
+
+Example:
+Air Filter
+Brake Pads
+
+Live Agent:
++92 308 7643288
+`
+
+}
+
+/* COMPLAINT */
+
 if(complaints.isComplaint(text)){
 
 complaints.saveComplaint(phone,message)
@@ -53,6 +85,8 @@ Live Agent:
 `
 
 }
+
+/* ORDER */
 
 if(text.includes("order")){
 
@@ -81,6 +115,8 @@ return "Order not found."
 }
 
 }
+
+/* VEHICLE MEMORY */
 
 const savedVehicle = vehicleMemory.getCustomerVehicle(phone)
 
