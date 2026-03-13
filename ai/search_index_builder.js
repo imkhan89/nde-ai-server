@@ -1,192 +1,78 @@
 const fs = require("fs")
 const path = require("path")
 
-const indexFile = path.join(__dirname,"../data/product_index.json")
+const PRODUCT_INDEX_PATH =
+path.join(__dirname,"../data/product_index.json")
 
-function normalize(text){
+let productIndex = []
 
-return (text || "")
-.toLowerCase()
-.replace(/[^a-z0-9\- ]/g," ")
-.replace(/\s+/g," ")
-.trim()
-
-}
-
-function extractYear(title){
-
-const range = title.match(/\b(19|20)\d{2}\s*-\s*(19|20)\d{2}\b/)
-if(range){
-return range[0]
-}
-
-const single = title.match(/\b(19|20)\d{2}\b/)
-if(single){
-return single[0]
-}
-
-return ""
-
-}
-
-function extractMake(title){
-
-const makes = [
-"toyota",
-"honda",
-"suzuki",
-"daihatsu",
-"nissan",
-"mitsubishi",
-"kia",
-"hyundai",
-"changan",
-"proton",
-"mg",
-"chevrolet"
-]
-
-const t = normalize(title)
-
-for(let make of makes){
-
-if(t.includes(make)){
-return make
-}
-
-}
-
-return ""
-
-}
-
-function extractModel(title){
-
-const models = [
-"corolla",
-"civic",
-"city",
-"alto",
-"cultus",
-"swift",
-"wagonr",
-"mehran",
-"bolan",
-"carry",
-"yaris",
-"revo",
-"hilux",
-"sportage",
-"elantra",
-"tucson",
-"sonata"
-]
-
-const t = normalize(title)
-
-for(let model of models){
-
-if(t.includes(model)){
-return model
-}
-
-}
-
-return ""
-
-}
-
-function extractPart(title){
-
-const parts = [
-"air filter",
-"oil filter",
-"cabin filter",
-"ac filter",
-"spark plug",
-"brake pad",
-"brake pads",
-"brake disc",
-"brake rotor",
-"radiator",
-"radiator cap",
-"engine mount",
-"engine mounting",
-"wheel bearing",
-"clutch plate",
-"clutch kit",
-"fuel filter",
-"wiper blade",
-"horn",
-"headlight",
-"tail light"
-]
-
-const t = normalize(title)
-
-for(let part of parts){
-
-if(t.includes(part)){
-return part
-}
-
-}
-
-return ""
-
-}
-
-function buildIndex(products){
-
-let index = []
-
-products.forEach(p=>{
-
-const title = p.title || ""
-const url = p.url || ""
-
-index.push({
-
-title:title,
-url:url,
-make:extractMake(title),
-model:extractModel(title),
-year:extractYear(title),
-part:extractPart(title)
-
-})
-
-})
-
-fs.writeFileSync(indexFile,JSON.stringify(index,null,2))
-
-console.log("Product index built:",index.length)
-
-}
-
-function loadIndex(){
+function loadProductIndex(){
 
 try{
 
-const raw = fs.readFileSync(indexFile,"utf8")
+if(!fs.existsSync(PRODUCT_INDEX_PATH)){
 
-const data = JSON.parse(raw)
+console.log("Product index file not found")
 
-console.log("Product index loaded:",data.length)
+productIndex = []
 
-return data
+return
+
+}
+
+const raw = fs.readFileSync(PRODUCT_INDEX_PATH)
+
+productIndex = JSON.parse(raw)
+
+if(!Array.isArray(productIndex)){
+
+console.log("Product index format invalid")
+
+productIndex = []
+
+return
+
+}
+
+console.log("Local product index loaded:",productIndex.length)
 
 }catch(err){
 
 console.log("Product index load error:",err.message)
 
-return []
+productIndex = []
 
 }
 
 }
+
+function searchProducts(query){
+
+if(!query) return []
+
+const q = query.toLowerCase()
+
+return productIndex.filter(p=>{
+
+if(!p.title) return false
+
+return p.title.toLowerCase().includes(q)
+
+}).slice(0,5)
+
+}
+
+function getProductIndex(){
+
+return productIndex
+
+}
+
+loadProductIndex()
 
 module.exports = {
-buildIndex,
-loadIndex
+
+searchProducts,
+getProductIndex
+
 }
