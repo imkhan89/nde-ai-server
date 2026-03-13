@@ -1,77 +1,77 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require("fs")
+const path = require("path")
 
-const MEMORY_FILE = path.join(__dirname, "../data/customer_vehicle_memory.json");
+const memoryFile = path.join(__dirname,"../data/customer_vehicle_memory.json")
 
-/*
-Load customer vehicle memory
-*/
-function loadMemory() {
+function ensureFile(){
 
-    if (!fs.existsSync(MEMORY_FILE)) {
-        fs.writeFileSync(MEMORY_FILE, "{}");
-    }
-
-    const raw = fs.readFileSync(MEMORY_FILE, "utf8");
-
-    try {
-        return JSON.parse(raw);
-    } catch (err) {
-
-        console.error("Vehicle memory JSON corrupted. Resetting...");
-
-        fs.writeFileSync(MEMORY_FILE, "{}");
-
-        return {};
-    }
+if(!fs.existsSync(memoryFile)){
+fs.writeFileSync(memoryFile,"{}")
+}
 
 }
 
-/*
-Save memory to file
-*/
-function saveMemory(memory) {
+function loadMemory(){
 
-    fs.writeFileSync(
-        MEMORY_FILE,
-        JSON.stringify(memory, null, 2)
-    );
+ensureFile()
 
-}
+try{
 
-/*
-Save customer's vehicle
-*/
-function saveCustomerVehicle(phone, vehicle) {
+const raw = fs.readFileSync(memoryFile,"utf8")
 
-    const memory = loadMemory();
+return JSON.parse(raw)
 
-    memory[phone] = {
-        make: vehicle.make,
-        model: vehicle.model,
-        year: vehicle.year
-    };
+}catch(err){
 
-    saveMemory(memory);
+console.log("Vehicle memory load error:",err.message)
+
+return {}
 
 }
 
-/*
-Get customer's saved vehicle
-*/
-function getCustomerVehicle(phone) {
+}
 
-    const memory = loadMemory();
+function saveMemory(data){
 
-    if (memory[phone]) {
-        return memory[phone];
-    }
+fs.writeFileSync(memoryFile,JSON.stringify(data,null,2))
 
-    return null;
+}
+
+function saveCustomerVehicle(phone,vehicle){
+
+const memory = loadMemory()
+
+memory[phone] = vehicle
+
+saveMemory(memory)
+
+}
+
+function getCustomerVehicle(phone){
+
+const memory = loadMemory()
+
+if(memory[phone]){
+return memory[phone]
+}
+
+return null
+
+}
+
+function clearCustomerVehicle(phone){
+
+const memory = loadMemory()
+
+if(memory[phone]){
+delete memory[phone]
+saveMemory(memory)
+}
 
 }
 
 module.exports = {
-    saveCustomerVehicle,
-    getCustomerVehicle
-};
+saveCustomerVehicle,
+getCustomerVehicle,
+clearCustomerVehicle
+}
