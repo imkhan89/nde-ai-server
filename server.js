@@ -6,18 +6,6 @@ require("./ai/vehicle_learning_engine")
 const twilioWebhook =
 require("./ai/twilio_webhook")
 
-/* BUILD PRODUCT INDEX */
-
-try{
-
-require("./ai/search_index_builder")
-
-}catch(err){
-
-console.log("Product index builder skipped:",err.message)
-
-}
-
 /* START VEHICLE LEARNING */
 
 try{
