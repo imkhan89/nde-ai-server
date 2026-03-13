@@ -1,5 +1,7 @@
 const express = require("express")
 
+/* CORE AI MODULES */
+
 const vehicleLearning =
 require("./ai/vehicle_learning_engine")
 
@@ -24,8 +26,13 @@ require("./ai/global_vehicle_database")
 const compatibilityEngine =
 require("./ai/compatibility_prediction_engine")
 
+const fastSearch =
+require("./ai/fast_product_search_engine")
+
 const shopifySync =
 require("./ai/shopify_catalog_sync_engine")
+
+/* PRODUCT INDEX BUILDER */
 
 try{
 
@@ -37,6 +44,8 @@ console.log("Product index builder skipped:",err.message)
 
 }
 
+/* VALIDATE PRODUCT URLS */
+
 try{
 
 urlValidator.validateUrls()
@@ -47,6 +56,8 @@ console.log("URL validation skipped:",err.message)
 
 }
 
+/* LOAD VEHICLE DATABASE */
+
 try{
 
 globalVehicleDB.loadVehicleDatabase()
@@ -56,6 +67,8 @@ globalVehicleDB.loadVehicleDatabase()
 console.log("Global vehicle database load failed:",err.message)
 
 }
+
+/* LOAD FITMENT DATABASE */
 
 try{
 
@@ -68,6 +81,20 @@ console.log("Fitment compatibility database loaded")
 console.log("Fitment database load failed:",err.message)
 
 }
+
+/* LOAD FAST PRODUCT SEARCH */
+
+try{
+
+fastSearch.loadProductIndex()
+
+}catch(err){
+
+console.log("Fast search engine load failed:",err.message)
+
+}
+
+/* VEHICLE INTELLIGENCE TRAINING */
 
 try{
 
@@ -86,15 +113,19 @@ console.log("Vehicle learning skipped:",err.message)
 
 }
 
+/* EXPRESS SERVER */
+
 const app = express()
+
+/* ROOT ENDPOINT */
 
 app.get("/",(req,res)=>{
 
-res.send("ndestore AI Server Running")
+res.send("ndestore Automotive AI Server Running")
 
 })
 
-/* TEST ROUTE */
+/* SHOPIFY CATALOG SYNC TEST ROUTE */
 
 app.get("/sync-shopify",async(req,res)=>{
 
@@ -112,9 +143,15 @@ res.send("Shopify sync failed")
 
 })
 
+/* WHATSAPP WEBHOOK */
+
 app.use("/",twilioWebhook)
 
+/* ADMIN REPORT ENDPOINT */
+
 app.use("/",adminReport)
+
+/* START REPORT SCHEDULER */
 
 try{
 
@@ -128,6 +165,8 @@ console.log("Report scheduler failed:",err.message)
 
 }
 
+/* START AGENT ALERT SYSTEM */
+
 try{
 
 agentAlertEngine.startAgentAlertEngine()
@@ -139,6 +178,8 @@ console.log("Agent alert engine started")
 console.log("Agent alert engine failed:",err.message)
 
 }
+
+/* START SERVER */
 
 const PORT = process.env.PORT || 8080
 
