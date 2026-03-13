@@ -15,6 +15,9 @@ require("./ai/admin_auto_report_scheduler")
 const agentAlertEngine =
 require("./ai/agent_alert_engine")
 
+const urlValidator =
+require("./ai/product_url_validator")
+
 try{
 
 require("./ai/search_index_builder")
@@ -22,6 +25,16 @@ require("./ai/search_index_builder")
 }catch(err){
 
 console.log("Product index builder skipped:",err.message)
+
+}
+
+try{
+
+urlValidator.validateUrls()
+
+}catch(err){
+
+console.log("URL validation skipped:",err.message)
 
 }
 
