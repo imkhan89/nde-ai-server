@@ -1,75 +1,78 @@
 const fs = require("fs")
 const path = require("path")
 
-const PRODUCT_SOURCE_PATH =
-path.join(__dirname,"../data/shopify_products.json")
-
 const PRODUCT_INDEX_PATH =
 path.join(__dirname,"../data/product_index.json")
 
-function normalize(text){
+let productIndex = []
 
-if(!text) return ""
-
-return text
-.toLowerCase()
-.replace(/[^a-z0-9 ]/g," ")
-.trim()
-
-}
-
-function buildIndex(){
+function loadProductIndex(){
 
 try{
 
-if(!fs.existsSync(PRODUCT_SOURCE_PATH)){
+if(!fs.existsSync(PRODUCT_INDEX_PATH)){
 
-console.log("Shopify product source not found")
+console.log("Product index file not found")
 
-return
-
-}
-
-const raw = fs.readFileSync(PRODUCT_SOURCE_PATH)
-
-const products = JSON.parse(raw)
-
-if(!Array.isArray(products)){
-
-console.log("Invalid Shopify product data")
+productIndex = []
 
 return
 
 }
 
-const index = products.map(p=>{
+const raw = fs.readFileSync(PRODUCT_INDEX_PATH)
 
-return {
+productIndex = JSON.parse(raw)
 
-title:p.title || "",
-url:p.url || "",
-handle:p.handle || "",
-keywords:normalize(p.title || "").split(" ")
+if(!Array.isArray(productIndex)){
+
+console.log("Product index format invalid")
+
+productIndex = []
+
+return
 
 }
 
-})
-
-fs.writeFileSync(
-PRODUCT_INDEX_PATH,
-JSON.stringify(index,null,2)
-)
-
-console.log("Product index built:",index.length)
+console.log("Local product index loaded:",productIndex.length)
 
 }catch(err){
 
-console.log("Index build error:",err.message)
+console.log("Product index load error:",err.message)
+
+productIndex = []
 
 }
 
 }
 
-buildIndex()
+function searchProducts(query){
 
-module.exports = {}
+if(!query) return []
+
+const q = query.toLowerCase()
+
+return productIndex.filter(p=>{
+
+if(!p.title) return false
+
+return p.title.toLowerCase().includes(q)
+
+}).slice(0,5)
+
+}
+
+function getProductIndex(){
+
+return productIndex
+
+}
+
+loadProductIndex()
+
+module.exports = {
+
+searchProducts,
+getProductIndex
+
+}
