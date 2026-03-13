@@ -6,34 +6,61 @@ const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION;
 
 let productCache = [];
 
-async function fetchProducts() {
+async function fetchAllProducts() {
 
     try {
 
-        console.log("Fetching Shopify catalog...");
+        console.log("Starting Shopify full catalog sync...");
 
-        const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
+        let page = 1;
+        let hasMore = true;
+        let allProducts = [];
 
-        const response = await axios.get(url, {
-            headers: {
-                "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-                "Content-Type": "application/json"
+        while (hasMore) {
+
+            const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250&page=${page}`;
+
+            const response = await axios.get(url, {
+                headers: {
+                    "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+                    "Content-Type": "application/json"
+                }
+            });
+
+            const products = response.data.products || [];
+
+            console.log(`Fetched page ${page} : ${products.length} products`);
+
+            if (products.length === 0) {
+                hasMore = false;
+                break;
             }
-        });
 
-        const products = response.data.products || [];
+            const mapped = products.map(p => ({
+                id: p.id,
+                title: p.title,
+                handle: p.handle,
+                vendor: p.vendor,
+                product_type: p.product_type
+            }));
 
-        productCache = products.map(p => ({
-            id: p.id,
-            title: p.title,
-            handle: p.handle
-        }));
+            allProducts = [...allProducts, ...mapped];
 
-        console.log("Products Synced:", productCache.length);
+            if (products.length < 250) {
+                hasMore = false;
+            } else {
+                page++;
+            }
 
-    } catch (err) {
+        }
 
-        console.error("Shopify Sync Error:", err.message);
+        productCache = allProducts;
+
+        console.log("Full Shopify Catalog Loaded:", productCache.length);
+
+    } catch (error) {
+
+        console.error("Shopify Sync Error:", error.message);
 
     }
 
@@ -47,15 +74,16 @@ function searchProducts(query) {
 
     return productCache
         .filter(p => p.title.toLowerCase().includes(query))
-        .slice(0,5);
+        .slice(0, 10);
 
 }
 
 async function startCatalogSync() {
 
-    await fetchProducts();
+    await fetchAllProducts();
 
-    setInterval(fetchProducts, 1800000);
+    // refresh catalog every 30 minutes
+    setInterval(fetchAllProducts, 30 * 60 * 1000);
 
 }
 
