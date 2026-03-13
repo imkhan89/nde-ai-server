@@ -78,16 +78,24 @@ function searchProducts(query) {
 
 }
 
+function getProductCount() {
+
+    return productCache.length;
+
+}
+
 async function startCatalogSync() {
 
     await fetchAllProducts();
 
-    // refresh every 30 minutes
+    console.log("Shopify Catalog Sync Engine Started");
+
     setInterval(fetchAllProducts, 30 * 60 * 1000);
 
 }
 
 module.exports = {
     startCatalogSync,
-    searchProducts
+    searchProducts,
+    getProductCount
 };
