@@ -1,37 +1,50 @@
-const fs = require("fs")
-const path = require("path")
+function normalize(text){
 
-let vehicles = []
+return (text || "")
+.toLowerCase()
+.replace(/[^a-z0-9 ]/g," ")
+.replace(/\s+/g," ")
+.trim()
 
-try{
+}
 
-const filePath = path.join(__dirname,"../data/vehicle_graph.json")
+const vehicleMap = {
 
-const raw = fs.readFileSync(filePath,"utf8")
-
-vehicles = JSON.parse(raw)
-
-console.log("Vehicle database loaded")
-
-}catch(err){
-
-console.log("Vehicle database load error:",err.message)
+corolla:"toyota",
+civic:"honda",
+city:"honda",
+alto:"suzuki",
+cultus:"suzuki",
+swift:"suzuki",
+wagonr:"suzuki",
+mehran:"suzuki",
+bolan:"suzuki",
+carry:"suzuki",
+yaris:"toyota",
+revo:"toyota",
+hilux:"toyota",
+sportage:"kia",
+elantra:"hyundai",
+tucson:"hyundai",
+sonata:"hyundai"
 
 }
 
 function detectVehicle(text){
 
-text = text.toLowerCase()
+const t = normalize(text)
 
 let detected = null
 
-vehicles.forEach(v => {
+Object.keys(vehicleMap).forEach(model=>{
 
-const make = (v.make || "").toLowerCase()
-const model = (v.model || "").toLowerCase()
+if(t.includes(model)){
 
-if(text.includes(make) && text.includes(model)){
-detected = v
+detected = {
+make: vehicleMap[model],
+model: model
+}
+
 }
 
 })
