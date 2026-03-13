@@ -1,77 +1,100 @@
-const fs = require("fs")
-const path = require("path")
+const fs = require("fs");
+const path = require("path");
 
-const memoryFile = path.join(__dirname,"../data/customer_vehicle_memory.json")
+const DATA_DIR = path.join(__dirname, "../data");
+const MEMORY_FILE = path.join(DATA_DIR, "customer_vehicle_memory.json");
 
-function ensureFile(){
+let memory = {};
 
-if(!fs.existsSync(memoryFile)){
-fs.writeFileSync(memoryFile,"{}")
+function loadVehicleMemory() {
+
+    try {
+
+        if (!fs.existsSync(MEMORY_FILE)) {
+            fs.writeFileSync(MEMORY_FILE, JSON.stringify({}));
+        }
+
+        const data = fs.readFileSync(MEMORY_FILE);
+
+        memory = JSON.parse(data);
+
+        console.log("Customer vehicle memory loaded");
+
+    } catch (err) {
+
+        console.log("Vehicle memory load error");
+
+        memory = {};
+
+    }
 }
 
+function saveVehicleMemory() {
+
+    try {
+
+        fs.writeFileSync(
+            MEMORY_FILE,
+            JSON.stringify(memory, null, 2)
+        );
+
+    } catch (err) {
+
+        console.log("Vehicle memory save error");
+
+    }
 }
 
-function loadMemory(){
+function rememberVehicle(phone, make, model, year) {
 
-ensureFile()
+    if (!phone || !make || !model) return;
 
-try{
+    memory[phone] = {
+        make,
+        model,
+        year,
+        updated: new Date().toISOString()
+    };
 
-const raw = fs.readFileSync(memoryFile,"utf8")
+    saveVehicleMemory();
 
-return JSON.parse(raw)
-
-}catch(err){
-
-console.log("Vehicle memory load error:",err.message)
-
-return {}
-
-}
-
-}
-
-function saveMemory(data){
-
-fs.writeFileSync(memoryFile,JSON.stringify(data,null,2))
-
-}
-
-function saveCustomerVehicle(phone,vehicle){
-
-const memory = loadMemory()
-
-memory[phone] = vehicle
-
-saveMemory(memory)
+    console.log("Vehicle saved for:", phone);
 
 }
 
-function getCustomerVehicle(phone){
+function getCustomerVehicle(phone) {
 
-const memory = loadMemory()
+    if (!memory[phone]) return null;
 
-if(memory[phone]){
-return memory[phone]
-}
-
-return null
+    return memory[phone];
 
 }
 
-function clearCustomerVehicle(phone){
+function applyCustomerVehicle(phone, query) {
 
-const memory = loadMemory()
+    const vehicle = getCustomerVehicle(phone);
 
-if(memory[phone]){
-delete memory[phone]
-saveMemory(memory)
-}
+    if (!vehicle) return query;
+
+    const text = query.toLowerCase();
+
+    const vehicleWords = [
+        vehicle.make.toLowerCase(),
+        vehicle.model.toLowerCase()
+    ];
+
+    const alreadyContainsVehicle =
+        vehicleWords.some(v => text.includes(v));
+
+    if (alreadyContainsVehicle) return query;
+
+    return `${query} ${vehicle.make} ${vehicle.model} ${vehicle.year}`;
 
 }
 
 module.exports = {
-saveCustomerVehicle,
-getCustomerVehicle,
-clearCustomerVehicle
-}
+    loadVehicleMemory,
+    rememberVehicle,
+    getCustomerVehicle,
+    applyCustomerVehicle
+};
