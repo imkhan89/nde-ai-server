@@ -1,157 +1,115 @@
-/*
-Vehicle Intelligence Engine
-Detects vehicle make, model and year range
-Works with auto_parts_parser and search_query_builder
-*/
+const fs = require("fs")
+const path = require("path")
 
-const VEHICLES = [
-{
-make:"Suzuki",
-models:[
-{name:"Swift",range:"2021-2026"},
-{name:"Swift",range:"2017-2021"},
-{name:"Cultus",range:"2017-2023"},
-{name:"Alto",range:"2019-2024"},
-{name:"Wagonr",range:"2014-2023"}
-]
-},
-{
-make:"Toyota",
-models:[
-{name:"Corolla",range:"2014-2017"},
-{name:"Corolla",range:"2017-2021"},
-{name:"Yaris",range:"2020-2024"},
-{name:"Hilux",range:"2016-2024"},
-{name:"Revo",range:"2016-2024"}
-]
-},
-{
-make:"Honda",
-models:[
-{name:"City",range:"2014-2017"},
-{name:"City",range:"2017-2021"},
-{name:"Civic",range:"2016-2021"},
-{name:"Civic",range:"2022-2025"}
-]
-},
-{
-make:"Kia",
-models:[
-{name:"Sportage",range:"2019-2024"},
-{name:"Picanto",range:"2019-2024"}
-]
-},
-{
-make:"Hyundai",
-models:[
-{name:"Tucson",range:"2020-2024"},
-{name:"Elantra",range:"2021-2024"}
-]
-},
-{
-make:"Mg",
-models:[
-{name:"Hs",range:"2021-2024"},
-{name:"Zs",range:"2021-2024"}
-]
+const vehicleGraphFile = path.join(__dirname,"../data/vehicle_graph.json")
+
+let vehicleGraph = {}
+
+function ensureFile(){
+
+if(!fs.existsSync(vehicleGraphFile)){
+fs.writeFileSync(vehicleGraphFile,"{}")
 }
-]
-
-/* NORMALIZE */
-
-function normalize(text){
-
-return (text || "")
-.toLowerCase()
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim()
 
 }
 
-/* CAPITALIZE */
+function loadGraph(){
 
-function capitalize(text){
+ensureFile()
 
-if(!text) return ""
+try{
 
-return text
-.split(" ")
-.map(w => w.charAt(0).toUpperCase() + w.slice(1))
-.join(" ")
+const raw = fs.readFileSync(vehicleGraphFile,"utf8")
 
-}
+vehicleGraph = JSON.parse(raw)
 
-/* DETECT YEAR */
+console.log("Vehicle intelligence graph loaded")
 
-function detectYear(message){
+}catch(err){
 
-const match = message.match(/\b(19|20)\d{2}\b/)
+console.log("Vehicle graph load error:",err.message)
 
-if(match){
-return parseInt(match[0])
-}
-
-return null
+vehicleGraph = {}
 
 }
 
-/* YEAR RANGE CHECK */
+}
 
-function inRange(year,range){
+function saveGraph(){
 
-if(!year) return true
+fs.writeFileSync(vehicleGraphFile,JSON.stringify(vehicleGraph,null,2))
 
-const parts = range.split("-")
+}
+
+function learnVehicle(make,model,year){
+
+if(!make || !model) return
+
+const key = `${make}_${model}`
+
+if(!vehicleGraph[key]){
+vehicleGraph[key] = {
+make:make,
+model:model,
+years:[]
+}
+}
+
+if(year && !vehicleGraph[key].years.includes(year)){
+vehicleGraph[key].years.push(year)
+}
+
+saveGraph()
+
+}
+
+function getVehicleYears(make,model){
+
+const key = `${make}_${model}`
+
+if(vehicleGraph[key]){
+return vehicleGraph[key].years
+}
+
+return []
+
+}
+
+function expandVehicleYears(make,model){
+
+const years = getVehicleYears(make,model)
+
+let expanded = []
+
+years.forEach(y=>{
+
+if(typeof y === "string" && y.includes("-")){
+
+const parts = y.split("-")
 
 const start = parseInt(parts[0])
 const end = parseInt(parts[1])
 
-return year >= start && year <= end
+for(let i=start;i<=end;i++){
+expanded.push(i)
+}
+
+}else{
+
+expanded.push(parseInt(y))
 
 }
 
-/* VEHICLE DETECTION */
+})
 
-function detectVehicle(message){
-
-const text = normalize(message)
-
-const year = detectYear(text)
-
-for(const brand of VEHICLES){
-
-if(text.includes(brand.make.toLowerCase())){
-
-for(const m of brand.models){
-
-if(text.includes(m.name.toLowerCase())){
-
-if(inRange(year,m.range)){
-
-return {
-
-make:capitalize(brand.make),
-model:capitalize(m.name),
-range:m.range,
-year:year || ""
+return expanded
 
 }
 
+loadGraph()
+
+module.exports = {
+learnVehicle,
+getVehicleYears,
+expandVehicleYears
 }
-
-}
-
-}
-
-}
-
-}
-
-return null
-
-}
-
-/* EXPORT */
-
-module.exports = detectVehicle
