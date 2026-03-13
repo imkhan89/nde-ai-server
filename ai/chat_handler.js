@@ -1,35 +1,39 @@
-const correctSpelling = require("./spelling_intelligence_engine")
-const parseAutoParts = require("./auto_parts_parser")
-const buildSearchQuery = require("./search_query_builder")
-const buildPartsResponse = require("./response_builder")
-const learning = require("./learning_engine")
+const productSearch = require("./product_search_engine")
 
-function handleChat(message){
+async function handleMessage(message){
 
-if(!message) return null
+try{
 
-/* RECORD QUERY */
+const text = message.toLowerCase().trim()
 
-learning.learn(message)
+const search = productSearch.searchProducts(text)
 
-/* SPELLING CORRECTION */
+if(search.success){
 
-const corrected = correctSpelling(message)
+let reply = "Here are matching products:\n\n"
 
-/* PARSE QUERY */
+search.products.forEach((product,index)=>{
 
-const parsed = parseAutoParts(corrected)
+reply += `${index+1}. ${product.title}\n${product.url}\n\n`
 
-if(!parsed) return null
+})
 
-/* BUILD SEARCH */
-
-const search = buildSearchQuery(parsed)
-
-/* BUILD RESPONSE */
-
-return buildPartsResponse(search)
+return reply
 
 }
 
-module.exports = handleChat
+return "Sorry, no matching products found."
+
+}catch(err){
+
+console.log("Chat handler error:",err.message)
+
+return "System error. Please try again."
+
+}
+
+}
+
+module.exports = {
+handleMessage
+}
