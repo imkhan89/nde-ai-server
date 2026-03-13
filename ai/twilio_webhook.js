@@ -2,7 +2,7 @@ const express = require("express")
 const bodyParser = require("body-parser")
 
 const conversationEngine = require("../conversation_engine")
-const handleChat = require("./chat_handler")
+const chatHandler = require("./chat_handler")
 
 const router = express.Router()
 
@@ -23,6 +23,10 @@ from = req.body.From || ""
 
 let reply = ""
 
+/* CLEAN PHONE NUMBER */
+
+const phone = from.replace("whatsapp:","")
+
 /* MENU SYSTEM */
 
 try{
@@ -39,7 +43,7 @@ reply = menu.reply
 
 if(!reply){
 
-const ai = handleChat(incoming)
+const ai = await chatHandler.handleMessage(incoming,phone)
 
 if(ai){
 reply = ai
