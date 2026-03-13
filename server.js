@@ -6,8 +6,6 @@ require("./ai/vehicle_learning_engine")
 const twilioWebhook =
 require("./ai/twilio_webhook")
 
-require("./ai/search_index_builder")
-
 /* START VEHICLE LEARNING */
 
 try{
