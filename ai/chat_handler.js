@@ -9,6 +9,7 @@ const insights = require("./customer_insight_engine")
 const complaints = require("./complaint_engine")
 const liveAgent = require("./live_agent_forwarder")
 const testEngine = require("./test_message_engine")
+const serviceEngine = require("./smart_service_recommendation_engine")
 
 function cleanUrl(url){
 
@@ -38,8 +39,6 @@ insights.trackChat(phone,message)
 
 const text = message.toLowerCase()
 
-/* COMPLAINT */
-
 if(complaints.isComplaint(text)){
 
 complaints.saveComplaint(phone,message)
@@ -49,15 +48,11 @@ liveAgent.forwardToAgent(phone,message)
 return `
 Your complaint has been registered.
 
-Our support team will contact you shortly.
-
 Live Agent:
-WhatsApp +92 308 7643288
++92 308 7643288
 `
 
 }
-
-/* ORDER STATUS */
 
 if(text.includes("order")){
 
@@ -77,19 +72,15 @@ if(order.tracking && order.tracking.length > 0){
 reply += `Tracking: ${order.tracking.join(", ")}`
 }
 
-reply += `\n\nLive Agent: +92 308 7643288`
-
 return reply
 
 }
 
-return "Sorry, order not found.\n\nLive Agent: +92 308 7643288"
+return "Order not found."
 
 }
 
 }
-
-/* VEHICLE MEMORY */
 
 const savedVehicle = vehicleMemory.getCustomerVehicle(phone)
 
@@ -130,13 +121,7 @@ parsed.year
 
 if(vehicleInfo){
 
-reply += `Vehicle: ${parsed.make} ${parsed.model} ${parsed.year || ""}\n`
-
-if(vehicleInfo.engine){
-reply += `Engine: ${vehicleInfo.engine}\n`
-}
-
-reply += "\n"
+reply += `Vehicle: ${parsed.make} ${parsed.model} ${parsed.year || ""}\n\n`
 
 }
 
@@ -163,31 +148,58 @@ recommendations.forEach(item=>{
 reply += `• ${item}\n`
 })
 
+reply += "\n"
+
 }
 
-reply += `\nNeed help?\nLive Agent: +92 308 7643288`
+const serviceKit =
+serviceEngine.getServiceRecommendations(
+parsed.part,
+parsed.make,
+parsed.model
+)
+
+if(serviceKit.length > 0){
+
+reply += "Suggested Service Kit:\n"
+
+serviceKit.forEach(p=>{
+
+const url = cleanUrl(p.url)
+
+reply += `• ${p.title}\n${url}\n`
+
+})
+
+reply += "\n"
+
+}
+
+reply += "Live Agent: +92 308 7643288"
 
 return reply
 
 }
 
-/* ESCALATE */
-
 liveAgent.forwardToAgent(phone,message)
 
-return `No exact match found.
+return `
+No exact match found.
 
-Please contact a live agent:
-
-WhatsApp +92 308 7643288`
+Live Agent:
++92 308 7643288
+`
 
 }catch(err){
 
 console.log("Chat handler error:",err.message)
 
-return `System error.
+return `
+System error.
 
-Live Agent: +92 308 7643288`
+Live Agent:
++92 308 7643288
+`
 
 }
 
