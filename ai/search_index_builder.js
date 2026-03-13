@@ -2,62 +2,53 @@ const fs = require("fs")
 const axios = require("axios")
 
 const SHOPIFY_STORE = "ndestore.com"
-
-/* USE EXISTING TOKEN FROM RAILWAY */
 const ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
 
 const OUTPUT_FILE = "./data/product_index.json"
 
-async function fetchAllProducts(){
+async function fetchProducts(){
 
 let allProducts = []
+let page = 1
+let hasMore = true
 
-let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
+while(hasMore){
 
-while(url){
+console.log("Fetching products page:",page)
 
-console.log("Fetching products from Shopify...")
-
-const response = await axios.get(url,{
+const response = await axios.get(
+`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json`,
+{
 headers:{
 "X-Shopify-Access-Token":ACCESS_TOKEN
+},
+params:{
+limit:250,
+page:page
 }
-})
+}
+)
 
 const products = response.data.products
 
 products.forEach(product=>{
 
-const record = {
-id: product.id,
-title: product.title,
-handle: product.handle,
-tags: product.tags,
-vendor: product.vendor,
-product_type: product.product_type,
-variants: product.variants.map(v=>({
-sku: v.sku,
-price: v.price
-})),
+allProducts.push({
+id:product.id,
+title:product.title,
+handle:product.handle,
+tags:product.tags,
+vendor:product.vendor,
+product_type:product.product_type,
 url:`https://ndestore.com/products/${product.handle}`
-}
-
-allProducts.push(record)
+})
 
 })
 
-const link = response.headers.link
-
-if(link && link.includes('rel="next"')){
-
-const match = link.match(/<(.*?)>; rel="next"/)
-
-url = match ? match[1] : null
-
+if(products.length < 250){
+hasMore = false
 }else{
-
-url = null
-
+page++
 }
 
 }
@@ -68,11 +59,11 @@ return allProducts
 
 async function buildIndex(){
 
-console.log("Building Shopify product index...")
+console.log("Building Shopify product index")
 
-const products = await fetchAllProducts()
+const products = await fetchProducts()
 
-console.log("Total products downloaded:",products.length)
+console.log("Total products:",products.length)
 
 fs.writeFileSync(
 OUTPUT_FILE,
