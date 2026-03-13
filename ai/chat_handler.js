@@ -11,6 +11,7 @@ const liveAgent = require("./live_agent_forwarder")
 const testEngine = require("./test_message_engine")
 const serviceEngine = require("./smart_service_recommendation_engine")
 const vinDecoder = require("./vin_decoder_engine")
+const contextEngine = require("./conversation_context_engine")
 
 function cleanUrl(url){
 
@@ -40,7 +41,7 @@ insights.trackChat(phone,message)
 
 const text = message.toLowerCase()
 
-/* VIN DETECTION */
+/* VIN */
 
 if(vinDecoder.isVIN(message)){
 
@@ -58,10 +59,6 @@ Make: ${vehicle.make}
 Model: ${vehicle.model}
 
 You can now search parts.
-
-Example:
-Air Filter
-Brake Pads
 
 Live Agent:
 +92 308 7643288
@@ -140,6 +137,8 @@ year: parsed.year
 
 }
 
+/* PRODUCT SEARCH */
+
 const searchQuery = parsed.part || message
 
 insights.trackDemand(searchQuery)
@@ -162,6 +161,10 @@ reply += `Vehicle: ${parsed.make} ${parsed.model} ${parsed.year || ""}\n\n`
 }
 
 if(search.success){
+
+contextEngine.setContext(phone,{
+lastResults:search.products
+})
 
 reply += "Matching Products:\n\n"
 
@@ -216,6 +219,26 @@ reply += "Live Agent: +92 308 7643288"
 return reply
 
 }
+
+/* CONTEXT FOLLOW-UP */
+
+const context = contextEngine.getContext(phone)
+
+if(context && context.lastResults){
+
+if(text.includes("first")){
+const p = context.lastResults[0]
+return `${p.title}\n${cleanUrl(p.url)}`
+}
+
+if(text.includes("second")){
+const p = context.lastResults[1]
+return `${p.title}\n${cleanUrl(p.url)}`
+}
+
+}
+
+/* ESCALATION */
 
 liveAgent.forwardToAgent(phone,message)
 
