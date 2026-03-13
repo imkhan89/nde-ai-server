@@ -1,26 +1,13 @@
 {
-  "name": "ndestore-automotive-ai",
+  "name": "nde-ai-server",
   "version": "1.0.0",
-  "description": "Automotive AI WhatsApp product search engine for ndestore",
-  "main": "AI/server.js",
-  "type": "commonjs",
+  "main": "server.js",
   "scripts": {
-    "start": "node AI/server.js",
-    "dev": "nodemon AI/server.js",
-    "sync-products": "node AI/shopify_product_sync.js"
+    "start": "node server.js"
   },
-  "author": "ndestore",
-  "license": "MIT",
   "dependencies": {
-    "axios": "^1.6.8",
+    "axios": "^1.6.0",
     "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.18.2",
-    "fs-extra": "^11.2.0",
-    "twilio": "^4.19.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.0"
+    "express": "^4.18.2"
   }
 }
