@@ -7,10 +7,30 @@ const orderEngine = require("./shopify_order_engine")
 const vehicleMemory = require("./vehicle_memory_engine")
 const insights = require("./customer_insight_engine")
 const complaints = require("./complaint_engine")
+const liveAgent = require("./live_agent_forwarder")
+const testEngine = require("./test_message_engine")
+
+function cleanUrl(url){
+
+if(!url) return ""
+
+let u = url.trim()
+
+if(!u.startsWith("http")){
+u = "https://www.ndestore.com" + u
+}
+
+u = u.replace("http://","https://")
+
+return u
+
+}
 
 async function handleMessage(message,phone){
 
 try{
+
+testEngine.logTest(message,phone)
 
 learning.learn(message)
 
@@ -18,20 +38,21 @@ insights.trackChat(phone,message)
 
 const text = message.toLowerCase()
 
-/* COMPLAINT DETECTION */
+/* COMPLAINT */
 
 if(complaints.isComplaint(text)){
 
 complaints.saveComplaint(phone,message)
 
+liveAgent.forwardToAgent(phone,message)
+
 return `
 Your complaint has been registered.
 
-Our support team will review it shortly.
+Our support team will contact you shortly.
 
-You may also contact a live agent:
-
-WhatsApp: +92 308 7643288
+Live Agent:
+WhatsApp +92 308 7643288
 `
 
 }
@@ -56,7 +77,7 @@ if(order.tracking && order.tracking.length > 0){
 reply += `Tracking: ${order.tracking.join(", ")}`
 }
 
-reply += `\n\nNeed help?\nLive Agent: +92 308 7643288`
+reply += `\n\nLive Agent: +92 308 7643288`
 
 return reply
 
@@ -67,6 +88,8 @@ return "Sorry, order not found.\n\nLive Agent: +92 308 7643288"
 }
 
 }
+
+/* VEHICLE MEMORY */
 
 const savedVehicle = vehicleMemory.getCustomerVehicle(phone)
 
@@ -123,7 +146,9 @@ reply += "Matching Products:\n\n"
 
 search.products.forEach((product,index)=>{
 
-reply += `${index+1}. ${product.title}\n${product.url}\n\n`
+const url = cleanUrl(product.url)
+
+reply += `${index+1}. ${product.title}\n${url}\n\n`
 
 })
 
@@ -140,15 +165,19 @@ reply += `• ${item}\n`
 
 }
 
-reply += `\nNeed assistance?\nLive Agent: +92 308 7643288`
+reply += `\nNeed help?\nLive Agent: +92 308 7643288`
 
 return reply
 
 }
 
-return `No matching products found.
+/* ESCALATE */
 
-You may contact a live agent:
+liveAgent.forwardToAgent(phone,message)
+
+return `No exact match found.
+
+Please contact a live agent:
 
 WhatsApp +92 308 7643288`
 
@@ -156,10 +185,9 @@ WhatsApp +92 308 7643288`
 
 console.log("Chat handler error:",err.message)
 
-return `System error occurred.
+return `System error.
 
-Please contact a live agent:
-+92 308 7643288`
+Live Agent: +92 308 7643288`
 
 }
 
