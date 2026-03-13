@@ -5,18 +5,36 @@ const learning = require("./self_learning_engine")
 const recommender = require("./recommendation_engine")
 const orderEngine = require("./shopify_order_engine")
 const vehicleMemory = require("./vehicle_memory_engine")
+const insights = require("./customer_insight_engine")
+const complaints = require("./complaint_engine")
 
-async function handleMessage(message, phone){
+async function handleMessage(message,phone){
 
 try{
 
 learning.learn(message)
 
+insights.trackChat(phone,message)
+
 const text = message.toLowerCase()
 
-/* LOAD SAVED VEHICLE */
+/* COMPLAINT DETECTION */
 
-const savedVehicle = vehicleMemory.getCustomerVehicle(phone)
+if(complaints.isComplaint(text)){
+
+complaints.saveComplaint(phone,message)
+
+return `
+Your complaint has been registered.
+
+Our support team will review it shortly.
+
+You may also contact a live agent:
+
+WhatsApp: +92 308 7643288
+`
+
+}
 
 /* ORDER STATUS */
 
@@ -38,21 +56,21 @@ if(order.tracking && order.tracking.length > 0){
 reply += `Tracking: ${order.tracking.join(", ")}`
 }
 
+reply += `\n\nNeed help?\nLive Agent: +92 308 7643288`
+
 return reply
 
 }
 
-return "Sorry, order not found."
+return "Sorry, order not found.\n\nLive Agent: +92 308 7643288"
 
 }
 
 }
 
-/* PRODUCT SEARCH */
+const savedVehicle = vehicleMemory.getCustomerVehicle(phone)
 
 const parsed = parser.parseVehicleQuery(message)
-
-/* APPLY SAVED VEHICLE */
 
 if(savedVehicle && !parsed.make){
 
@@ -61,8 +79,6 @@ parsed.model = savedVehicle.model
 parsed.year = savedVehicle.year
 
 }
-
-/* SAVE VEHICLE IF DETECTED */
 
 if(parsed.make && parsed.model){
 
@@ -76,11 +92,18 @@ year: parsed.year
 
 const searchQuery = parsed.part || message
 
+insights.trackDemand(searchQuery)
+
 const search = productSearch.searchProducts(searchQuery)
 
 let reply = ""
 
-const vehicleInfo = knowledge.findVehicleInfo(parsed.make,parsed.model,parsed.year)
+const vehicleInfo =
+knowledge.findVehicleInfo(
+parsed.make,
+parsed.model,
+parsed.year
+)
 
 if(vehicleInfo){
 
@@ -96,7 +119,7 @@ reply += "\n"
 
 if(search.success){
 
-reply += "Here are matching products:\n\n"
+reply += "Matching Products:\n\n"
 
 search.products.forEach((product,index)=>{
 
@@ -104,7 +127,8 @@ reply += `${index+1}. ${product.title}\n${product.url}\n\n`
 
 })
 
-const recommendations = recommender.getRecommendations(searchQuery)
+const recommendations =
+recommender.getRecommendations(searchQuery)
 
 if(recommendations.length > 0){
 
@@ -116,17 +140,26 @@ reply += `• ${item}\n`
 
 }
 
+reply += `\nNeed assistance?\nLive Agent: +92 308 7643288`
+
 return reply
 
 }
 
-return "Sorry, no matching products found."
+return `No matching products found.
+
+You may contact a live agent:
+
+WhatsApp +92 308 7643288`
 
 }catch(err){
 
 console.log("Chat handler error:",err.message)
 
-return "System error. Please try again."
+return `System error occurred.
+
+Please contact a live agent:
++92 308 7643288`
 
 }
 
