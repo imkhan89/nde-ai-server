@@ -1,12 +1,7 @@
-// server.js
-
 const express = require("express");
 const bodyParser = require("body-parser");
 
-/*
-IMPORT ENGINES
-*/
-const catalogEngine = require("./shopify_catalog_sync_engine.js");
+const catalogEngine = require("./shopify_catalog_sync_engine");
 
 const productSearchEngine = require("./product_search_engine.js");
 const vehicleDetectionEngine = require("./vehicle_detection_engine.js");
@@ -31,10 +26,27 @@ HEALTH CHECK
 */
 
 app.get("/health", (req, res) => {
+
     res.json({
         status: "ok",
         service: "nde-ai-server"
     });
+
+});
+
+/*
+VERIFY CATALOG SYNC
+*/
+
+app.get("/catalog-status", (req, res) => {
+
+    const totalProducts = catalogEngine.getProductCount();
+
+    res.json({
+        status: "ok",
+        cached_products: totalProducts
+    });
+
 });
 
 /*
@@ -58,10 +70,6 @@ app.post("/search", async (req, res) => {
 
         console.log("User Query:", query);
 
-        /*
-        VEHICLE DETECTION
-        */
-
         let vehicle = null;
 
         if (vehicleDetectionEngine.detectVehicle) {
@@ -70,10 +78,6 @@ app.post("/search", async (req, res) => {
 
         }
 
-        /*
-        PART DETECTION
-        */
-
         let part = null;
 
         if (semanticPartsEngine.detectPart) {
@@ -81,10 +85,6 @@ app.post("/search", async (req, res) => {
             part = semanticPartsEngine.detectPart(query);
 
         }
-
-        /*
-        PRODUCT SEARCH
-        */
 
         let results = [];
 
@@ -127,15 +127,9 @@ app.listen(PORT, async () => {
 
     console.log("NDE AI Server Running on port:", PORT);
 
-    /*
-    START SHOPIFY CATALOG SYNC
-    */
-
     if (catalogEngine.startCatalogSync) {
 
         await catalogEngine.startCatalogSync();
-
-        console.log("Shopify Catalog Sync Engine Started");
 
     }
 
