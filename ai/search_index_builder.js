@@ -1,81 +1,88 @@
-const fs = require("fs");
-const axios = require("axios");
+const fs = require("fs")
+const axios = require("axios")
 
-const SHOPIFY_STORE = "ndestore.com";
-const ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const SHOPIFY_STORE = "ndestore.com"
 
-const OUTPUT_FILE = "./data/product_index.json";
+/* USE EXISTING TOKEN FROM RAILWAY */
+const ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
 
-async function fetchAllProducts() {
+const OUTPUT_FILE = "./data/product_index.json"
 
-    let allProducts = [];
-    let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`;
+async function fetchAllProducts(){
 
-    while (url) {
+let allProducts = []
 
-        const response = await axios.get(url, {
-            headers: {
-                "X-Shopify-Access-Token": ACCESS_TOKEN
-            }
-        });
+let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
 
-        const products = response.data.products;
+while(url){
 
-        products.forEach(product => {
+console.log("Fetching products from Shopify...")
 
-            const record = {
-                id: product.id,
-                title: product.title,
-                handle: product.handle,
-                tags: product.tags,
-                vendor: product.vendor,
-                product_type: product.product_type,
-                variants: product.variants.map(v => ({
-                    sku: v.sku,
-                    price: v.price
-                })),
-                url: `https://ndestore.com/products/${product.handle}`
-            };
+const response = await axios.get(url,{
+headers:{
+"X-Shopify-Access-Token":ACCESS_TOKEN
+}
+})
 
-            allProducts.push(record);
+const products = response.data.products
 
-        });
+products.forEach(product=>{
 
-        const link = response.headers.link;
-
-        if (link && link.includes('rel="next"')) {
-
-            const match = link.match(/<(.*?)>; rel="next"/);
-            url = match ? match[1] : null;
-
-        } else {
-
-            url = null;
-
-        }
-
-    }
-
-    return allProducts;
+const record = {
+id: product.id,
+title: product.title,
+handle: product.handle,
+tags: product.tags,
+vendor: product.vendor,
+product_type: product.product_type,
+variants: product.variants.map(v=>({
+sku: v.sku,
+price: v.price
+})),
+url:`https://ndestore.com/products/${product.handle}`
 }
 
-async function buildIndex() {
+allProducts.push(record)
 
-    console.log("Building Shopify product index...");
+})
 
-    const products = await fetchAllProducts();
+const link = response.headers.link
 
-    console.log(`Total products downloaded: ${products.length}`);
+if(link && link.includes('rel="next"')){
 
-    fs.writeFileSync(
-        OUTPUT_FILE,
-        JSON.stringify(products, null, 2)
-    );
+const match = link.match(/<(.*?)>; rel="next"/)
 
-    console.log("product_index.json created successfully.");
+url = match ? match[1] : null
+
+}else{
+
+url = null
 
 }
 
-buildIndex().catch(err => {
-    console.error("Index build error:", err.message);
-});
+}
+
+return allProducts
+
+}
+
+async function buildIndex(){
+
+console.log("Building Shopify product index...")
+
+const products = await fetchAllProducts()
+
+console.log("Total products downloaded:",products.length)
+
+fs.writeFileSync(
+OUTPUT_FILE,
+JSON.stringify(products,null,2)
+)
+
+console.log("product_index.json created successfully")
+
+}
+
+buildIndex().catch(err=>{
+console.log("Index build error:",err.message)
+})
