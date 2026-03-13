@@ -7,7 +7,7 @@ function ensureIndex(){
 
 if(!fs.existsSync(indexFile)){
 
-fs.writeFileSync(indexFile,"{}")
+fs.writeFileSync(indexFile,"[]")
 
 console.log("Product index created")
 
@@ -19,7 +19,7 @@ function buildIndex(){
 
 ensureIndex()
 
-console.log("Product index ready")
+console.log("Product index loaded")
 
 }
 
