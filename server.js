@@ -1,329 +1,217 @@
-const express = require("express")
+require("dotenv").config();
 
-/* ============================= */
-/* LOAD AI MODULES */
-/* ============================= */
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const bodyParser = require("body-parser");
 
-const vehicleLearning =
-require("./ai/vehicle_learning_engine")
+const { syncShopifyCatalog } = require("./ai/shopify_catalog_sync_engine");
+const { parseVehicleQuery } = require("./ai/vehicle_query_parser");
+const { fastProductSearch } = require("./ai/fast_product_search_engine");
+const { fitmentSearch } = require("./ai/vehicle_fitment_search_engine");
+const { generateServiceKit } = require("./ai/service_kit_ai_engine");
+const { detectComplaint } = require("./ai/complaint_engine");
+const { alertAgent } = require("./ai/agent_alert_engine");
 
-const twilioWebhook =
-require("./ai/twilio_webhook")
+const app = express();
 
-const adminReport =
-require("./ai/admin_whatsapp_report")
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-const reportScheduler =
-require("./ai/admin_auto_report_scheduler")
+const DATA_DIR = path.join(__dirname, "data");
 
-const agentAlertEngine =
-require("./ai/agent_alert_engine")
+const PRODUCT_INDEX_FILE = path.join(DATA_DIR, "product_index.json");
+const VEHICLE_DB_FILE = path.join(DATA_DIR, "global_vehicle_database.json");
 
-const urlValidator =
-require("./ai/product_url_validator")
+let productIndex = [];
+let vehicleDB = [];
 
-const globalVehicleDB =
-require("./ai/global_vehicle_database")
+const PORT = process.env.PORT || 8080;
 
-const compatibilityEngine =
-require("./ai/compatibility_prediction_engine")
+function loadProductIndex() {
+  try {
+    const data = fs.readFileSync(PRODUCT_INDEX_FILE);
+    productIndex = JSON.parse(data);
+    console.log("Fast product search index loaded:", productIndex.length);
+  } catch (err) {
+    console.log("Product index not found");
+  }
+}
 
-const fastSearch =
-require("./ai/fast_product_search_engine")
+function loadVehicleDatabase() {
+  try {
+    const data = fs.readFileSync(VEHICLE_DB_FILE);
+    vehicleDB = JSON.parse(data);
+    console.log("Global vehicle database loaded");
+  } catch (err) {
+    console.log("Vehicle database missing");
+  }
+}
 
-const vehicleFitmentSearch =
-require("./ai/vehicle_fitment_search_engine")
+function formatProductResults(products) {
+  if (!products || products.length === 0) {
+    return "No matching products found.";
+  }
 
-const serviceKitAI =
-require("./ai/service_kit_ai_engine")
+  let response = "Top Matching Products\n\n";
 
-const shopifySync =
-require("./ai/shopify_catalog_sync_engine")
+  products.slice(0, 5).forEach((p, i) => {
+    response += `${i + 1} ${p.title}\n${p.url}\n\n`;
+  });
 
-/* ============================= */
-/* PRODUCT INDEX BUILDER */
-/* ============================= */
+  return response;
+}
 
-try{
+function formatServiceKit(kit) {
+  if (!kit || kit.length === 0) return "";
 
-require("./ai/search_index_builder")
+  let text = "\nRecommended Service Kit\n\n";
 
-}catch(err){
+  kit.forEach(item => {
+    text += `• ${item}\n`;
+  });
 
-console.log("Product index builder skipped:",err.message)
+  return text;
+}
+
+function mainMenu() {
+  return `
+Welcome to ndestore.com
+
+Choose an option:
+
+1 Auto Parts
+2 Accessories
+3 Decal Stickers
+4 Order Status
+5 Support
+6 Complaints
+
+Reply with a number to continue.
+`;
+}
+
+app.post("/twilio/webhook", async (req, res) => {
+
+  const message = req.body.Body || "";
+  const from = req.body.From || "";
+
+  console.log("Incoming message:", message);
+
+  if (message.toLowerCase() === "menu") {
+    return res.send(mainMenu());
+  }
+
+  if (detectComplaint(message)) {
+
+    await alertAgent(from, message);
+
+    return res.send(`
+Your complaint has been received.
+
+Our support team will contact you shortly.
+
+Support:
++92 308 7643288
+`);
+  }
+
+  const vehicleQuery = parseVehicleQuery(message);
+
+  if (!vehicleQuery) {
+
+    const results = fastProductSearch(message, productIndex);
+
+    const response = formatProductResults(results);
+
+    return res.send(response);
+  }
+
+  const { part, make, model, year } = vehicleQuery;
+
+  console.log("Parsed Query:", vehicleQuery);
+
+  let results = fitmentSearch(part, make, model, year, productIndex);
+
+  if (!results || results.length === 0) {
+    results = fastProductSearch(message, productIndex);
+  }
+
+  const serviceKit = generateServiceKit(part);
+
+  let reply = formatProductResults(results);
+
+  reply += formatServiceKit(serviceKit);
+
+  res.send(reply);
+
+});
+
+app.get("/", (req, res) => {
+  res.send("ndestore Automotive AI Running");
+});
+
+app.get("/admin/report", (req, res) => {
+
+  const reportFile = path.join(DATA_DIR, "daily_ai_reports.log");
+
+  if (!fs.existsSync(reportFile)) {
+    return res.send("No reports yet");
+  }
+
+  const report = fs.readFileSync(reportFile, "utf8");
+
+  res.send(report);
+});
+
+app.get("/admin/customers", (req, res) => {
+
+  const file = path.join(DATA_DIR, "customer_behavior.json");
+
+  if (!fs.existsSync(file)) {
+    return res.send([]);
+  }
+
+  const data = JSON.parse(fs.readFileSync(file));
+
+  res.json(data);
+});
+
+app.get("/admin/chats", (req, res) => {
+
+  const file = path.join(DATA_DIR, "live_agent_queue.json");
+
+  if (!fs.existsSync(file)) {
+    return res.send([]);
+  }
+
+  const data = JSON.parse(fs.readFileSync(file));
+
+  res.json(data);
+});
+
+async function initializeSystem() {
+
+  console.log("Starting ndestore Automotive AI...");
+
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR);
+  }
+
+  await syncShopifyCatalog();
+
+  loadProductIndex();
+
+  loadVehicleDatabase();
+
+  console.log("Vehicle intelligence loaded");
 
 }
 
-/* ============================= */
-/* VALIDATE PRODUCT URLS */
-/* ============================= */
+initializeSystem();
 
-try{
+app.listen(PORT, () => {
 
-urlValidator.validateUrls()
+  console.log("Server running on port", PORT);
 
-}catch(err){
-
-console.log("URL validation skipped:",err.message)
-
-}
-
-/* ============================= */
-/* LOAD GLOBAL VEHICLE DATABASE */
-/* ============================= */
-
-try{
-
-globalVehicleDB.loadVehicleDatabase()
-
-}catch(err){
-
-console.log("Global vehicle database load failed:",err.message)
-
-}
-
-/* ============================= */
-/* LOAD FITMENT DATABASE */
-/* ============================= */
-
-try{
-
-compatibilityEngine.loadFitmentDatabase()
-
-console.log("Fitment compatibility database loaded")
-
-}catch(err){
-
-console.log("Fitment database load failed:",err.message)
-
-}
-
-/* ============================= */
-/* LOAD FAST PRODUCT SEARCH */
-/* ============================= */
-
-try{
-
-fastSearch.loadProductIndex()
-
-}catch(err){
-
-console.log("Fast product search load failed:",err.message)
-
-}
-
-/* ============================= */
-/* LOAD VEHICLE FITMENT SEARCH */
-/* ============================= */
-
-try{
-
-vehicleFitmentSearch.loadIndex()
-
-}catch(err){
-
-console.log("Vehicle fitment search load failed:",err.message)
-
-}
-
-/* ============================= */
-/* LOAD SERVICE KIT AI */
-/* ============================= */
-
-try{
-
-serviceKitAI.loadIndex()
-
-}catch(err){
-
-console.log("Service kit AI load failed:",err.message)
-
-}
-
-/* ============================= */
-/* VEHICLE LEARNING */
-/* ============================= */
-
-try{
-
-if(vehicleLearning &&
-typeof vehicleLearning.learnFromProducts === "function"){
-
-vehicleLearning.learnFromProducts()
-
-console.log("Vehicle intelligence loaded")
-
-}
-
-}catch(err){
-
-console.log("Vehicle learning skipped:",err.message)
-
-}
-
-/* ============================= */
-/* EXPRESS SERVER */
-/* ============================= */
-
-const app = express()
-
-app.use(express.json())
-
-/* ROOT */
-
-app.get("/",(req,res)=>{
-
-res.send("ndestore Automotive AI Server Running")
-
-})
-
-/* ============================= */
-/* SHOPIFY CATALOG SYNC TEST */
-/* ============================= */
-
-app.get("/sync-shopify",async(req,res)=>{
-
-try{
-
-await shopifySync.syncCatalog()
-
-res.send("Shopify catalog sync completed")
-
-}catch(err){
-
-console.log(err)
-
-res.send("Shopify sync failed")
-
-}
-
-})
-
-/* ============================= */
-/* FAST PRODUCT SEARCH TEST */
-/* ============================= */
-
-app.get("/search",async(req,res)=>{
-
-try{
-
-const query = req.query.q
-
-const result = fastSearch.buildSearchResponse(query)
-
-res.send(result || "No products found")
-
-}catch(err){
-
-res.send("Search failed")
-
-}
-
-})
-
-/* ============================= */
-/* VEHICLE FITMENT SEARCH TEST */
-/* ============================= */
-
-app.get("/fitment",async(req,res)=>{
-
-try{
-
-const part = req.query.part
-const make = req.query.make
-const model = req.query.model
-const year = req.query.year
-
-const result =
-vehicleFitmentSearch.buildFitmentResponse(part,make,model,year)
-
-res.send(result || "No compatible products found")
-
-}catch(err){
-
-res.send("Fitment search failed")
-
-}
-
-})
-
-/* ============================= */
-/* SERVICE KIT TEST */
-/* ============================= */
-
-app.get("/service-kit",async(req,res)=>{
-
-try{
-
-const make = req.query.make
-const model = req.query.model
-const year = req.query.year
-
-const result =
-serviceKitAI.buildServiceKitResponse(make,model,year)
-
-res.send(result || "No service kit found")
-
-}catch(err){
-
-res.send("Service kit search failed")
-
-}
-
-})
-
-/* ============================= */
-/* WHATSAPP WEBHOOK */
-/* ============================= */
-
-app.use("/",twilioWebhook)
-
-/* ============================= */
-/* ADMIN REPORT ROUTES */
-/* ============================= */
-
-app.use("/",adminReport)
-
-/* ============================= */
-/* START REPORT SCHEDULER */
-/* ============================= */
-
-try{
-
-reportScheduler.startScheduler()
-
-console.log("AI report scheduler started")
-
-}catch(err){
-
-console.log("Report scheduler failed:",err.message)
-
-}
-
-/* ============================= */
-/* START AGENT ALERT SYSTEM */
-/* ============================= */
-
-try{
-
-agentAlertEngine.startAgentAlertEngine()
-
-console.log("Agent alert engine started")
-
-}catch(err){
-
-console.log("Agent alert engine failed:",err.message)
-
-}
-
-/* ============================= */
-/* START SERVER */
-/* ============================= */
-
-const PORT = process.env.PORT || 8080
-
-app.listen(PORT,()=>{
-
-console.log("Server running on port",PORT)
-
-})
+});
