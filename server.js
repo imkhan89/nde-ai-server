@@ -5,26 +5,33 @@ const fs = require("fs");
 const path = require("path");
 const bodyParser = require("body-parser");
 
-const { syncShopifyCatalog } = require("./ai/shopify_catalog_sync_engine");
-const { parseVehicleQuery } = require("./ai/vehicle_query_parser");
-const { fastProductSearch } = require("./ai/fast_product_search_engine");
-const { fitmentSearch } = require("./ai/vehicle_fitment_search_engine");
-const { generateServiceKit } = require("./ai/service_kit_ai_engine");
-const { detectComplaint } = require("./ai/complaint_engine");
-const { alertAgent } = require("./ai/agent_alert_engine");
+const { syncShopifyCatalog } = require("./shopify_catalog_sync_engine");
+const { parseVehicleQuery } = require("./vehicle_query_parser");
+const { fastProductSearch } = require("./fast_product_search_engine");
+const { fitmentSearch } = require("./vehicle_fitment_search_engine");
+const { generateServiceKit } = require("./service_kit_ai_engine");
+const { detectComplaint } = require("./complaint_engine");
+const { alertAgent } = require("./agent_alert_engine");
 
 const {
   loadVehicleMemory,
   rememberVehicle,
   applyCustomerVehicle
-} = require("./ai/vehicle_memory_engine");
+} = require("./vehicle_memory_engine");
+
+const {
+  sendMainMenu,
+  sendVehicleConfirmation,
+  sendProductCards,
+  sendServiceKit
+} = require("./whatsapp_commerce_interface");
 
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-const DATA_DIR = path.join(__dirname, "data");
+const DATA_DIR = path.join(__dirname, "../data");
 
 const PRODUCT_INDEX_FILE = path.join(DATA_DIR, "product_index.json");
 const VEHICLE_DB_FILE = path.join(DATA_DIR, "global_vehicle_database.json");
@@ -37,7 +44,7 @@ const PORT = process.env.PORT || 8080;
 
 
 /* ------------------------------------------------ */
-/* LOAD DATA                                        */
+/* LOAD PRODUCT INDEX                               */
 /* ------------------------------------------------ */
 
 function loadProductIndex() {
@@ -45,8 +52,11 @@ function loadProductIndex() {
   try {
 
     if (!fs.existsSync(PRODUCT_INDEX_FILE)) {
+
       console.log("Product index missing");
+
       return;
+
     }
 
     const data = fs.readFileSync(PRODUCT_INDEX_FILE);
@@ -64,13 +74,21 @@ function loadProductIndex() {
 }
 
 
+
+/* ------------------------------------------------ */
+/* LOAD VEHICLE DATABASE                            */
+/* ------------------------------------------------ */
+
 function loadVehicleDatabase() {
 
   try {
 
     if (!fs.existsSync(VEHICLE_DB_FILE)) {
+
       console.log("Vehicle database missing");
+
       return;
+
     }
 
     const data = fs.readFileSync(VEHICLE_DB_FILE);
@@ -90,77 +108,7 @@ function loadVehicleDatabase() {
 
 
 /* ------------------------------------------------ */
-/* RESPONSE FORMATTERS                              */
-/* ------------------------------------------------ */
-
-function formatProductResults(products) {
-
-  if (!products || products.length === 0) {
-
-    return `No matching products found.
-
-Send request in this format:
-
-Part + Make + Model + Year
-
-Example:
-Brake Pads Toyota Corolla 2018`;
-
-  }
-
-  let response = `Top Matching Products\n\n`;
-
-  products.slice(0,5).forEach((p,i)=>{
-
-    response += `${i+1} ${p.title}\n${p.url}\n\n`;
-
-  });
-
-  return response;
-
-}
-
-
-
-function formatServiceKit(kit){
-
-  if(!kit || kit.length === 0) return "";
-
-  let text = "\nRecommended Service Kit\n\n";
-
-  kit.forEach(item => {
-
-    text += `• ${item}\n`;
-
-  });
-
-  return text;
-
-}
-
-
-
-function mainMenu(){
-
-return `Welcome to ndestore.com
-
-Choose an option:
-
-1 Auto Parts
-2 Accessories
-3 Decal Stickers
-4 Order Status
-5 Support
-6 Complaints
-
-Reply with a number to continue.`;
-
-}
-
-
-
-/* ------------------------------------------------ */
-/* TWILIO WHATSAPP WEBHOOK                          */
+/* WHATSAPP WEBHOOK                                 */
 /* ------------------------------------------------ */
 
 app.post("/twilio/webhook", async (req,res)=>{
@@ -176,7 +124,9 @@ app.post("/twilio/webhook", async (req,res)=>{
 
   if(message.toLowerCase() === "menu"){
 
-    return res.send(mainMenu());
+    res.type("text/xml");
+
+    return res.send(sendMainMenu());
 
   }
 
@@ -188,7 +138,10 @@ app.post("/twilio/webhook", async (req,res)=>{
 
     await alertAgent(from,message);
 
-    return res.send(`Your complaint has been received.
+    res.type("text/xml");
+
+    return res.send(`
+Your complaint has been received.
 
 Our support team will contact you shortly.
 
@@ -234,8 +187,6 @@ Support
 
     const { part, make, model, year } = vehicleQuery;
 
-    console.log("Parsed vehicle:",vehicleQuery);
-
     results = fitmentSearch(
       part,
       make,
@@ -273,13 +224,11 @@ Support
 
 
 
-  let reply = formatProductResults(results);
+  /* SEND PRODUCT CARDS */
 
-  reply += formatServiceKit(serviceKit);
+  res.type("text/xml");
 
-
-
-  res.send(reply);
+  return res.send(sendProductCards(results));
 
 });
 
@@ -373,19 +322,19 @@ async function initializeSystem(){
 
 
 
-  /* SHOPIFY SYNC */
+  /* SHOPIFY PRODUCT SYNC */
 
   await syncShopifyCatalog();
 
 
 
-  /* LOAD INDEX */
+  /* LOAD PRODUCT INDEX */
 
   loadProductIndex();
 
 
 
-  /* LOAD VEHICLE DB */
+  /* LOAD VEHICLE DATABASE */
 
   loadVehicleDatabase();
 
