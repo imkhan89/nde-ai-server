@@ -6,7 +6,8 @@ require("./ai/vehicle_learning_engine")
 const twilioWebhook =
 require("./ai/twilio_webhook")
 
-/* BUILD PRODUCT INDEX */
+const adminReport =
+require("./ai/admin_whatsapp_report")
 
 try{
 
@@ -17,8 +18,6 @@ require("./ai/search_index_builder")
 console.log("Product index builder skipped:",err.message)
 
 }
-
-/* START VEHICLE LEARNING */
 
 try{
 
@@ -37,8 +36,6 @@ console.log("Vehicle learning skipped:",err.message)
 
 }
 
-/* EXPRESS SERVER */
-
 const app = express()
 
 app.get("/",(req,res)=>{
@@ -47,11 +44,9 @@ res.send("ndestore AI Server Running")
 
 })
 
-/* TWILIO WEBHOOK */
-
 app.use("/",twilioWebhook)
 
-/* START SERVER */
+app.use("/",adminReport)
 
 const PORT = process.env.PORT || 3000
 
