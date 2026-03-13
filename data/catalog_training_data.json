@@ -1,0 +1,19 @@
+{
+  "parts": [
+    "air filter",
+    "oil filter",
+    "spark plug",
+    "brake pad"
+  ],
+  "vehicles": [
+    "suzuki",
+    "toyota",
+    "honda"
+  ],
+  "keywords": [
+    "filter",
+    "swift",
+    "corolla",
+    "plug"
+  ]
+}
