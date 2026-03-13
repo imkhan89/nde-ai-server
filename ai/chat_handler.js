@@ -1,11 +1,13 @@
 const productSearch = require("./product_search_engine")
 const parser = require("./vehicle_query_parser")
-const vehicleDetector = require("./vehicle_detector")
 const knowledge = require("./automotive_knowledge_engine")
+const learning = require("./self_learning_engine")
 
 async function handleMessage(message){
 
 try{
+
+learning.learn(message)
 
 const parsed = parser.parseVehicleQuery(message)
 
@@ -15,7 +17,7 @@ const search = productSearch.searchProducts(searchQuery)
 
 let reply = ""
 
-const vehicleInfo = knowledge.findVehicleInfo(parsed.make, parsed.model, parsed.year)
+const vehicleInfo = knowledge.findVehicleInfo(parsed.make,parsed.model,parsed.year)
 
 if(vehicleInfo){
 
