@@ -1,7 +1,7 @@
 const productSearch = require("./product_search_engine")
 const parser = require("./vehicle_query_parser")
 const vehicleDetector = require("./vehicle_detector")
-const compatibility = require("./vehicle_compatibility_engine")
+const knowledge = require("./automotive_knowledge_engine")
 
 async function handleMessage(message){
 
@@ -9,16 +9,24 @@ try{
 
 const parsed = parser.parseVehicleQuery(message)
 
-const vehicle = vehicleDetector.detectVehicle(message)
-
 const searchQuery = parsed.part || message
 
 const search = productSearch.searchProducts(searchQuery)
 
 let reply = ""
 
-if(vehicle){
-reply += `Detected Vehicle: ${vehicle.make} ${vehicle.model}\n\n`
+const vehicleInfo = knowledge.findVehicleInfo(parsed.make, parsed.model, parsed.year)
+
+if(vehicleInfo){
+
+reply += `Vehicle: ${parsed.make} ${parsed.model} ${parsed.year || ""}\n`
+
+if(vehicleInfo.engine){
+reply += `Engine: ${vehicleInfo.engine}\n`
+}
+
+reply += "\n"
+
 }
 
 if(search.success){
@@ -35,25 +43,7 @@ return reply
 
 }
 
-const vehicleName = vehicle ? `${vehicle.make} ${vehicle.model}` : ""
-
-const compatibilityCheck = compatibility.checkCompatibility(vehicleName,searchQuery)
-
-if(compatibilityCheck.length > 0){
-
-reply += "Compatible parts found:\n\n"
-
-compatibilityCheck.forEach((item,index)=>{
-
-reply += `${index+1}. ${item.part}\n`
-
-})
-
-return reply
-
-}
-
-return "Sorry, no compatible parts found."
+return "Sorry, no matching products found."
 
 }catch(err){
 
