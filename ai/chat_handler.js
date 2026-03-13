@@ -4,14 +4,19 @@ const knowledge = require("./automotive_knowledge_engine")
 const learning = require("./self_learning_engine")
 const recommender = require("./recommendation_engine")
 const orderEngine = require("./shopify_order_engine")
+const vehicleMemory = require("./vehicle_memory_engine")
 
-async function handleMessage(message){
+async function handleMessage(message, phone){
 
 try{
 
 learning.learn(message)
 
 const text = message.toLowerCase()
+
+/* LOAD SAVED VEHICLE */
+
+const savedVehicle = vehicleMemory.getCustomerVehicle(phone)
 
 /* ORDER STATUS */
 
@@ -46,6 +51,28 @@ return "Sorry, order not found."
 /* PRODUCT SEARCH */
 
 const parsed = parser.parseVehicleQuery(message)
+
+/* APPLY SAVED VEHICLE */
+
+if(savedVehicle && !parsed.make){
+
+parsed.make = savedVehicle.make
+parsed.model = savedVehicle.model
+parsed.year = savedVehicle.year
+
+}
+
+/* SAVE VEHICLE IF DETECTED */
+
+if(parsed.make && parsed.model){
+
+vehicleMemory.saveCustomerVehicle(phone,{
+make: parsed.make,
+model: parsed.model,
+year: parsed.year
+})
+
+}
 
 const searchQuery = parsed.part || message
 
