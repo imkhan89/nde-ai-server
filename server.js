@@ -18,9 +18,11 @@ require("./ai/agent_alert_engine")
 const urlValidator =
 require("./ai/product_url_validator")
 
-/* NEW MODULE */
 const globalVehicleDB =
 require("./ai/global_vehicle_database")
+
+const compatibilityEngine =
+require("./ai/compatibility_prediction_engine")
 
 try{
 
@@ -42,8 +44,6 @@ console.log("URL validation skipped:",err.message)
 
 }
 
-/* LOAD GLOBAL VEHICLE DATABASE */
-
 try{
 
 globalVehicleDB.loadVehicleDatabase()
@@ -51,6 +51,18 @@ globalVehicleDB.loadVehicleDatabase()
 }catch(err){
 
 console.log("Global vehicle database load failed:",err.message)
+
+}
+
+try{
+
+compatibilityEngine.loadFitmentDatabase()
+
+console.log("Fitment compatibility database loaded")
+
+}catch(err){
+
+console.log("Fitment database load failed:",err.message)
 
 }
 
