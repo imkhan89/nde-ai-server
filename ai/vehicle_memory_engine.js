@@ -17,10 +17,14 @@ function loadMemory() {
     try {
         return JSON.parse(raw);
     } catch (err) {
+
         console.error("Vehicle memory JSON corrupted. Resetting...");
+
         fs.writeFileSync(MEMORY_FILE, "{}");
+
         return {};
     }
+
 }
 
 /*
