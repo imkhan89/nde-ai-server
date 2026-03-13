@@ -35,7 +35,7 @@ app.get("/health", (req, res) => {
 });
 
 /*
-VERIFY CATALOG SYNC
+VERIFY SHOPIFY CATALOG SYNC
 */
 
 app.get("/catalog-status", (req, res) => {
@@ -70,6 +70,10 @@ app.post("/search", async (req, res) => {
 
         console.log("User Query:", query);
 
+        /*
+        VEHICLE DETECTION
+        */
+
         let vehicle = null;
 
         if (vehicleDetectionEngine.detectVehicle) {
@@ -78,6 +82,10 @@ app.post("/search", async (req, res) => {
 
         }
 
+        /*
+        PART DETECTION
+        */
+
         let part = null;
 
         if (semanticPartsEngine.detectPart) {
@@ -85,6 +93,10 @@ app.post("/search", async (req, res) => {
             part = semanticPartsEngine.detectPart(query);
 
         }
+
+        /*
+        PRODUCT SEARCH
+        */
 
         let results = [];
 
