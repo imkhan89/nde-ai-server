@@ -21,13 +21,11 @@ from = req.body.From || ""
 
 }catch(e){}
 
-let reply = ""
-
-/* CLEAN PHONE */
-
 const phone = from.replace("whatsapp:","")
 
-/* MENU ENGINE */
+let reply = ""
+
+/* MENU SYSTEM */
 
 try{
 
@@ -37,9 +35,11 @@ if(menu && menu.reply){
 reply = menu.reply
 }
 
-}catch(e){}
+}catch(e){
+console.log("Menu engine error:",e.message)
+}
 
-/* AI ENGINE */
+/* AI SYSTEM */
 
 if(!reply){
 
@@ -69,9 +69,8 @@ Part + Make + Model + Year
 Example:
 Brake Pads Toyota Corolla 2016
 
-Need assistance?
+For live support contact:
 
-Live Agent:
 WhatsApp +92 308 7643288
 `
 
@@ -85,6 +84,10 @@ res.send(`
 </Response>
 `)
 
+})
+
+router.get("/",(req,res)=>{
+res.send("Webhook Active")
 })
 
 module.exports = router
