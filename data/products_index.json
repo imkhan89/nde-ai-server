@@ -1,245 +1,30 @@
-[
-{
-"title":"Front Wheel Bearing Toyota Corolla 2014-2019",
-"part":"wheel bearing",
-"position":"front",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/front-wheel-bearing-toyota-corolla-2014-2019"
-},
-{
-"title":"Rear Wheel Bearing Toyota Corolla 2014-2019",
-"part":"wheel bearing",
-"position":"rear",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/rear-wheel-bearing-toyota-corolla-2014-2019"
-},
-{
-"title":"Front Brake Pads Toyota Corolla 2014-2019",
-"part":"brake pads",
-"position":"front",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/front-brake-pads-toyota-corolla-2014-2019"
-},
-{
-"title":"Rear Brake Pads Toyota Corolla 2014-2019",
-"part":"brake pads",
-"position":"rear",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/rear-brake-pads-toyota-corolla-2014-2019"
-},
-{
-"title":"Engine Air Filter Toyota Corolla 2014-2019",
-"part":"air filter",
-"position":"engine",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/engine-air-filter-toyota-corolla"
-},
-{
-"title":"Cabin AC Filter Toyota Corolla 2014-2019",
-"part":"cabin filter",
-"position":"cabin",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/cabin-ac-filter-toyota-corolla"
-},
-{
-"title":"Front Shock Absorber Toyota Corolla 2014-2019",
-"part":"shock absorber",
-"position":"front",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/front-shock-absorber-toyota-corolla"
-},
-{
-"title":"Rear Shock Absorber Toyota Corolla 2014-2019",
-"part":"shock absorber",
-"position":"rear",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/rear-shock-absorber-toyota-corolla"
-},
-{
-"title":"Front Bumper Toyota Corolla 2017-2019",
-"part":"bumper",
-"position":"front",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/front-bumper-toyota-corolla"
-},
-{
-"title":"Rear Bumper Toyota Corolla 2017-2019",
-"part":"bumper",
-"position":"rear",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/rear-bumper-toyota-corolla"
-},
+const fs = require("fs")
+const path = require("path")
 
-{
-"title":"Front Wheel Bearing Honda Civic 2016-2021",
-"part":"wheel bearing",
-"position":"front",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/front-wheel-bearing-honda-civic"
-},
-{
-"title":"Rear Wheel Bearing Honda Civic 2016-2021",
-"part":"wheel bearing",
-"position":"rear",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/rear-wheel-bearing-honda-civic"
-},
-{
-"title":"Front Brake Pads Honda Civic 2016-2021",
-"part":"brake pads",
-"position":"front",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/front-brake-pads-honda-civic"
-},
-{
-"title":"Rear Brake Pads Honda Civic 2016-2021",
-"part":"brake pads",
-"position":"rear",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/rear-brake-pads-honda-civic"
-},
-{
-"title":"Engine Air Filter Honda Civic 2016-2021",
-"part":"air filter",
-"position":"engine",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/engine-air-filter-honda-civic"
-},
-{
-"title":"Cabin AC Filter Honda Civic 2016-2021",
-"part":"cabin filter",
-"position":"cabin",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/cabin-ac-filter-honda-civic"
-},
-{
-"title":"Front Shock Absorber Honda Civic 2016-2021",
-"part":"shock absorber",
-"position":"front",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/front-shock-absorber-honda-civic"
-},
-{
-"title":"Rear Shock Absorber Honda Civic 2016-2021",
-"part":"shock absorber",
-"position":"rear",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/rear-shock-absorber-honda-civic"
-},
+const indexFile = path.join(__dirname,"../data/product_index.json")
 
-{
-"title":"Front Brake Pads Suzuki Alto 2019-2024",
-"part":"brake pads",
-"position":"front",
-"make":"suzuki",
-"model":"alto",
-"url":"https://www.ndestore.com/products/front-brake-pads-suzuki-alto"
-},
-{
-"title":"Rear Brake Shoes Suzuki Alto 2019-2024",
-"part":"brake shoes",
-"position":"rear",
-"make":"suzuki",
-"model":"alto",
-"url":"https://www.ndestore.com/products/rear-brake-shoes-suzuki-alto"
-},
-{
-"title":"Engine Air Filter Suzuki Alto 2019-2024",
-"part":"air filter",
-"position":"engine",
-"make":"suzuki",
-"model":"alto",
-"url":"https://www.ndestore.com/products/engine-air-filter-suzuki-alto"
-},
-{
-"title":"Cabin AC Filter Suzuki Alto 2019-2024",
-"part":"cabin filter",
-"position":"cabin",
-"make":"suzuki",
-"model":"alto",
-"url":"https://www.ndestore.com/products/cabin-ac-filter-suzuki-alto"
-},
+function ensureIndex(){
 
-{
-"title":"Radiator Coolant Toyota Corolla",
-"part":"coolant",
-"position":"engine",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/radiator-coolant"
-},
-{
-"title":"Radiator Cap Toyota Corolla",
-"part":"radiator cap",
-"position":"engine",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/radiator-cap"
-},
-{
-"title":"Spark Plug Denso Toyota Corolla",
-"part":"spark plug",
-"position":"engine",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/denso-spark-plug"
-},
-{
-"title":"Spark Plug NGK Honda Civic",
-"part":"spark plug",
-"position":"engine",
-"make":"honda",
-"model":"civic",
-"url":"https://www.ndestore.com/products/ngk-spark-plug"
-},
-{
-"title":"Car Floor Mat Toyota Corolla",
-"part":"floor mat",
-"position":"interior",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/car-floor-mat-corolla"
-},
-{
-"title":"Car Trunk Tray Toyota Corolla",
-"part":"trunk tray",
-"position":"trunk",
-"make":"toyota",
-"model":"corolla",
-"url":"https://www.ndestore.com/products/trunk-tray-corolla"
-},
-{
-"title":"Windshield Glass Cleaner",
-"part":"glass cleaner",
-"position":"exterior",
-"make":"universal",
-"model":"all",
-"url":"https://www.ndestore.com/products/windshield-glass-cleaner"
-},
-{
-"title":"Car Window Sun Shade Universal",
-"part":"sun shade",
-"position":"window",
-"make":"universal",
-"model":"all",
-"url":"https://www.ndestore.com/products/car-window-sun-shade"
+if(!fs.existsSync(indexFile)){
+
+fs.writeFileSync(indexFile,"{}")
+
+console.log("Product index created")
+
 }
-]
+
+}
+
+function buildIndex(){
+
+ensureIndex()
+
+console.log("Product index ready")
+
+}
+
+buildIndex()
+
+module.exports = {
+buildIndex
+}
