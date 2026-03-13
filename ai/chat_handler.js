@@ -3,12 +3,47 @@ const parser = require("./vehicle_query_parser")
 const knowledge = require("./automotive_knowledge_engine")
 const learning = require("./self_learning_engine")
 const recommender = require("./recommendation_engine")
+const orderEngine = require("./shopify_order_engine")
 
 async function handleMessage(message){
 
 try{
 
 learning.learn(message)
+
+const text = message.toLowerCase()
+
+/* ORDER STATUS */
+
+if(text.includes("order")){
+
+const orderMatch = message.match(/\d+/)
+
+if(orderMatch){
+
+const order = await orderEngine.getOrder(orderMatch[0])
+
+if(order){
+
+let reply = `Order ${order.name}\n`
+reply += `Payment: ${order.financial}\n`
+reply += `Status: ${order.status}\n`
+
+if(order.tracking && order.tracking.length > 0){
+reply += `Tracking: ${order.tracking.join(", ")}`
+}
+
+return reply
+
+}
+
+return "Sorry, order not found."
+
+}
+
+}
+
+/* PRODUCT SEARCH */
 
 const parsed = parser.parseVehicleQuery(message)
 
