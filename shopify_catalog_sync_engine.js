@@ -12,13 +12,13 @@ async function fetchAllProducts() {
 
         console.log("Starting Shopify full catalog sync...");
 
-        let page = 1;
-        let hasMore = true;
+        let since_id = 0;
         let allProducts = [];
+        let keepFetching = true;
 
-        while (hasMore) {
+        while (keepFetching) {
 
-            const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250&page=${page}`;
+            const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250&since_id=${since_id}`;
 
             const response = await axios.get(url, {
                 headers: {
@@ -29,10 +29,10 @@ async function fetchAllProducts() {
 
             const products = response.data.products || [];
 
-            console.log(`Fetched page ${page} : ${products.length} products`);
+            console.log(`Fetched ${products.length} products`);
 
             if (products.length === 0) {
-                hasMore = false;
+                keepFetching = false;
                 break;
             }
 
@@ -46,10 +46,10 @@ async function fetchAllProducts() {
 
             allProducts = [...allProducts, ...mapped];
 
+            since_id = products[products.length - 1].id;
+
             if (products.length < 250) {
-                hasMore = false;
-            } else {
-                page++;
+                keepFetching = false;
             }
 
         }
@@ -60,7 +60,7 @@ async function fetchAllProducts() {
 
     } catch (error) {
 
-        console.error("Shopify Sync Error:", error.message);
+        console.error("Shopify Sync Error:", error.response?.data || error.message);
 
     }
 
@@ -82,7 +82,7 @@ async function startCatalogSync() {
 
     await fetchAllProducts();
 
-    // refresh catalog every 30 minutes
+    // refresh every 30 minutes
     setInterval(fetchAllProducts, 30 * 60 * 1000);
 
 }
