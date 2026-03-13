@@ -1,5 +1,6 @@
 const productSearch = require("./product_search_engine")
 const parser = require("./vehicle_query_parser")
+const vehicleDetector = require("./vehicle_detector")
 
 async function handleMessage(message){
 
@@ -7,13 +8,21 @@ try{
 
 const parsed = parser.parseVehicleQuery(message)
 
+const vehicle = vehicleDetector.detectVehicle(message)
+
 const searchQuery = parsed.part || message
 
 const search = productSearch.searchProducts(searchQuery)
 
 if(search.success){
 
-let reply = "Here are matching products:\n\n"
+let reply = ""
+
+if(vehicle){
+reply += `Detected Vehicle: ${vehicle.make} ${vehicle.model}\n\n`
+}
+
+reply += "Here are matching products:\n\n"
 
 search.products.forEach((product,index)=>{
 
