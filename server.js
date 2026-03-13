@@ -1,6 +1,8 @@
 const express = require("express")
 
-/* CORE AI MODULES */
+/* ============================= */
+/* LOAD AI MODULES */
+/* ============================= */
 
 const vehicleLearning =
 require("./ai/vehicle_learning_engine")
@@ -29,10 +31,18 @@ require("./ai/compatibility_prediction_engine")
 const fastSearch =
 require("./ai/fast_product_search_engine")
 
+const vehicleFitmentSearch =
+require("./ai/vehicle_fitment_search_engine")
+
+const serviceKitAI =
+require("./ai/service_kit_ai_engine")
+
 const shopifySync =
 require("./ai/shopify_catalog_sync_engine")
 
+/* ============================= */
 /* PRODUCT INDEX BUILDER */
+/* ============================= */
 
 try{
 
@@ -44,7 +54,9 @@ console.log("Product index builder skipped:",err.message)
 
 }
 
+/* ============================= */
 /* VALIDATE PRODUCT URLS */
+/* ============================= */
 
 try{
 
@@ -56,7 +68,9 @@ console.log("URL validation skipped:",err.message)
 
 }
 
-/* LOAD VEHICLE DATABASE */
+/* ============================= */
+/* LOAD GLOBAL VEHICLE DATABASE */
+/* ============================= */
 
 try{
 
@@ -68,7 +82,9 @@ console.log("Global vehicle database load failed:",err.message)
 
 }
 
+/* ============================= */
 /* LOAD FITMENT DATABASE */
+/* ============================= */
 
 try{
 
@@ -82,7 +98,9 @@ console.log("Fitment database load failed:",err.message)
 
 }
 
+/* ============================= */
 /* LOAD FAST PRODUCT SEARCH */
+/* ============================= */
 
 try{
 
@@ -90,11 +108,41 @@ fastSearch.loadProductIndex()
 
 }catch(err){
 
-console.log("Fast search engine load failed:",err.message)
+console.log("Fast product search load failed:",err.message)
 
 }
 
-/* VEHICLE INTELLIGENCE TRAINING */
+/* ============================= */
+/* LOAD VEHICLE FITMENT SEARCH */
+/* ============================= */
+
+try{
+
+vehicleFitmentSearch.loadIndex()
+
+}catch(err){
+
+console.log("Vehicle fitment search load failed:",err.message)
+
+}
+
+/* ============================= */
+/* LOAD SERVICE KIT AI */
+/* ============================= */
+
+try{
+
+serviceKitAI.loadIndex()
+
+}catch(err){
+
+console.log("Service kit AI load failed:",err.message)
+
+}
+
+/* ============================= */
+/* VEHICLE LEARNING */
+/* ============================= */
 
 try{
 
@@ -113,11 +161,15 @@ console.log("Vehicle learning skipped:",err.message)
 
 }
 
+/* ============================= */
 /* EXPRESS SERVER */
+/* ============================= */
 
 const app = express()
 
-/* ROOT ENDPOINT */
+app.use(express.json())
+
+/* ROOT */
 
 app.get("/",(req,res)=>{
 
@@ -125,7 +177,9 @@ res.send("ndestore Automotive AI Server Running")
 
 })
 
-/* SHOPIFY CATALOG SYNC TEST ROUTE */
+/* ============================= */
+/* SHOPIFY CATALOG SYNC TEST */
+/* ============================= */
 
 app.get("/sync-shopify",async(req,res)=>{
 
@@ -137,21 +191,102 @@ res.send("Shopify catalog sync completed")
 
 }catch(err){
 
+console.log(err)
+
 res.send("Shopify sync failed")
 
 }
 
 })
 
+/* ============================= */
+/* FAST PRODUCT SEARCH TEST */
+/* ============================= */
+
+app.get("/search",async(req,res)=>{
+
+try{
+
+const query = req.query.q
+
+const result = fastSearch.buildSearchResponse(query)
+
+res.send(result || "No products found")
+
+}catch(err){
+
+res.send("Search failed")
+
+}
+
+})
+
+/* ============================= */
+/* VEHICLE FITMENT SEARCH TEST */
+/* ============================= */
+
+app.get("/fitment",async(req,res)=>{
+
+try{
+
+const part = req.query.part
+const make = req.query.make
+const model = req.query.model
+const year = req.query.year
+
+const result =
+vehicleFitmentSearch.buildFitmentResponse(part,make,model,year)
+
+res.send(result || "No compatible products found")
+
+}catch(err){
+
+res.send("Fitment search failed")
+
+}
+
+})
+
+/* ============================= */
+/* SERVICE KIT TEST */
+/* ============================= */
+
+app.get("/service-kit",async(req,res)=>{
+
+try{
+
+const make = req.query.make
+const model = req.query.model
+const year = req.query.year
+
+const result =
+serviceKitAI.buildServiceKitResponse(make,model,year)
+
+res.send(result || "No service kit found")
+
+}catch(err){
+
+res.send("Service kit search failed")
+
+}
+
+})
+
+/* ============================= */
 /* WHATSAPP WEBHOOK */
+/* ============================= */
 
 app.use("/",twilioWebhook)
 
-/* ADMIN REPORT ENDPOINT */
+/* ============================= */
+/* ADMIN REPORT ROUTES */
+/* ============================= */
 
 app.use("/",adminReport)
 
+/* ============================= */
 /* START REPORT SCHEDULER */
+/* ============================= */
 
 try{
 
@@ -165,7 +300,9 @@ console.log("Report scheduler failed:",err.message)
 
 }
 
+/* ============================= */
 /* START AGENT ALERT SYSTEM */
+/* ============================= */
 
 try{
 
@@ -179,7 +316,9 @@ console.log("Agent alert engine failed:",err.message)
 
 }
 
+/* ============================= */
 /* START SERVER */
+/* ============================= */
 
 const PORT = process.env.PORT || 8080
 
