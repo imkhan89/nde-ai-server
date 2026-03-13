@@ -18,6 +18,10 @@ require("./ai/agent_alert_engine")
 const urlValidator =
 require("./ai/product_url_validator")
 
+/* NEW MODULE */
+const globalVehicleDB =
+require("./ai/global_vehicle_database")
+
 try{
 
 require("./ai/search_index_builder")
@@ -35,6 +39,18 @@ urlValidator.validateUrls()
 }catch(err){
 
 console.log("URL validation skipped:",err.message)
+
+}
+
+/* LOAD GLOBAL VEHICLE DATABASE */
+
+try{
+
+globalVehicleDB.loadVehicleDatabase()
+
+}catch(err){
+
+console.log("Global vehicle database load failed:",err.message)
 
 }
 
