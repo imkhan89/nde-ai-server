@@ -1,6 +1,10 @@
 const MessagingResponse = require("twilio").twiml.MessagingResponse;
 
 
+/*
+MAIN MENU
+Modern WhatsApp entry menu
+*/
 
 function sendMainMenu() {
 
@@ -11,7 +15,7 @@ Welcome to *ndestore.com*
 
 Pakistan's Automotive Parts Store
 
-Choose a category:
+How can we help you today?
 
 1️⃣ Auto Parts
 2️⃣ Car Accessories
@@ -19,7 +23,7 @@ Choose a category:
 4️⃣ Order Status
 5️⃣ Customer Support
 
-Send the number to continue.
+Reply with a number to continue.
 `);
 
 return twiml.toString();
@@ -28,16 +32,20 @@ return twiml.toString();
 
 
 
+/*
+VEHICLE CONFIRMATION CARD
+*/
+
 function sendVehicleConfirmation(vehicle){
 
 const twiml = new MessagingResponse();
 
 twiml.message(`
-Vehicle detected
+🚗 Vehicle detected
 
-🚗 ${vehicle.make} ${vehicle.model} ${vehicle.year}
+${vehicle.make} ${vehicle.model} ${vehicle.year}
 
-Send your required part.
+Now send the required part.
 
 Example:
 Brake Pads
@@ -51,6 +59,11 @@ return twiml.toString();
 
 
 
+/*
+PRODUCT CARD ENGINE
+Sends clear product image + link
+*/
+
 function sendProductCards(products){
 
 const twiml = new MessagingResponse();
@@ -60,7 +73,7 @@ if(!products || products.length === 0){
 twiml.message(`
 No matching parts found.
 
-Send request in format:
+Send request like:
 
 Part + Make + Model + Year
 
@@ -73,24 +86,24 @@ return twiml.toString();
 }
 
 
-
-products.slice(0,3).forEach(p => {
+products.slice(0,3).forEach(product => {
 
 twiml.message({
 
-mediaUrl: [p.image],
-
 body:
-`*${p.title}*
+`*${product.title}*
 
 View Product
-${p.url}
+${product.url}
 
-ndestore.com`
+ndestore.com`,
+
+mediaUrl: [product.image]
 
 });
 
 });
+
 
 return twiml.toString();
 
@@ -98,21 +111,29 @@ return twiml.toString();
 
 
 
+/*
+SERVICE KIT SUGGESTIONS
+*/
+
 function sendServiceKit(kit){
 
 const twiml = new MessagingResponse();
 
-if(!kit || kit.length === 0) return null;
+if(!kit || kit.length === 0){
 
-let text = `Recommended Service Parts\n\n`;
+return null;
 
-kit.forEach(k => {
+}
 
-text += `• ${k}\n`;
+let message = `Recommended Service Parts\n\n`;
+
+kit.forEach(item => {
+
+message += `• ${item}\n`;
 
 });
 
-twiml.message(text);
+twiml.message(message);
 
 return twiml.toString();
 
