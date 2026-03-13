@@ -1,8 +1,8 @@
 const express = require("express")
 const bodyParser = require("body-parser")
 
-const conversationEngine = require("../conversation_engine")
 const chatHandler = require("./chat_handler")
+const conversationEngine = require("../conversation_engine")
 
 const router = express.Router()
 
@@ -23,11 +23,11 @@ from = req.body.From || ""
 
 let reply = ""
 
-/* CLEAN PHONE NUMBER */
+/* CLEAN PHONE */
 
 const phone = from.replace("whatsapp:","")
 
-/* MENU SYSTEM */
+/* MENU ENGINE */
 
 try{
 
@@ -39,14 +39,18 @@ reply = menu.reply
 
 }catch(e){}
 
-/* AI CHAT */
+/* AI ENGINE */
 
 if(!reply){
 
-const ai = await chatHandler.handleMessage(incoming,phone)
+try{
 
-if(ai){
-reply = ai
+reply = await chatHandler.handleMessage(incoming,phone)
+
+}catch(err){
+
+console.log("AI error:",err.message)
+
 }
 
 }
@@ -56,21 +60,18 @@ reply = ai
 if(!reply){
 
 reply = `
-We are unable to understand your inquiry.
+Welcome to ndeStore Auto Parts AI
 
-Please share:
+Send request in this format:
 
-Part Description
-Vehicle Make
-Vehicle Model
-Model Year
+Part + Make + Model + Year
 
 Example:
-Air Filter Suzuki Swift 2021
+Brake Pads Toyota Corolla 2016
 
-Reply # to return to the Main Menu.
+Need assistance?
 
-For a Live Agent:
+Live Agent:
 WhatsApp +92 308 7643288
 `
 
