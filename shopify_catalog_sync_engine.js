@@ -2,18 +2,19 @@
 
 const axios = require("axios");
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN;
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION;
 
 let productCache = [];
 
-/*
-Fetch products from Shopify
-*/
 async function fetchShopifyProducts() {
+
     try {
 
-        const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`;
+        console.log("Fetching Shopify products...");
+
+        const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
 
         const response = await axios.get(url, {
             headers: {
@@ -35,35 +36,33 @@ async function fetchShopifyProducts() {
         console.log("Shopify products synced:", productCache.length);
 
     } catch (error) {
+
         console.error("Shopify Sync Error:", error.message);
+
     }
+
 }
 
-/*
-Search products locally (FAST)
-*/
 function searchProducts(query) {
 
     if (!query) return [];
 
     query = query.toLowerCase();
 
-    return productCache.filter(p =>
-        p.title.toLowerCase().includes(query)
-    ).slice(0, 5);
+    return productCache
+        .filter(p => p.title.toLowerCase().includes(query))
+        .slice(0, 5);
+
 }
 
-/*
-Start sync process
-*/
 async function startCatalogSync() {
 
     console.log("Starting Shopify Catalog Sync...");
 
     await fetchShopifyProducts();
 
-    // Refresh every 30 minutes
     setInterval(fetchShopifyProducts, 30 * 60 * 1000);
+
 }
 
 module.exports = {
