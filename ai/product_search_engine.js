@@ -1,103 +1,38 @@
-/* =====================================================
-FAST PRODUCT SEARCH ENGINE
-Searches local product index instead of Shopify search page
-===================================================== */
-
-const PRODUCTS = require("../data/products_index.json")
-
-/* =====================================================
-NORMALIZE TEXT
-===================================================== */
-
-function normalize(text){
-
-if(!text) return ""
-
-return text
-.toString()
-.toLowerCase()
-.replace(/[^\w\s]/g," ")
-.replace(/\s+/g," ")
-.trim()
-
-}
-
-
-/* =====================================================
-MATCH SCORE ENGINE
-===================================================== */
-
-function scoreProduct(product, query){
-
-let score = 0
-
-const q = normalize(query)
-
-const title = normalize(product.title)
-
-if(title.includes(q)){
-score += 100
-}
-
-if(product.part && q.includes(product.part)){
-score += 50
-}
-
-if(product.make && q.includes(product.make)){
-score += 30
-}
-
-if(product.model && q.includes(product.model)){
-score += 30
-}
-
-if(product.position && q.includes(product.position)){
-score += 20
-}
-
-return score
-
-}
-
-
-/* =====================================================
-SEARCH PRODUCTS
-===================================================== */
+const localSearch = require("./local_product_search")
 
 function searchProducts(query){
 
-if(!query) return []
+try{
 
-let results = []
+const results = localSearch.searchProducts(query)
 
-for(const product of PRODUCTS){
+if(!results || results.length === 0){
 
-const score = scoreProduct(product, query)
-
-if(score > 0){
-
-results.push({
-product,
-score
-})
-
+return {
+success:false,
+message:"No matching products found"
 }
 
 }
 
-results.sort((a,b)=>b.score-a.score)
+return {
+success:true,
+products:results
+}
 
-return results.slice(0,3).map(r=>r.product)
+}catch(err){
+
+console.log("Search engine error:",err.message)
+
+return {
+success:false,
+message:"Search error"
+}
 
 }
 
-
-/* =====================================================
-EXPORT
-===================================================== */
+}
 
 module.exports = {
-
 searchProducts
-
 }
