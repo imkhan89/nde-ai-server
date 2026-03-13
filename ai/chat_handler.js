@@ -1,6 +1,7 @@
 const productSearch = require("./product_search_engine")
 const parser = require("./vehicle_query_parser")
 const vehicleDetector = require("./vehicle_detector")
+const compatibility = require("./vehicle_compatibility_engine")
 
 async function handleMessage(message){
 
@@ -14,13 +15,13 @@ const searchQuery = parsed.part || message
 
 const search = productSearch.searchProducts(searchQuery)
 
-if(search.success){
-
 let reply = ""
 
 if(vehicle){
 reply += `Detected Vehicle: ${vehicle.make} ${vehicle.model}\n\n`
 }
+
+if(search.success){
 
 reply += "Here are matching products:\n\n"
 
@@ -34,7 +35,25 @@ return reply
 
 }
 
-return "Sorry, no matching products found."
+const vehicleName = vehicle ? `${vehicle.make} ${vehicle.model}` : ""
+
+const compatibilityCheck = compatibility.checkCompatibility(vehicleName,searchQuery)
+
+if(compatibilityCheck.length > 0){
+
+reply += "Compatible parts found:\n\n"
+
+compatibilityCheck.forEach((item,index)=>{
+
+reply += `${index+1}. ${item.part}\n`
+
+})
+
+return reply
+
+}
+
+return "Sorry, no compatible parts found."
 
 }catch(err){
 
