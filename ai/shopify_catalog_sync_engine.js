@@ -1,139 +1,114 @@
-const fs = require("fs")
-const path = require("path")
-const https = require("https")
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN;
 
-const OUTPUT_PATH =
-path.join(__dirname,"../data/shopify_products.json")
+const DATA_DIR = path.join(__dirname, "../data");
 
-function fetchProducts(){
+const PRODUCTS_FILE = path.join(DATA_DIR, "shopify_products.json");
+const PRODUCT_INDEX_FILE = path.join(DATA_DIR, "product_index.json");
 
-return new Promise((resolve,reject)=>{
+async function fetchAllProducts() {
 
-let products = []
+    console.log("Starting Shopify catalog sync...");
 
-let url = `/admin/api/2023-10/products.json?limit=250`
+    let products = [];
+    let pageInfo = null;
 
-function getPage(pageUrl){
+    while (true) {
 
-const options = {
+        let url = `https://${SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250`;
 
-hostname: SHOPIFY_STORE,
-path: pageUrl,
-method: "GET",
-headers: {
+        if (pageInfo) {
+            url += `&page_info=${pageInfo}`;
+        }
 
-"X-Shopify-Access-Token": SHOPIFY_TOKEN,
-"Content-Type": "application/json"
+        const response = await axios.get(url, {
+            headers: {
+                "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+                "Content-Type": "application/json"
+            }
+        });
 
+        const data = response.data.products;
+
+        if (!data || data.length === 0) break;
+
+        products = products.concat(data);
+
+        console.log("Downloaded products:", products.length);
+
+        const linkHeader = response.headers.link;
+
+        if (!linkHeader || !linkHeader.includes("rel=\"next\"")) {
+            break;
+        }
+
+        const match = linkHeader.match(/page_info=([^&>]+)/);
+
+        if (!match) break;
+
+        pageInfo = match[1];
+    }
+
+    console.log("Total products downloaded:", products.length);
+
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2));
+
+    return products;
 }
 
+function buildProductIndex(products) {
+
+    console.log("Building fast product index...");
+
+    const index = [];
+
+    products.forEach(product => {
+
+        const title = product.title.toLowerCase();
+
+        const handle = product.handle;
+
+        const tags = product.tags ? product.tags.toLowerCase() : "";
+
+        const vendor = product.vendor ? product.vendor.toLowerCase() : "";
+
+        index.push({
+            id: product.id,
+            title,
+            handle,
+            tags,
+            vendor,
+            url: `https://ndestore.com/products/${handle}`
+        });
+
+    });
+
+    fs.writeFileSync(PRODUCT_INDEX_FILE, JSON.stringify(index, null, 2));
+
+    console.log("Product index built:", index.length);
 }
 
-const req = https.request(options,res=>{
+async function syncShopifyCatalog() {
 
-let data = ""
+    try {
 
-res.on("data",chunk=>{
+        const products = await fetchAllProducts();
 
-data += chunk
+        buildProductIndex(products);
 
-})
+        console.log("Shopify catalog sync complete");
 
-res.on("end",()=>{
+    } catch (err) {
 
-try{
+        console.error("Catalog sync error:", err.message);
 
-const json = JSON.parse(data)
-
-if(json.products){
-
-json.products.forEach(p=>{
-
-products.push({
-
-title:p.title,
-handle:p.handle,
-url:`https://${SHOPIFY_STORE}/products/${p.handle}`
-
-})
-
-})
-
-}
-
-const link = res.headers.link
-
-if(link && link.includes('rel="next"')){
-
-const next = link.match(/<([^>]+)>; rel="next"/)
-
-if(next){
-
-const nextPath = next[1].split(SHOPIFY_STORE)[1]
-
-getPage(nextPath)
-
-return
-
-}
-
-}
-
-resolve(products)
-
-}catch(err){
-
-reject(err)
-
-}
-
-})
-
-})
-
-req.on("error",reject)
-
-req.end()
-
-}
-
-getPage(url)
-
-})
-
-}
-
-async function syncCatalog(){
-
-try{
-
-console.log("Starting Shopify catalog sync")
-
-const products = await fetchProducts()
-
-fs.writeFileSync(
-
-OUTPUT_PATH,
-
-JSON.stringify(products,null,2)
-
-)
-
-console.log("Shopify catalog synced:",products.length)
-
-}catch(err){
-
-console.log("Shopify sync failed:",err.message)
-
-}
-
+    }
 }
 
 module.exports = {
-
-syncCatalog
-
-}
+    syncShopifyCatalog
+};
