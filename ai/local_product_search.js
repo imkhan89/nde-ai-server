@@ -1,5 +1,6 @@
 const fs = require("fs")
 const path = require("path")
+const ranker = require("./search_ranker")
 
 let productIndex = []
 
@@ -23,7 +24,7 @@ function searchProducts(query){
 
 query = query.toLowerCase()
 
-const results = productIndex.filter(product => {
+let results = productIndex.filter(product => {
 
 const title = (product.title || "").toLowerCase()
 const tags = (product.tags || "").toLowerCase()
@@ -31,6 +32,8 @@ const tags = (product.tags || "").toLowerCase()
 return title.includes(query) || tags.includes(query)
 
 })
+
+results = ranker.rankProducts(results, query)
 
 return results.slice(0,5)
 
