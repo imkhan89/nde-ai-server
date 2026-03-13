@@ -24,6 +24,9 @@ require("./ai/global_vehicle_database")
 const compatibilityEngine =
 require("./ai/compatibility_prediction_engine")
 
+const shopifySync =
+require("./ai/shopify_catalog_sync_engine")
+
 try{
 
 require("./ai/search_index_builder")
@@ -91,6 +94,24 @@ res.send("ndestore AI Server Running")
 
 })
 
+/* TEST ROUTE */
+
+app.get("/sync-shopify",async(req,res)=>{
+
+try{
+
+await shopifySync.syncCatalog()
+
+res.send("Shopify catalog sync completed")
+
+}catch(err){
+
+res.send("Shopify sync failed")
+
+}
+
+})
+
 app.use("/",twilioWebhook)
 
 app.use("/",adminReport)
@@ -119,7 +140,7 @@ console.log("Agent alert engine failed:",err.message)
 
 }
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 8080
 
 app.listen(PORT,()=>{
 
