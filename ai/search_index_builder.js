@@ -6,28 +6,20 @@ const ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
 
 const OUTPUT_FILE = "./data/product_index.json"
 
-async function fetchProducts(){
+async function fetchAllProducts(){
 
 let allProducts = []
-let page = 1
-let hasMore = true
+let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
 
-while(hasMore){
+while(url){
 
-console.log("Fetching products page:",page)
+console.log("Fetching products from Shopify...")
 
-const response = await axios.get(
-`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json`,
-{
+const response = await axios.get(url,{
 headers:{
 "X-Shopify-Access-Token":ACCESS_TOKEN
-},
-params:{
-limit:250,
-page:page
 }
-}
-)
+})
 
 const products = response.data.products
 
@@ -45,10 +37,18 @@ url:`https://ndestore.com/products/${product.handle}`
 
 })
 
-if(products.length < 250){
-hasMore = false
+const linkHeader = response.headers.link
+
+if(linkHeader && linkHeader.includes('rel="next"')){
+
+const match = linkHeader.match(/<(.*?)>; rel="next"/)
+
+url = match ? match[1] : null
+
 }else{
-page++
+
+url = null
+
 }
 
 }
@@ -61,9 +61,9 @@ async function buildIndex(){
 
 console.log("Building Shopify product index")
 
-const products = await fetchProducts()
+const products = await fetchAllProducts()
 
-console.log("Total products:",products.length)
+console.log("Total products downloaded:",products.length)
 
 fs.writeFileSync(
 OUTPUT_FILE,
