@@ -12,6 +12,9 @@ require("./ai/admin_whatsapp_report")
 const reportScheduler =
 require("./ai/admin_auto_report_scheduler")
 
+const agentAlertEngine =
+require("./ai/agent_alert_engine")
+
 try{
 
 require("./ai/search_index_builder")
@@ -60,6 +63,18 @@ console.log("AI report scheduler started")
 }catch(err){
 
 console.log("Report scheduler failed:",err.message)
+
+}
+
+try{
+
+agentAlertEngine.startAgentAlertEngine()
+
+console.log("Agent alert engine started")
+
+}catch(err){
+
+console.log("Agent alert engine failed:",err.message)
 
 }
 
