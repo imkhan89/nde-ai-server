@@ -1,0 +1,37 @@
+[
+{
+"problem":"Brake pads worn out",
+"keywords":[
+"brake noise",
+"squeaking brake",
+"brake sound",
+"noise when braking"
+],
+"parts":[
+"Brake Pads",
+"Brake Disc Rotor"
+]
+},
+{
+"problem":"Engine air filter clogged",
+"keywords":[
+"low engine power",
+"engine not responding",
+"slow acceleration"
+],
+"parts":[
+"Engine Air Filter"
+]
+},
+{
+"problem":"Spark plugs worn",
+"keywords":[
+"engine misfire",
+"engine vibration",
+"rough idle"
+],
+"parts":[
+"Spark Plugs"
+]
+}
+]
