@@ -1,0 +1,18 @@
+[
+  {
+    "make": "Suzuki",
+    "model": "Swift",
+    "start_year": 2021,
+    "end_year": 2026,
+    "engine": "1.2L",
+    "body": "Hatchback"
+  },
+  {
+    "make": "Toyota",
+    "model": "Corolla",
+    "start_year": 2014,
+    "end_year": 2020,
+    "engine": "1.6L",
+    "body": "Sedan"
+  }
+]
