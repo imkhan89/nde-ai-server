@@ -1,6 +1,7 @@
 const fs = require("fs")
 const path = require("path")
 const ranker = require("./search_ranker")
+const spelling = require("./spelling_engine")
 
 let productIndex = []
 
@@ -21,6 +22,8 @@ console.log("Product index load error:",err.message)
 }
 
 function searchProducts(query){
+
+query = spelling.correctQuery(query)
 
 query = query.toLowerCase()
 
