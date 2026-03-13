@@ -1,12 +1,15 @@
 const productSearch = require("./product_search_engine")
+const parser = require("./vehicle_query_parser")
 
 async function handleMessage(message){
 
 try{
 
-const text = message.toLowerCase().trim()
+const parsed = parser.parseVehicleQuery(message)
 
-const search = productSearch.searchProducts(text)
+const searchQuery = parsed.part || message
+
+const search = productSearch.searchProducts(searchQuery)
 
 if(search.success){
 
