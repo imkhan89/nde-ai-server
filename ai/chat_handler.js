@@ -2,6 +2,7 @@ const productSearch = require("./product_search_engine")
 const parser = require("./vehicle_query_parser")
 const knowledge = require("./automotive_knowledge_engine")
 const learning = require("./self_learning_engine")
+const recommender = require("./recommendation_engine")
 
 async function handleMessage(message){
 
@@ -40,6 +41,18 @@ search.products.forEach((product,index)=>{
 reply += `${index+1}. ${product.title}\n${product.url}\n\n`
 
 })
+
+const recommendations = recommender.getRecommendations(searchQuery)
+
+if(recommendations.length > 0){
+
+reply += "Recommended Add-Ons:\n"
+
+recommendations.forEach(item=>{
+reply += `• ${item}\n`
+})
+
+}
 
 return reply
 
