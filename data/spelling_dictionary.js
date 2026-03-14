@@ -1,16 +1,47 @@
-export const spellingDictionary = {
+// data/spelling_dictionary.js
 
-  corola: "corolla",
-  corolla: "corolla",
+export const SPELLING_DICTIONARY = {
 
-  vipar: "wiper",
-  vipr: "wiper",
-  viper: "wiper",
+    // vehicle models
+    "corola": "corolla",
+    "corrola": "corolla",
+    "corlla": "corolla",
+    "vioss": "vios",
+    "vioss": "vios",
+    "civc": "civic",
+    "civik": "civic",
+    "cultis": "cultus",
+    "swft": "swift",
+    "santroo": "santro",
 
-  break: "brake",
-  brek: "brake",
+    // product terms
+    "vipar": "wiper",
+    "vipr": "wiper",
+    "viper": "wiper",
+    "wipr": "wiper",
+    "wipe": "wiper",
 
-  fillter: "filter",
-  filtr: "filter"
+    "break": "brake",
+    "braks": "brake",
+    "brek": "brake",
 
-}
+    "filtr": "filter",
+    "filtre": "filter",
+    "filtrr": "filter",
+
+    "hornn": "horn",
+
+    "sparkplug": "spark plug",
+    "sparkplugs": "spark plug",
+
+    // common typing errors
+    "toyata": "toyota",
+    "toyta": "toyota",
+    "toyoota": "toyota",
+
+    "hondaa": "honda",
+    "hunda": "hyundai",
+
+    "kiya": "kia"
+
+};
