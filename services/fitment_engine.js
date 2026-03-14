@@ -1,59 +1,38 @@
-export function getFitment(vehicle, year, part) {
+import { VEHICLE_FITMENT_DATA } from "../data/vehicle_fitment_data.js";
+import { VEHICLE_GENERATION_RANGES } from "../data/vehicle_generation_ranges.js";
 
-  const fitmentData = {
+export function getVehicleGeneration(make, model, year) {
 
-    corolla: [
-      {
-        start: 2014,
-        end: 2019,
-        wiper: {
-          driver: "26",
-          passenger: "14"
+    const key = `${make}_${model}`.toLowerCase();
+
+    const ranges = VEHICLE_GENERATION_RANGES[key];
+
+    if (!ranges) return null;
+
+    for (const range of ranges) {
+
+        if (year >= range.start && year <= range.end) {
+
+            return `${make}_${model}_${range.start}_${range.end}`.toLowerCase();
+
         }
-      }
-    ],
-
-    civic: [
-      {
-        start: 2016,
-        end: 2021,
-        wiper: {
-          driver: "26",
-          passenger: "18"
-        }
-      }
-    ],
-
-    hilux: [
-      {
-        start: 2015,
-        end: 2022,
-        wiper: {
-          driver: "22",
-          passenger: "22"
-        }
-      }
-    ]
-
-  }
-
-  if (!vehicle || !year) return null
-
-  const vehicleData = fitmentData[vehicle]
-
-  if (!vehicleData) return null
-
-  for (const generation of vehicleData) {
-
-    if (year >= generation.start && year <= generation.end) {
-
-      if (generation[part]) {
-        return generation[part]
-      }
 
     }
 
-  }
+    return null;
 
-  return null
+}
+
+export function getFitmentData(make, model, year) {
+
+    const generationKey = getVehicleGeneration(make, model, year);
+
+    if (!generationKey) return null;
+
+    const fitment = VEHICLE_FITMENT_DATA[generationKey];
+
+    if (!fitment) return null;
+
+    return fitment;
+
 }
