@@ -71,7 +71,7 @@ const parts = [
 "horn"
 ]
 
-const links = {}
+const shortLinks = {}
 
 function normalize(text){
 
@@ -86,7 +86,11 @@ return text
 function detectVehicle(text){
 
 for(const v of vehicles){
-if(text.includes(v)) return v
+
+if(text.includes(v)){
+return v
+}
+
 }
 
 return null
@@ -96,7 +100,11 @@ return null
 function detectPart(text){
 
 for(const p of parts){
-if(text.includes(p)) return p
+
+if(text.includes(p)){
+return p
+}
+
 }
 
 return null
@@ -107,7 +115,7 @@ function shorten(url){
 
 const id = shortid.generate()
 
-links[id] = url
+shortLinks[id] = url
 
 return `https://ndestore.com/s/${id}`
 
@@ -116,8 +124,11 @@ return `https://ndestore.com/s/${id}`
 async function searchProducts(part){
 
 const rows = await db.all(
+
 `SELECT * FROM products WHERE title LIKE ?`,
+
 [`%${part}%`]
+
 )
 
 return rows.slice(0,3)
@@ -127,8 +138,11 @@ return rows.slice(0,3)
 async function learn(phone,message){
 
 await db.run(
+
 `INSERT INTO conversations(phone,message) VALUES(?,?)`,
+
 [phone,message]
+
 )
 
 }
@@ -149,11 +163,11 @@ let msg = `Available ${part} for ${vehicle}:
 
 for(const p of products){
 
-const link = shorten(p.url)
+const short = shorten(p.url)
 
 msg += `${p.title}
 PKR ${p.price}
-${link}
+${short}
 
 `
 
@@ -168,25 +182,24 @@ async function processMessage(message,phone){
 const text = normalize(message)
 
 const vehicle = detectVehicle(text)
-
 const part = detectPart(text)
 
 await learn(phone,message)
 
 if(!part){
 
-return `Please tell us which part you need.
+return `Please share which part you need.
 
 Example:
-Wiper Blade
 Brake Pad
-Oil Filter`
+Oil Filter
+Wiper Blade`
 
 }
 
 if(!vehicle){
 
-return `Please share your vehicle details.
+return `Please share vehicle details.
 
 Example:
 Toyota Corolla 2018`
@@ -203,10 +216,31 @@ app.get("/",(req,res)=>{
 res.send("NDE Automotive AI Running")
 })
 
+app.get("/s/:id",(req,res)=>{
+
+const id = req.params.id
+
+if(shortLinks[id]){
+
+res.redirect(shortLinks[id])
+
+}else{
+
+res.send("Invalid link")
+
+}
+
+})
+
 app.post("/whatsapp",async(req,res)=>{
 
 const message = req.body.Body || ""
 const phone = req.body.From || ""
+
+await db.run(
+`INSERT OR IGNORE INTO customers(phone) VALUES(?)`,
+[phone]
+)
 
 const reply = await processMessage(message,phone)
 
