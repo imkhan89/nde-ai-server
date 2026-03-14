@@ -1,45 +1,75 @@
+// data/spelling_dictionary.js
+
 export const SPELLING_DICTIONARY = {
 
-    // vehicle models
+    // Vehicle brands
+    "toyata": "toyota",
+    "toyta": "toyota",
+    "toyoota": "toyota",
+    "hondaa": "honda",
+    "hunda": "hyundai",
+    "kiya": "kia",
+    "nisan": "nissan",
+
+    // Toyota models
     "corola": "corolla",
     "corrola": "corolla",
     "corlla": "corolla",
     "vioss": "vios",
-    "vioss": "vios",
+    "yarisz": "yaris",
+    "hylux": "hilux",
+    "hilix": "hilux",
+
+    // Honda models
     "civc": "civic",
     "civik": "civic",
+    "cityy": "city",
+
+    // Suzuki models
     "cultis": "cultus",
     "swft": "swift",
-    "santroo": "santro",
+    "altooo": "alto",
+    "wagnor": "wagonr",
+    "mehrann": "mehran",
 
-    // product terms
+    // Hyundai / Kia
+    "santroo": "santro",
+    "sportag": "sportage",
+
+    // Product terms
     "vipar": "wiper",
     "vipr": "wiper",
     "viper": "wiper",
-    "wipr": "wiper",
     "wipe": "wiper",
+    "wipr": "wiper",
 
     "break": "brake",
     "braks": "brake",
     "brek": "brake",
+    "brakee": "brake",
 
     "filtr": "filter",
     "filtre": "filter",
     "filtrr": "filter",
 
-    "hornn": "horn",
+    "airfilter": "air filter",
+    "cabinfilter": "cabin filter",
+    "oilfilter": "oil filter",
 
     "sparkplug": "spark plug",
     "sparkplugs": "spark plug",
 
-    // common typing errors
-    "toyata": "toyota",
-    "toyta": "toyota",
-    "toyoota": "toyota",
+    "headlamp": "headlight",
+    "taillamp": "tail light",
 
-    "hondaa": "honda",
-    "hunda": "hyundai",
+    "bonet": "bonnet",
+    "bonnit": "bonnet",
 
-    "kiya": "kia"
+    "bumperr": "bumper",
 
+    "miror": "mirror",
+    "mirrors": "mirror",
+
+    "coolent": "coolant",
+    "antifrez": "antifreeze"
 };
