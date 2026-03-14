@@ -1,4 +1,4 @@
-import parts from "../knowledge/part_dictionary.json" assert { type: "json" }
+import parts from "../knowledge/part_dictionary.json" with { type: "json" }
 
 export function detectPart(text){
 
