@@ -6,31 +6,125 @@ import { detectProductName } from "./product_name_parser.js";
 import { getFitmentData } from "./fitment_engine.js";
 import { productSearch } from "./product_search.js";
 
+function customerAskedTechnical(message) {
+
+    const text = message.toLowerCase();
+
+    const technicalWords = [
+        "size",
+        "length",
+        "inch",
+        "mm",
+        "dimension",
+        "spec",
+        "specification",
+        "weight"
+    ];
+
+    for (const word of technicalWords) {
+        if (text.includes(word)) {
+            return true;
+        }
+    }
+
+    return false;
+
+}
+
+function buildSalesResponse(vehicle, product, products, fitment, originalMessage) {
+
+    let response = "";
+
+    const askedTechnical = customerAskedTechnical(originalMessage);
+
+    if (vehicle && vehicle.make && vehicle.model) {
+
+        response += `Thank you for your inquiry.\n\n`;
+        response += `Vehicle detected:\n`;
+        response += `${vehicle.make} ${vehicle.model}`;
+
+        if (vehicle.year) {
+            response += ` ${vehicle.year}`;
+        }
+
+        response += `\n\n`;
+
+    }
+
+    if (product) {
+
+        response += `You are looking for:\n`;
+        response += `${product}\n\n`;
+
+    }
+
+    if (products && products.length > 0) {
+
+        response += `We have the following options available:\n\n`;
+
+        products.slice(0, 5).forEach((p, index) => {
+
+            response += `${index + 1}. ${p.title}\n`;
+
+        });
+
+        response += `\n`;
+
+        response += `All products are available at ndestore.com and can be shipped nationwide.\n\n`;
+
+        response += `Please let us know if you would like:\n`;
+        response += `• Original brand\n`;
+        response += `• OEM equivalent\n`;
+        response += `• Budget option\n`;
+
+        response += `\nWe will assist you with the best option for your vehicle.`;
+
+    } else {
+
+        response += `Thank you for your message.\n\n`;
+        response += `To assist you better, please send:\n`;
+        response += `• Vehicle make\n`;
+        response += `• Model\n`;
+        response += `• Year\n`;
+        response += `• Required part\n`;
+
+        response += `Example:\n`;
+        response += `Toyota Corolla 2018 wiper blade`;
+
+    }
+
+    if (askedTechnical && fitment && fitment.wiper) {
+
+        response += `\n\nTechnical specification:\n`;
+        response += `Driver side: ${fitment.wiper.driver}\n`;
+        response += `Passenger side: ${fitment.wiper.passenger}\n`;
+
+    }
+
+    return response;
+
+}
+
 export async function processCustomerMessage(db, message) {
 
     try {
 
         if (!message || typeof message !== "string") {
-            return "Sorry, I could not understand your message. Please send the vehicle and part required.";
+            return "Please send vehicle details and the part you require.";
         }
 
-        // STEP 1 — Normalize user query
         const normalizedQuery = queryNormalizer(message);
 
-        // STEP 2 — Detect vehicle information
         const vehicle = parseVehicle(normalizedQuery);
 
-        // STEP 3 — Detect product name
         const product = detectProductName(normalizedQuery);
 
-        // STEP 4 — Get vehicle fitment data if possible
         let fitment = null;
 
         if (vehicle && vehicle.make && vehicle.model && vehicle.year) {
             fitment = getFitmentData(vehicle.make, vehicle.model, vehicle.year);
         }
 
-        // STEP 5 — Build search query
         let searchQuery = normalizedQuery;
 
         if (vehicle && product) {
@@ -39,64 +133,23 @@ export async function processCustomerMessage(db, message) {
             searchQuery = product;
         }
 
-        // STEP 6 — Search products
         const products = await productSearch(db, searchQuery);
 
-        // STEP 7 — Build WhatsApp response
-        let response = "";
-
-        if (vehicle && vehicle.make && vehicle.model) {
-
-            response += "Vehicle Identification\n";
-            response += `Make: ${vehicle.make}\n`;
-            response += `Model: ${vehicle.model}\n`;
-
-            if (vehicle.year) {
-                response += `Year: ${vehicle.year}\n`;
-            }
-
-            response += "\n";
-
-        }
-
-        if (product) {
-
-            response += "Product Requested\n";
-            response += `${product}\n\n`;
-
-        }
-
-        if (fitment && fitment.wiper) {
-
-            response += "Correct Wiper Specification\n";
-            response += `Driver: ${fitment.wiper.driver}\n`;
-            response += `Passenger: ${fitment.wiper.passenger}\n\n`;
-
-        }
-
-        if (products && products.length > 0) {
-
-            response += "Available Products\n\n";
-
-            products.slice(0, 5).forEach((product, index) => {
-
-                response += `${index + 1}. ${product.title}\n`;
-
-            });
-
-        } else {
-
-            response += "No matching products found. Please send vehicle details and part required.";
-
-        }
+        const response = buildSalesResponse(
+            vehicle,
+            product,
+            products,
+            fitment,
+            message
+        );
 
         return response;
 
     } catch (error) {
 
-        console.error("AI Engine Error:", error);
+        console.error("AI engine error:", error);
 
-        return "Sorry, something went wrong while processing your request.";
+        return "Sorry, something went wrong. Please send your vehicle details and required part.";
 
     }
 
