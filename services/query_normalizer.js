@@ -1,19 +1,35 @@
-import { spellingDictionary } from "../data/spelling_dictionary.js"
+// services/query_normalizer.js
 
-export function normalizeQuery(message) {
+import { SPELLING_DICTIONARY } from "../data/spelling_dictionary.js";
 
-  const words = message.toLowerCase().split(" ")
+export function queryNormalizer(message) {
 
-  const corrected = words.map(word => {
-
-    if (spellingDictionary[word]) {
-      return spellingDictionary[word]
+    if (!message || typeof message !== "string") {
+        return "";
     }
 
-    return word
+    // convert to lowercase
+    let normalized = message.toLowerCase();
 
-  })
+    // remove punctuation
+    normalized = normalized.replace(/[^\w\s]/g, " ");
 
-  return corrected.join(" ")
+    // normalize whitespace
+    normalized = normalized.replace(/\s+/g, " ").trim();
+
+    // tokenize
+    const tokens = normalized.split(" ");
+
+    const correctedTokens = tokens.map(token => {
+
+        if (SPELLING_DICTIONARY[token]) {
+            return SPELLING_DICTIONARY[token];
+        }
+
+        return token;
+
+    });
+
+    return correctedTokens.join(" ");
 
 }
