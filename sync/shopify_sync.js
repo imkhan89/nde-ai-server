@@ -1,31 +1,38 @@
 import axios from "axios"
-import config from "../config.js"
 
 export async function syncShopify(db){
 
-if(!config.SHOPIFY_STORE || !config.SHOPIFY_ACCESS_TOKEN){
+const store = process.env.SHOPIFY_STORE_DOMAIN
+const token = process.env.SHOPIFY_ADMIN_API_TOKEN
+const version = process.env.SHOPIFY_API_VERSION || "2024-01"
+
+if(!store || !token){
 
 console.log("Shopify credentials missing")
-
 return
 
 }
 
 try{
 
-let url = `https://${config.SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250`
-
+let page = 1
 let total = 0
 
-while(url){
+while(true){
 
-const response = await axios.get(url,{
+const url = `https://${store}/admin/api/${version}/products.json?limit=250&page=${page}`
+
+const res = await axios.get(url,{
 headers:{
-"X-Shopify-Access-Token": config.SHOPIFY_ACCESS_TOKEN
+"X-Shopify-Access-Token": token
 }
 })
 
-const products = response.data.products
+const products = res.data.products
+
+if(!products || products.length === 0){
+break
+}
 
 for(const product of products){
 
@@ -46,29 +53,19 @@ product.handle
 ]
 )
 
-}
-
-total += products.length
-
-const link = response.headers.link
-
-if(link && link.includes('rel="next"')){
-
-url = link.split(";")[0].replace("<","").replace(">","")
-
-}else{
-
-url = null
+total++
 
 }
 
+page++
+
 }
 
-console.log(`Shopify sync completed: ${total} products`)
+console.log("Shopify sync completed:", total, "products")
 
 }catch(err){
 
-console.error("Shopify sync failed", err.message)
+console.log("Shopify sync failed:", err.message)
 
 }
 
