@@ -5,250 +5,241 @@ import { open } from "sqlite"
 import shortid from "shortid"
 import twilio from "twilio"
 import dotenv from "dotenv"
+import fs from "fs"
 
 dotenv.config()
+
+const vehicles = JSON.parse(fs.readFileSync("./vehicle_dictionary.json"))
+const parts = JSON.parse(fs.readFileSync("./part_dictionary.json"))
 
 const { MessagingResponse } = twilio.twiml
 
 const app = express()
 
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({extended:false}))
 app.use(bodyParser.json())
 
 const db = await open({
-  filename: "./nde.db",
-  driver: sqlite3.Database
+filename:"./nde.db",
+driver:sqlite3.Database
 })
 
 await db.exec(`
+
 CREATE TABLE IF NOT EXISTS customers(
-  id INTEGER PRIMARY KEY,
-  phone TEXT UNIQUE,
-  country TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+id INTEGER PRIMARY KEY,
+phone TEXT UNIQUE,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS conversations(
-  id INTEGER PRIMARY KEY,
-  phone TEXT,
-  message TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+id INTEGER PRIMARY KEY,
+phone TEXT,
+message TEXT,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS leads(
-  id INTEGER PRIMARY KEY,
-  phone TEXT,
-  vehicle TEXT,
-  part TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+id INTEGER PRIMARY KEY,
+phone TEXT,
+vehicle TEXT,
+part TEXT,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS products(
-  id INTEGER PRIMARY KEY,
-  title TEXT,
-  price REAL,
-  url TEXT,
-  sku TEXT
+id INTEGER PRIMARY KEY,
+title TEXT,
+price REAL,
+url TEXT,
+sku TEXT
 );
 
-CREATE TABLE IF NOT EXISTS orders(
-  id INTEGER PRIMARY KEY,
-  order_number TEXT,
-  phone TEXT,
-  status TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS complaints(
-  id INTEGER PRIMARY KEY,
-  phone TEXT,
-  message TEXT,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
 `)
-
-const vehicles = [
-  "corolla",
-  "civic",
-  "city",
-  "cultus",
-  "swift",
-  "mehran",
-  "yaris"
-]
-
-const parts = [
-  "wiper",
-  "wiper blade",
-  "brake pad",
-  "air filter",
-  "oil filter",
-  "cabin filter",
-  "spark plug",
-  "radiator cap",
-  "horn"
-]
 
 const shortLinks = {}
 
-function normalize(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
+function normalize(text){
+
+return text
+.toLowerCase()
+.replace(/[^a-z0-9 ]/g," ")
+.replace(/\s+/g," ")
+.trim()
+
 }
 
-function detectVehicle(text) {
-  for (const v of vehicles) {
-    if (text.includes(v)) return v
-  }
-  return null
+function detectVehicle(text){
+
+for(const v of vehicles){
+
+if(text.includes(v.model)){
+return v.model
 }
 
-function detectPart(text) {
-  for (const p of parts) {
-    if (text.includes(p)) return p
-  }
-  return null
 }
 
-function shorten(url) {
-  const id = shortid.generate()
-  shortLinks[id] = url
-  return `${process.env.BASE_URL}/s/${id}`
+return null
+
 }
 
-async function searchProducts(part) {
-  const rows = await db.all(
-    `SELECT * FROM products WHERE title LIKE ?`,
-    [`%${part}%`]
-  )
-  return rows.slice(0, 3)
+function detectPart(text){
+
+for(const p of parts){
+
+if(text.includes(p)){
+return p
 }
 
-async function learn(phone, message) {
-  await db.run(
-    `INSERT INTO conversations(phone,message) VALUES(?,?)`,
-    [phone, message]
-  )
 }
 
-async function saveLead(phone, vehicle, part) {
-  await db.run(
-    `INSERT INTO leads(phone,vehicle,part) VALUES(?,?,?)`,
-    [phone, vehicle, part]
-  )
+return null
+
 }
 
-async function saveComplaint(phone, message) {
-  await db.run(
-    `INSERT INTO complaints(phone,message) VALUES(?,?)`,
-    [phone, message]
-  )
+function shorten(url){
+
+const id = shortid.generate()
+
+shortLinks[id] = url
+
+return `${process.env.BASE_URL}/s/${id}`
+
 }
 
-function buildResponse(products, vehicle, part) {
-  if (products.length === 0) {
-    return `We could not find ${part} for ${vehicle}.
+async function searchProducts(part){
 
-Our team will check availability and assist shortly.`
-  }
+const rows = await db.all(
+`SELECT * FROM products WHERE title LIKE ?`,
+[`%${part}%`]
+)
 
-  let msg = `Available ${part} for ${vehicle}:\n\n`
+return rows.slice(0,3)
 
-  for (const p of products) {
-    const short = shorten(p.url)
+}
 
-    msg += `${p.title}
+async function learn(phone,message){
+
+await db.run(
+`INSERT INTO conversations(phone,message) VALUES(?,?)`,
+[phone,message]
+)
+
+}
+
+async function saveLead(phone,vehicle,part){
+
+await db.run(
+`INSERT INTO leads(phone,vehicle,part) VALUES(?,?,?)`,
+[phone,vehicle,part]
+)
+
+}
+
+function buildResponse(products,vehicle,part){
+
+if(products.length===0){
+
+return `We could not find ${part} for ${vehicle}.
+
+Our team will check availability and get back to you shortly.`
+
+}
+
+let msg = `Found ${part} for ${vehicle}:\n\n`
+
+for(const p of products){
+
+const short = shorten(p.url)
+
+msg += `${p.title}
 PKR ${p.price}
 ${short}
 
 `
-  }
 
-  return msg
 }
 
-async function processMessage(message, phone) {
+return msg
 
-  const text = normalize(message)
+}
 
-  await learn(phone, message)
+async function processMessage(message,phone){
 
-  if (text.includes("complaint") || text.includes("fraud")) {
-    await saveComplaint(phone, message)
+const text = normalize(message)
 
-    return `Your complaint has been received. Our team will contact you shortly.`
-  }
+await learn(phone,message)
 
-  const vehicle = detectVehicle(text)
-  const part = detectPart(text)
+const vehicle = detectVehicle(text)
+const part = detectPart(text)
 
-  if (!part) {
-    return `Please tell us which part you need.
+if(!part){
+
+return `Please tell us which part you need.
 
 Example:
 Wiper Blade
 Brake Pad
-Oil Filter`
-  }
+Air Filter`
+}
 
-  if (!vehicle) {
-    return `Please share vehicle details.
+if(!vehicle){
+
+return `Please share vehicle details.
 
 Example:
 Toyota Corolla 2018`
-  }
-
-  const products = await searchProducts(part)
-
-  if (products.length === 0) {
-    await saveLead(phone, vehicle, part)
-  }
-
-  return buildResponse(products, vehicle, part)
 }
 
-app.get("/", (req, res) => {
-  res.send("NDE Automotive AI Running")
+const products = await searchProducts(part)
+
+if(products.length===0){
+await saveLead(phone,vehicle,part)
+}
+
+return buildResponse(products,vehicle,part)
+
+}
+
+app.get("/",(req,res)=>{
+res.send("NDE Automotive AI Running")
 })
 
-app.get("/s/:id", (req, res) => {
+app.get("/s/:id",(req,res)=>{
 
-  const id = req.params.id
+const id = req.params.id
 
-  if (shortLinks[id]) {
-    res.redirect(shortLinks[id])
-  } else {
-    res.send("Invalid link")
-  }
+if(shortLinks[id]){
+res.redirect(shortLinks[id])
+}else{
+res.send("Invalid link")
+}
 
 })
 
-app.post("/whatsapp", async (req, res) => {
+app.post("/whatsapp",async(req,res)=>{
 
-  const message = req.body.Body || ""
-  const phone = req.body.From || ""
+const message = req.body.Body || ""
+const phone = req.body.From || ""
 
-  await db.run(
-    `INSERT OR IGNORE INTO customers(phone) VALUES(?)`,
-    [phone]
-  )
+await db.run(
+`INSERT OR IGNORE INTO customers(phone) VALUES(?)`,
+[phone]
+)
 
-  const reply = await processMessage(message, phone)
+const reply = await processMessage(message,phone)
 
-  const twiml = new MessagingResponse()
+const twiml = new MessagingResponse()
 
-  twiml.message(reply)
+twiml.message(reply)
 
-  res.writeHead(200, { "Content-Type": "text/xml" })
-  res.end(twiml.toString())
+res.writeHead(200,{"Content-Type":"text/xml"})
+res.end(twiml.toString())
 
 })
 
 const PORT = process.env.PORT || 3000
 
-app.listen(PORT, () => {
-  console.log("Server running on port", PORT)
+app.listen(PORT,()=>{
+console.log("Server running on port",PORT)
 })
