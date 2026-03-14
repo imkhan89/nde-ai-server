@@ -11,12 +11,13 @@ import { processCustomerMessage } from "./services/ai_engine.js";
 dotenv.config();
 
 const app = express();
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 let db;
 
-// Initialize database and sync products
+// Initialize system
 async function initialize() {
 
     try {
@@ -27,12 +28,12 @@ async function initialize() {
 
         await syncShopifyProducts(db);
 
-        console.log("Initial Shopify sync completed");
+        console.log("Initial Shopify product sync completed");
 
-        // Schedule product sync every 6 hours
+        // Scheduled sync every 6 hours
         setInterval(async () => {
 
-            console.log("Running scheduled Shopify sync...");
+            console.log("Running scheduled Shopify sync");
 
             await syncShopifyProducts(db);
 
@@ -48,6 +49,7 @@ async function initialize() {
 
 initialize();
 
+
 // Health check route
 app.get("/", (req, res) => {
 
@@ -55,16 +57,18 @@ app.get("/", (req, res) => {
 
 });
 
+
 // WhatsApp webhook
 app.post("/whatsapp", async (req, res) => {
 
     try {
 
-        const incomingMessage = req.body.Body;
+        const incomingMessage = req.body.Body || "";
+        const sessionId = req.body.From || "anonymous";
 
-        console.log("Incoming message:", incomingMessage);
+        console.log("Incoming WhatsApp message:", incomingMessage);
 
-        const reply = await processCustomerMessage(db, incomingMessage);
+        const reply = await processCustomerMessage(db, sessionId, incomingMessage);
 
         const twiml = `
 <Response>
@@ -91,10 +95,11 @@ app.post("/whatsapp", async (req, res) => {
 
 });
 
+
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
 
-    console.log(`Server running on port ${PORT}`);
+    console.log(`NDE Automotive AI Server running on port ${PORT}`);
 
 });
