@@ -14,7 +14,9 @@ export function detectMake(query) {
         "kia",
         "mitsubishi",
         "nissan",
-        "daihatsu"
+        "daihatsu",
+        "mazda",
+        "chevrolet"
     ];
 
     const normalized = query.toLowerCase();
@@ -28,7 +30,6 @@ export function detectMake(query) {
     }
 
     return null;
-
 }
 
 function capitalize(text) {
@@ -36,5 +37,4 @@ function capitalize(text) {
     if (!text) return text;
 
     return text.charAt(0).toUpperCase() + text.slice(1);
-
 }
