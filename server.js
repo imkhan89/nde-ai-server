@@ -4,57 +4,42 @@ const { MessagingResponse } = require("twilio").twiml;
 
 const app = express();
 
-// Twilio sends data as URL encoded
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-// Health check
 app.get("/", (req, res) => {
   res.send("NDE Automotive AI Server Running");
 });
 
-// WhatsApp webhook
-app.post("/webhook", async (req, res) => {
-  try {
-    const incomingMsg = req.body.Body || "";
-    const from = req.body.From || "";
+app.post("/webhook", (req, res) => {
 
-    console.log("Incoming message:", incomingMsg);
-    console.log("From:", from);
+  console.log("Webhook hit");
+  console.log(req.body);
 
-    const twiml = new MessagingResponse();
+  const incomingMessage = req.body.Body || "";
 
-    // Simple response logic
-    if (!incomingMsg || incomingMsg.trim() === "") {
-      twiml.message(
-        "Welcome to NDE Automotive AI.\n\nPlease share your vehicle details:\nMake Model Year\n\nExample:\nToyota Corolla 2015"
-      );
-    } else {
-      twiml.message(
-        "NDE Automotive AI received your message:\n\n" +
-          incomingMsg +
-          "\n\nPlease also share vehicle details if missing.\nExample:\nHonda Civic 2018"
-      );
-    }
+  const twiml = new MessagingResponse();
 
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
+  let reply = "";
 
-  } catch (error) {
-    console.error("Webhook Error:", error);
-
-    const twiml = new MessagingResponse();
-    twiml.message(
-      "Sorry, something went wrong. Please try again or send your vehicle details.\nExample: Toyota Corolla 2015"
-    );
-
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
+  if (!incomingMessage) {
+    reply =
+      "Welcome to NDE Automotive AI.\n\nPlease share vehicle details:\nMake Model Year\n\nExample:\nToyota Corolla 2015";
+  } else {
+    reply =
+      "Message received:\n" +
+      incomingMessage +
+      "\n\nPlease also include vehicle Make Model Year.";
   }
+
+  twiml.message(reply);
+
+  res.writeHead(200, { "Content-Type": "text/xml" });
+  res.end(twiml.toString());
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+  console.log("Server running on port", PORT);
 });
