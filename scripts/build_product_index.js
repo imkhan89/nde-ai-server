@@ -1,18 +1,20 @@
 const fs = require("fs")
 const path = require("path")
 
-const SHOPIFY_PRODUCTS =
+const shopifyFile =
 path.join(__dirname,"../data/shopify_products.json")
 
-const OUTPUT_INDEX =
+const outputFile =
 path.join(__dirname,"../data/product_index.json")
 
 function normalize(text){
+
 return (text || "")
 .toLowerCase()
 .replace(/[^a-z0-9 ]/g," ")
 .replace(/\s+/g," ")
 .trim()
+
 }
 
 function detectVehicle(title){
@@ -59,8 +61,8 @@ const parts = [
 "brake pad",
 "brake shoe",
 "brake rotor",
-"radiator cap",
 "coolant",
+"radiator cap",
 "horn",
 "sun shade",
 "car mat"
@@ -75,24 +77,28 @@ return p
 }
 
 return ""
+
 }
 
 function buildIndex(){
 
-const raw = fs.readFileSync(SHOPIFY_PRODUCTS,"utf8")
+const raw =
+fs.readFileSync(shopifyFile,"utf8")
 
-const products = JSON.parse(raw)
+const products =
+JSON.parse(raw)
 
 let index=[]
 
 products.forEach(p=>{
 
-const vehicle = detectVehicle(p.title)
+const vehicle =
+detectVehicle(p.title)
 
 index.push({
 
 title:p.title,
-url:p.url || "/products/"+p.handle,
+url:"/products/"+p.handle,
 part:detectPart(p.title),
 make:vehicle.make,
 model:vehicle.model
@@ -102,7 +108,7 @@ model:vehicle.model
 })
 
 fs.writeFileSync(
-OUTPUT_INDEX,
+outputFile,
 JSON.stringify(index,null,2)
 )
 
