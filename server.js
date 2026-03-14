@@ -4,8 +4,6 @@ import bodyParser from "body-parser"
 import twilio from "twilio"
 import cron from "node-cron"
 
-import config from "./config.js"
-
 import { initDB } from "./database/database.js"
 import { processMessage } from "./services/ai_engine.js"
 import { syncShopify } from "./sync/shopify_sync.js"
@@ -15,29 +13,50 @@ const MessagingResponse = twilio.twiml.MessagingResponse
 const app = express()
 
 app.use(cors())
-
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
 let db
 
+/*
+START SERVER
+*/
 async function start(){
 
 db = await initDB()
 
 console.log("Database initialized")
 
-// Initial Shopify sync
+try{
+
 await syncShopify(db)
 
 console.log("Initial Shopify sync complete")
 
-// Schedule auto sync every 6 hours
-cron.schedule("0 */6 * * *", async () => {
+}catch(err){
+
+console.log("Shopify sync skipped:", err.message)
+
+}
+
+/*
+AUTO SYNC EVERY 6 HOURS
+*/
+cron.schedule("0 */6 * * *", async ()=>{
 
 console.log("Running scheduled Shopify sync")
 
+try{
+
 await syncShopify(db)
+
+console.log("Scheduled Shopify sync completed")
+
+}catch(err){
+
+console.log("Scheduled Shopify sync failed:", err.message)
+
+}
 
 })
 
@@ -71,7 +90,7 @@ twiml.message(reply)
 
 }catch(err){
 
-console.error("WhatsApp webhook error:", err)
+console.error("WhatsApp error:", err)
 
 twiml.message("System temporarily unavailable.")
 
@@ -90,7 +109,6 @@ app.post("/shopify/webhook/product", async (req,res)=>{
 try{
 
 const product = req.body
-
 const variant = product.variants?.[0]
 
 if(!variant){
@@ -127,17 +145,44 @@ res.sendStatus(500)
 })
 
 /*
-HEALTH CHECK
+DEBUG — VERIFY PRODUCTS IN DATABASE
 */
-app.get("/", (req,res)=>{
-res.send("NDE Automotive AI Server Running")
+app.get("/debug/products", async (req,res)=>{
+
+try{
+
+const row = await db.get("SELECT COUNT(*) as count FROM products")
+
+res.json({
+products: row.count
+})
+
+}catch(err){
+
+res.json({
+error: err.message
+})
+
+}
+
 })
 
 /*
-RAILWAY PORT FIX
+HEALTH CHECK
 */
-const PORT = process.env.PORT || config.SERVER_PORT || 3000
+app.get("/", (req,res)=>{
+
+res.send("NDE Automotive AI Server Running")
+
+})
+
+/*
+RAILWAY PORT
+*/
+const PORT = process.env.PORT || 3000
 
 app.listen(PORT, ()=>{
+
 console.log("Server running on port", PORT)
+
 })
