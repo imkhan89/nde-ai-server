@@ -18,30 +18,30 @@ app.use(bodyParser.json())
 
 let db
 
-/*
-START SERVER
-*/
 async function start(){
+
+console.log("Initializing database...")
 
 db = await initDB()
 
 console.log("Database initialized")
 
+console.log("Starting Shopify sync...")
+
 try{
 
 await syncShopify(db)
 
-console.log("Initial Shopify sync complete")
+console.log("Initial Shopify sync finished")
 
 }catch(err){
 
-console.log("Shopify sync skipped:", err.message)
+console.log("Shopify sync error:", err.message)
 
 }
 
-/*
-AUTO SYNC EVERY 6 HOURS
-*/
+console.log("Scheduling Shopify auto sync...")
+
 cron.schedule("0 */6 * * *", async ()=>{
 
 console.log("Running scheduled Shopify sync")
@@ -50,11 +50,11 @@ try{
 
 await syncShopify(db)
 
-console.log("Scheduled Shopify sync completed")
+console.log("Scheduled sync completed")
 
 }catch(err){
 
-console.log("Scheduled Shopify sync failed:", err.message)
+console.log("Scheduled sync error:", err.message)
 
 }
 
@@ -90,7 +90,7 @@ twiml.message(reply)
 
 }catch(err){
 
-console.error("WhatsApp error:", err)
+console.log("WhatsApp error:", err.message)
 
 twiml.message("System temporarily unavailable.")
 
@@ -102,50 +102,7 @@ res.status(200).send(twiml.toString())
 })
 
 /*
-SHOPIFY PRODUCT WEBHOOK
-*/
-app.post("/shopify/webhook/product", async (req,res)=>{
-
-try{
-
-const product = req.body
-const variant = product.variants?.[0]
-
-if(!variant){
-
-return res.sendStatus(200)
-
-}
-
-await db.run(
-`INSERT OR REPLACE INTO products
-(id,title,price,sku,handle)
-VALUES (?,?,?,?,?)`,
-[
-product.id,
-product.title,
-variant.price,
-variant.sku,
-product.handle
-]
-)
-
-console.log("Shopify product updated:", product.title)
-
-res.sendStatus(200)
-
-}catch(err){
-
-console.error("Shopify webhook error:", err)
-
-res.sendStatus(500)
-
-}
-
-})
-
-/*
-DEBUG — VERIFY PRODUCTS IN DATABASE
+DEBUG PRODUCT COUNT
 */
 app.get("/debug/products", async (req,res)=>{
 
@@ -153,32 +110,22 @@ try{
 
 const row = await db.get("SELECT COUNT(*) as count FROM products")
 
-res.json({
-products: row.count
-})
+res.json(row)
 
 }catch(err){
 
-res.json({
-error: err.message
-})
+res.json({error: err.message})
 
 }
 
 })
 
-/*
-HEALTH CHECK
-*/
 app.get("/", (req,res)=>{
 
 res.send("NDE Automotive AI Server Running")
 
 })
 
-/*
-RAILWAY PORT
-*/
 const PORT = process.env.PORT || 3000
 
 app.listen(PORT, ()=>{
