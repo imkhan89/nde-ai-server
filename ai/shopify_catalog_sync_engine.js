@@ -5,16 +5,18 @@ const axios = require("axios")
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE
 const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
 
-const SHOPIFY_OUTPUT =
+const PRODUCTS_FILE =
 path.join(__dirname,"../data/shopify_products.json")
 
-const INDEX_OUTPUT =
+const INDEX_FILE =
 path.join(__dirname,"../data/product_index.json")
 
 async function fetchAllProducts(){
 
 let products=[]
-let url=`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
+
+let url =
+`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
 
 try{
 
@@ -36,12 +38,15 @@ const link = res.headers.link
 
 if(link && link.includes('rel="next"')){
 
-const match = link.match(/<([^>]+)>;\s*rel="next"/)
+const match =
+link.match(/<([^>]+)>;\s*rel="next"/)
 
 url = match ? match[1] : null
 
 }else{
+
 url = null
+
 }
 
 }
@@ -49,11 +54,11 @@ url = null
 console.log("Full Shopify Catalog Loaded:",products.length)
 
 fs.writeFileSync(
-SHOPIFY_OUTPUT,
+PRODUCTS_FILE,
 JSON.stringify(products,null,2)
 )
 
-buildIndex(products)
+buildProductIndex(products)
 
 console.log("Shopify Catalog Sync Engine Started")
 
@@ -66,11 +71,13 @@ console.log("Shopify sync error:",err.message)
 }
 
 function normalize(text){
+
 return (text || "")
 .toLowerCase()
 .replace(/[^a-z0-9 ]/g," ")
 .replace(/\s+/g," ")
 .trim()
+
 }
 
 function detectVehicle(title){
@@ -108,7 +115,7 @@ function detectPart(title){
 
 title = normalize(title)
 
-const parts=[
+const parts = [
 "wiper",
 "oil filter",
 "air filter",
@@ -136,13 +143,14 @@ return ""
 
 }
 
-function buildIndex(products){
+function buildProductIndex(products){
 
 let index=[]
 
 products.forEach(p=>{
 
-const vehicle = detectVehicle(p.title)
+const vehicle =
+detectVehicle(p.title)
 
 let url=""
 
@@ -163,7 +171,7 @@ model:vehicle.model
 })
 
 fs.writeFileSync(
-INDEX_OUTPUT,
+INDEX_FILE,
 JSON.stringify(index,null,2)
 )
 
@@ -171,6 +179,6 @@ console.log("INDEX CREATED:",index.length)
 
 }
 
-module.exports={
+module.exports = {
 fetchAllProducts
 }
