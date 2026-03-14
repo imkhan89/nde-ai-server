@@ -25,7 +25,6 @@ export function detectProductName(query) {
     }
 
     return null;
-
 }
 
 function formatProductName(productKey) {
@@ -34,13 +33,20 @@ function formatProductName(productKey) {
 
         wiper: "Wiper Blade",
         brake: "Brake Pad",
-        filter: "Filter",
+        air_filter: "Air Filter",
+        cabin_filter: "Cabin Filter",
+        oil_filter: "Oil Filter",
+        spark_plug: "Spark Plug",
         horn: "Car Horn",
         coolant: "Radiator Coolant",
-        sparkplug: "Spark Plug"
+        radiator: "Radiator",
+        bumper: "Bumper",
+        bonnet: "Bonnet Hood",
+        mirror: "Side Mirror",
+        headlight: "Headlight",
+        taillight: "Tail Light"
 
     };
 
     return productMap[productKey] || productKey;
-
 }
