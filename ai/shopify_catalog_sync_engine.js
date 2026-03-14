@@ -1,114 +1,92 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
+const fs = require("fs")
+const path = require("path")
+const axios = require("axios")
+const { exec } = require("child_process")
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN;
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
 
-const DATA_DIR = path.join(__dirname, "../data");
+const OUTPUT_FILE =
+path.join(__dirname,"../data/shopify_products.json")
 
-const PRODUCTS_FILE = path.join(DATA_DIR, "shopify_products.json");
-const PRODUCT_INDEX_FILE = path.join(DATA_DIR, "product_index.json");
+async function fetchAllProducts(){
 
-async function fetchAllProducts() {
+let products = []
+let url =
+`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
 
-    console.log("Starting Shopify catalog sync...");
+try{
 
-    let products = [];
-    let pageInfo = null;
+while(url){
 
-    while (true) {
+const res = await axios.get(url,{
+headers:{
+"X-Shopify-Access-Token":SHOPIFY_TOKEN
+}
+})
 
-        let url = `https://${SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250`;
+const data = res.data.products || []
 
-        if (pageInfo) {
-            url += `&page_info=${pageInfo}`;
-        }
+products = products.concat(data)
 
-        const response = await axios.get(url, {
-            headers: {
-                "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-                "Content-Type": "application/json"
-            }
-        });
+console.log(`Fetched ${data.length} products`)
 
-        const data = response.data.products;
+const link = res.headers.link
 
-        if (!data || data.length === 0) break;
+if(link && link.includes('rel="next"')){
 
-        products = products.concat(data);
+const match = link.match(/<([^>]+)>;\s*rel="next"/)
 
-        console.log("Downloaded products:", products.length);
+url = match ? match[1] : null
 
-        const linkHeader = response.headers.link;
+}else{
 
-        if (!linkHeader || !linkHeader.includes("rel=\"next\"")) {
-            break;
-        }
+url = null
 
-        const match = linkHeader.match(/page_info=([^&>]+)/);
-
-        if (!match) break;
-
-        pageInfo = match[1];
-    }
-
-    console.log("Total products downloaded:", products.length);
-
-    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2));
-
-    return products;
 }
 
-function buildProductIndex(products) {
-
-    console.log("Building fast product index...");
-
-    const index = [];
-
-    products.forEach(product => {
-
-        const title = product.title.toLowerCase();
-
-        const handle = product.handle;
-
-        const tags = product.tags ? product.tags.toLowerCase() : "";
-
-        const vendor = product.vendor ? product.vendor.toLowerCase() : "";
-
-        index.push({
-            id: product.id,
-            title,
-            handle,
-            tags,
-            vendor,
-            url: `https://ndestore.com/products/${handle}`
-        });
-
-    });
-
-    fs.writeFileSync(PRODUCT_INDEX_FILE, JSON.stringify(index, null, 2));
-
-    console.log("Product index built:", index.length);
 }
 
-async function syncShopifyCatalog() {
+console.log("Full Shopify Catalog Loaded:",products.length)
 
-    try {
+fs.writeFileSync(
+OUTPUT_FILE,
+JSON.stringify(products,null,2)
+)
 
-        const products = await fetchAllProducts();
+console.log("Shopify Catalog Sync Engine Started")
 
-        buildProductIndex(products);
+buildProductIndex()
 
-        console.log("Shopify catalog sync complete");
+}catch(err){
 
-    } catch (err) {
+console.log("Shopify sync error:",err.message)
 
-        console.error("Catalog sync error:", err.message);
+}
 
-    }
+}
+
+function buildProductIndex(){
+
+exec("node scripts/build_product_index.js",(err,stdout,stderr)=>{
+
+if(err){
+console.log("Index build error:",err.message)
+return
+}
+
+if(stdout){
+console.log(stdout)
+}
+
+if(stderr){
+console.log(stderr)
+}
+
+})
+
 }
 
 module.exports = {
-    syncShopifyCatalog
-};
+fetchAllProducts
+}
