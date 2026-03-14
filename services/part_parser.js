@@ -1,34 +1,30 @@
-const parts = [
-  "wiper",
-  "wiper blade",
-  "brake pad",
-  "brake pads",
-  "air filter",
-  "oil filter",
-  "cabin filter",
-  "spark plug",
-  "radiator",
-  "coolant",
-  "horn",
-  "bumper",
-  "bonnet",
-  "fender",
-  "radiator cap"
-];
+export function detectPart(message) {
 
-function detectPart(message) {
+  const parts = [
+    "wiper",
+    "wiper blade",
+    "brake pad",
+    "brake pads",
+    "air filter",
+    "oil filter",
+    "cabin filter",
+    "spark plug",
+    "radiator",
+    "coolant",
+    "horn",
+    "bumper",
+    "bonnet",
+    "fender",
+    "radiator cap"
+  ]
 
-  const msg = message.toLowerCase();
+  const msg = message.toLowerCase()
 
   for (const part of parts) {
     if (msg.includes(part)) {
-      return part;
+      return part
     }
   }
 
-  return null;
+  return null
 }
-
-module.exports = {
-  detectPart
-};
