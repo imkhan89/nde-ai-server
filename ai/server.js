@@ -1,149 +1,121 @@
 const express = require("express")
+const bodyParser = require("body-parser")
 
-const vehicleLearning =
-require("./ai/vehicle_learning_engine")
-
-const twilioWebhook =
-require("./ai/twilio_webhook")
-
-const adminReport =
-require("./ai/admin_whatsapp_report")
-
-const reportScheduler =
-require("./ai/admin_auto_report_scheduler")
-
-const agentAlertEngine =
-require("./ai/agent_alert_engine")
-
-const urlValidator =
-require("./ai/product_url_validator")
-
-const globalVehicleDB =
-require("./ai/global_vehicle_database")
-
-const compatibilityEngine =
-require("./ai/compatibility_prediction_engine")
-
-const shopifySync =
-require("./ai/shopify_catalog_sync_engine")
-
-try{
-
-require("./ai/search_index_builder")
-
-}catch(err){
-
-console.log("Product index builder skipped:",err.message)
-
-}
-
-try{
-
-urlValidator.validateUrls()
-
-}catch(err){
-
-console.log("URL validation skipped:",err.message)
-
-}
-
-try{
-
-globalVehicleDB.loadVehicleDatabase()
-
-}catch(err){
-
-console.log("Global vehicle database load failed:",err.message)
-
-}
-
-try{
-
-compatibilityEngine.loadFitmentDatabase()
-
-console.log("Fitment compatibility database loaded")
-
-}catch(err){
-
-console.log("Fitment database load failed:",err.message)
-
-}
-
-try{
-
-if(vehicleLearning &&
-typeof vehicleLearning.learnFromProducts === "function"){
-
-vehicleLearning.learnFromProducts()
-
-console.log("Vehicle intelligence loaded")
-
-}
-
-}catch(err){
-
-console.log("Vehicle learning skipped:",err.message)
-
-}
+const chatHandler = require("./chat_handler")
+const catalogSync = require("./shopify_catalog_sync_engine")
 
 const app = express()
 
-app.get("/",(req,res)=>{
-
-res.send("ndestore AI Server Running")
-
-})
-
-/* TEST ROUTE */
-
-app.get("/sync-shopify",async(req,res)=>{
-
-try{
-
-await shopifySync.syncCatalog()
-
-res.send("Shopify catalog sync completed")
-
-}catch(err){
-
-res.send("Shopify sync failed")
-
-}
-
-})
-
-app.use("/",twilioWebhook)
-
-app.use("/",adminReport)
-
-try{
-
-reportScheduler.startScheduler()
-
-console.log("AI report scheduler started")
-
-}catch(err){
-
-console.log("Report scheduler failed:",err.message)
-
-}
-
-try{
-
-agentAlertEngine.startAgentAlertEngine()
-
-console.log("Agent alert engine started")
-
-}catch(err){
-
-console.log("Agent alert engine failed:",err.message)
-
-}
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended:true }))
 
 const PORT = process.env.PORT || 8080
 
-app.listen(PORT,()=>{
+/* HEALTH CHECK */
 
-console.log("Server running on port",PORT)
+app.get("/",(req,res)=>{
+
+res.send("NDE AI Server Running")
 
 })
+
+/* CATALOG STATUS */
+
+app.get("/catalog-status",(req,res)=>{
+
+try{
+
+const fs = require("fs")
+const path = require("path")
+
+const file =
+path.join(__dirname,"../data/shopify_products.json")
+
+if(!fs.existsSync(file)){
+
+return res.json({
+status:"loading",
+products:0
+})
+
+}
+
+const raw = fs.readFileSync(file,"utf8")
+
+const products = JSON.parse(raw)
+
+return res.json({
+status:"ok",
+cached_products:products.length
+})
+
+}catch(err){
+
+return res.json({
+status:"error"
+})
+
+}
+
+})
+
+/* WHATSAPP WEBHOOK */
+
+app.post("/webhook",async (req,res)=>{
+
+try{
+
+const message =
+req.body.Body ||
+req.body.message ||
+""
+
+const phone =
+req.body.From ||
+req.body.phone ||
+""
+
+const reply =
+await chatHandler.handleMessage(message,phone)
+
+res.send(reply)
+
+}catch(err){
+
+console.log("Webhook error:",err.message)
+
+res.send("System error.")
+
+}
+
+})
+
+/* START SERVER */
+
+app.listen(PORT,()=>{
+
+console.log("NDE AI Server Running on port:",PORT)
+
+startSystem()
+
+})
+
+/* START SYSTEM */
+
+async function startSystem(){
+
+try{
+
+console.log("Starting Shopify full catalog sync...")
+
+await catalogSync.fetchAllProducts()
+
+console.log("Catalog sync finished")
+
+}catch(err){
+
+console.log("Startup error:",err.message)
+
+}
+
+}
