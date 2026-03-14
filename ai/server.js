@@ -1,65 +1,78 @@
-require("dotenv").config()
+const express = require("express");
+const bodyParser = require("body-parser");
+const twilio = require("twilio");
 
-const express = require("express")
-const bodyParser = require("body-parser")
+const app = express();
 
-const app = express()
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
-
-const PORT = process.env.PORT || 3000
-
+const MessagingResponse = twilio.twiml.MessagingResponse;
 
 
-// HEALTH CHECK
+// Root test route
 app.get("/", (req, res) => {
-  res.send("NDESTORE WhatsApp AI Running")
-})
-
+  res.send("NDE Automotive AI Server Running");
+});
 
 
 // WHATSAPP WEBHOOK
 app.post("/whatsapp", async (req, res) => {
 
-  console.log("===== WHATSAPP WEBHOOK =====")
-  console.log(req.body)
+  console.log("WhatsApp webhook triggered");
+  console.log(req.body);
 
-  const message = req.body.Body || ""
-  const sender = req.body.From || ""
+  const incoming = (req.body.Body || "").toLowerCase().trim();
 
-  console.log("Message:", message)
-  console.log("Sender:", sender)
+  let reply = "";
 
-  let reply = "Welcome to ndestore.com 🚗"
-
-  const text = message.toLowerCase()
-
-  if(text.includes("wiper")){
-    reply = "Please share your vehicle Make Model and Year.\n\nExample:\nSuzuki Swift 2021"
+  if (!incoming) {
+    reply = "Please send a message.";
   }
 
-  if(text.includes("hello") || text.includes("hi")){
-    reply = "Welcome to ndestore.com\n\n1 Auto Parts\n2 Accessories\n3 Decals\n4 Order Status\n5 Support"
+  else if (incoming.includes("wiper")) {
+    reply =
+`Please share your vehicle details.
+
+Example:
+Suzuki Swift 2021
+Toyota Corolla 2018`;
   }
 
-  res.set("Content-Type", "text/xml")
+  else if (incoming.includes("hello") || incoming.includes("hi")) {
+    reply =
+`Welcome to ndestore.com
 
-  res.send(`
-<Response>
-<Message>${reply}</Message>
-</Response>
-`)
+Send request in this format:
 
-})
+Part + Make + Model + Year
+
+Example:
+Wiper Blade Suzuki Swift 2021`;
+  }
+
+  else {
+    reply =
+`Send request in this format:
+
+Part + Make + Model + Year
+
+Example:
+Brake Pad Toyota Corolla 2018`;
+  }
+
+  const twiml = new MessagingResponse();
+  twiml.message(reply);
+
+  res.writeHead(200, { "Content-Type": "text/xml" });
+  res.end(twiml.toString());
+
+});
 
 
 
-// START SERVER
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log("=================================")
-  console.log("NDESTORE AI SERVER RUNNING")
-  console.log("PORT:", PORT)
-  console.log("Webhook: /whatsapp")
-  console.log("=================================")
-})
+  console.log("Server running on port", PORT);
+});
