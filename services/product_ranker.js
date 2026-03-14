@@ -8,28 +8,29 @@ export function rankProducts(products, query) {
 
     const q = query.toLowerCase();
 
-    const scored = products.map(product => {
+    const ranked = products.map(product => {
 
         let score = 0;
 
         const title = product.title.toLowerCase();
 
-        // Strong match
+        // Exact phrase match
         if (title.includes(q)) {
             score += 50;
         }
 
-        // Brand preference scoring
+        // Brand priority (helps sales + trusted brands)
         if (title.includes("denso")) score += 30;
         if (title.includes("bosch")) score += 25;
         if (title.includes("ngk")) score += 25;
         if (title.includes("nwb")) score += 20;
 
-        // OEM keywords
+        // Quality indicators
         if (title.includes("genuine")) score += 15;
         if (title.includes("oem")) score += 10;
+        if (title.includes("original")) score += 10;
 
-        // Popular auto parts terms
+        // Premium indicators
         if (title.includes("premium")) score += 5;
 
         return {
@@ -39,8 +40,7 @@ export function rankProducts(products, query) {
 
     });
 
-    scored.sort((a, b) => b.score - a.score);
+    ranked.sort((a, b) => b.score - a.score);
 
-    return scored;
-
+    return ranked;
 }
