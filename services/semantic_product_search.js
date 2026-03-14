@@ -1,7 +1,8 @@
+// services/semantic_product_search.js
+
 import { PRODUCT_SYNONYMS } from "../data/product_synonyms.js";
 
 function expandQuery(query) {
-
     const tokens = query.toLowerCase().split(/\s+/);
 
     let expandedTokens = [];
@@ -15,20 +16,16 @@ function expandQuery(query) {
             const synonyms = PRODUCT_SYNONYMS[key];
 
             if (synonyms.includes(token)) {
-
                 expandedTokens = expandedTokens.concat(synonyms);
-
             }
 
         }
 
     }
 
-    // remove duplicates
     expandedTokens = [...new Set(expandedTokens)];
 
     return expandedTokens.join(" OR ");
-
 }
 
 export async function semanticProductSearch(db, query) {
@@ -55,6 +52,7 @@ export async function semanticProductSearch(db, query) {
     } catch (error) {
 
         console.error("Semantic search error:", error);
+
         return [];
 
     }
