@@ -1,10 +1,26 @@
-export function detectYear(message) {
+// services/year_parser.js
 
-  const match = message.match(/\b(19|20)\d{2}\b/)
+export function detectYear(query) {
 
-  if (match) {
-    return parseInt(match[0])
-  }
+    if (!query || typeof query !== "string") {
+        return null;
+    }
 
-  return null
+    const yearMatch = query.match(/\b(19\d{2}|20\d{2})\b/);
+
+    if (!yearMatch) {
+        return null;
+    }
+
+    const year = parseInt(yearMatch[0]);
+
+    // sanity check for realistic vehicle years
+    const currentYear = new Date().getFullYear() + 1;
+
+    if (year < 1980 || year > currentYear) {
+        return null;
+    }
+
+    return year;
+
 }
