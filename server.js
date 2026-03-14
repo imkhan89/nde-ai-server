@@ -1,12 +1,11 @@
 import express from "express"
 import cors from "cors"
 import bodyParser from "body-parser"
+import twilio from "twilio"
 
 import config from "./config.js"
 import { initDB } from "./database/database.js"
 import { processMessage } from "./services/ai_engine.js"
-
-import twilio from "twilio"
 
 const MessagingResponse = twilio.twiml.MessagingResponse
 
@@ -29,42 +28,46 @@ console.log("Database initialized")
 
 await start()
 
-app.post("/whatsapp", async (req, res) => {
+app.post("/whatsapp", async (req,res)=>{
 
 const twiml = new MessagingResponse()
 
-try {
+try{
 
-const phone = req.body.From
-const message = req.body.Body
+// Safety parsing
+const phone = req.body?.From || ""
+const message = req.body?.Body || ""
 
+console.log("Webhook payload:", req.body)
 console.log("Incoming:", phone, message)
 
-const reply = await processMessage(db, phone, message)
+let reply = "Message received."
 
-twiml.message(reply)
+if(phone && message){
 
-} catch (error) {
-
-console.error("Webhook error:", error)
-
-twiml.message("System temporarily unavailable.")
+reply = await processMessage(db, phone, message)
 
 }
 
-res.writeHead(200, { "Content-Type": "text/xml" })
-res.end(twiml.toString())
+twiml.message(reply)
+
+}catch(err){
+
+console.error("Webhook error:", err)
+
+twiml.message("System error. Please try again.")
+
+}
+
+res.set("Content-Type","text/xml")
+res.status(200).send(twiml.toString())
 
 })
 
-app.get("/", (req, res) => {
-
+app.get("/", (req,res)=>{
 res.send("NDE Automotive AI Server Running")
-
 })
 
-app.listen(config.SERVER_PORT, () => {
-
+app.listen(config.SERVER_PORT, ()=>{
 console.log("Server running on port", config.SERVER_PORT)
-
 })
