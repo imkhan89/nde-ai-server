@@ -14,56 +14,62 @@ const app = express()
 
 app.use(cors())
 
-// REQUIRED FOR TWILIO
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
 let db
 
-try {
+async function start() {
 
 db = await initDB()
+
 console.log("Database initialized")
 
-} catch (e) {
-
-console.error("Database failed", e)
-
 }
+
+await start()
 
 app.post("/whatsapp", async (req,res)=>{
 
-const response = new MessagingResponse()
-
 try {
 
-console.log("Webhook body:", req.body)
-
-const phone = req.body?.From || "unknown"
-const message = req.body?.Body || ""
+const phone = req.body?.From
+const message = req.body?.Body
 
 console.log("Incoming:", phone, message)
 
-let reply = "Message received."
+const response = new MessagingResponse()
 
-if(db && message){
+response.message("Processing your request...")
 
-reply = await processMessage(db, phone, message)
+res.type("text/xml")
+res.send(response.toString())
+
+// Process AI after response
+if(phone && message){
+
+processMessage(db, phone, message)
+.then(reply => {
+console.log("AI reply:", reply)
+})
+.catch(err => {
+console.error("AI error:", err)
+})
 
 }
-
-response.message(reply)
 
 } catch (error) {
 
 console.error("Webhook crash:", error)
 
-response.message("System error. Please try again.")
+const response = new MessagingResponse()
 
-}
+response.message("System error")
 
 res.type("text/xml")
 res.send(response.toString())
+
+}
 
 })
 
