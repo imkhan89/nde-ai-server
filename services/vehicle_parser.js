@@ -30,7 +30,6 @@ export function parseVehicle(query) {
         year,
         generation
     };
-
 }
 
 function detectModel(query, make) {
@@ -42,15 +41,17 @@ function detectModel(query, make) {
             "vios",
             "yaris",
             "hilux",
-            "prado",
+            "revo",
             "fortuner",
-            "revo"
+            "prado",
+            "land cruiser"
         ],
 
         honda: [
             "civic",
             "city",
-            "brv"
+            "brv",
+            "accord"
         ],
 
         suzuki: [
@@ -58,18 +59,21 @@ function detectModel(query, make) {
             "swift",
             "alto",
             "wagonr",
-            "mehran"
+            "mehran",
+            "bolan"
         ],
 
         hyundai: [
             "santro",
             "elantra",
-            "tucson"
+            "tucson",
+            "sonata"
         ],
 
         kia: [
             "sportage",
-            "picanto"
+            "picanto",
+            "stonic"
         ]
 
     };
@@ -87,7 +91,6 @@ function detectModel(query, make) {
     }
 
     return null;
-
 }
 
 function detectGeneration(make, model, year) {
@@ -101,15 +104,12 @@ function detectGeneration(make, model, year) {
     for (const range of ranges) {
 
         if (year >= range.start && year <= range.end) {
-
             return `${range.start}-${range.end}`;
-
         }
 
     }
 
     return null;
-
 }
 
 function capitalize(text) {
@@ -117,5 +117,4 @@ function capitalize(text) {
     if (!text) return text;
 
     return text.charAt(0).toUpperCase() + text.slice(1);
-
 }
