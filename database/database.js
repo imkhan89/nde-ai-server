@@ -1,86 +1,84 @@
-// database/database.js
+import Database from "better-sqlite3";
+import path from "path";
+import fs from "fs";
 
-import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+/*
+Database path
+*/
+const DB_PATH = path.join(process.cwd(), "nde.db");
 
-let db = null;
-
-export async function initDatabase() {
-
-    if (db) {
-        return db;
-    }
-
-    db = await open({
-        filename: "./nde.db",
-        driver: sqlite3.Database
-    });
-
-    // Performance settings
-    await db.exec(`
-        PRAGMA journal_mode = WAL;
-        PRAGMA synchronous = NORMAL;
-        PRAGMA temp_store = MEMORY;
-    `);
-
-    // Main products table
-    await db.exec(`
-        CREATE TABLE IF NOT EXISTS products (
-            id INTEGER PRIMARY KEY,
-            title TEXT NOT NULL,
-            handle TEXT NOT NULL
-        );
-    `);
-
-    // FTS5 semantic search table
-    await db.exec(`
-        CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
-        USING fts5(
-            title,
-            handle,
-            content='products',
-            content_rowid='id'
-        );
-    `);
-
-    // Rebuild FTS index if needed
-    await rebuildFTSIndex();
-
-    console.log("Database initialized");
-
-    return db;
+/*
+Ensure database file exists
+*/
+if (!fs.existsSync(DB_PATH)) {
+  console.log("Creating new SQLite database...");
 }
 
-export function getDatabase() {
+const db = new Database(DB_PATH);
 
-    if (!db) {
-        throw new Error("Database not initialized. Call initDatabase() first.");
-    }
+/*
+Performance optimizations
+*/
+db.pragma("journal_mode = WAL");
+db.pragma("synchronous = NORMAL");
+db.pragma("temp_store = MEMORY");
+db.pragma("cache_size = 1000000");
 
-    return db;
-}
+/*
+Products table
+*/
+db.exec(`
+CREATE TABLE IF NOT EXISTS products (
+    id INTEGER PRIMARY KEY,
+    title TEXT,
+    handle TEXT
+);
+`);
 
-export async function rebuildFTSIndex() {
+/*
+Full Text Search table
+*/
+db.exec(`
+CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
+USING fts5(
+    title,
+    handle,
+    content='products',
+    content_rowid='id'
+);
+`);
 
-    if (!db) return;
+/*
+FTS triggers for automatic sync
+*/
+db.exec(`
 
-    try {
+CREATE TRIGGER IF NOT EXISTS products_ai
+AFTER INSERT ON products
+BEGIN
+  INSERT INTO products_fts(rowid, title, handle)
+  VALUES (new.id, new.title, new.handle);
+END;
 
-        await db.exec(`
-            DELETE FROM products_fts;
-        `);
+CREATE TRIGGER IF NOT EXISTS products_ad
+AFTER DELETE ON products
+BEGIN
+  INSERT INTO products_fts(products_fts, rowid, title, handle)
+  VALUES('delete', old.id, old.title, old.handle);
+END;
 
-        await db.exec(`
-            INSERT INTO products_fts(rowid, title, handle)
-            SELECT id, title, handle FROM products;
-        `);
+CREATE TRIGGER IF NOT EXISTS products_au
+AFTER UPDATE ON products
+BEGIN
+  INSERT INTO products_fts(products_fts, rowid, title, handle)
+  VALUES('delete', old.id, old.title, old.handle);
 
-        console.log("FTS index rebuilt");
+  INSERT INTO products_fts(rowid, title, handle)
+  VALUES (new.id, new.title, new.handle);
+END;
 
-    } catch (error) {
+`);
 
-        console.error("FTS rebuild error:", error);
+console.log("SQLite database initialized.");
 
-    }
-
-}
+export default db;
