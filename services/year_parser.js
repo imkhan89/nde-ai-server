@@ -6,21 +6,24 @@ export function detectYear(query) {
         return null;
     }
 
-    const yearMatch = query.match(/\b(19\d{2}|20\d{2})\b/);
+    const matches = query.match(/\b(19\d{2}|20\d{2})\b/g);
 
-    if (!yearMatch) {
+    if (!matches || matches.length === 0) {
         return null;
     }
 
-    const year = parseInt(yearMatch[0]);
-
-    // sanity check for realistic vehicle years
     const currentYear = new Date().getFullYear() + 1;
 
-    if (year < 1980 || year > currentYear) {
-        return null;
+    for (const match of matches) {
+
+        const year = parseInt(match);
+
+        if (year >= 1980 && year <= currentYear) {
+            return year;
+        }
+
     }
 
-    return year;
+    return null;
 
 }
