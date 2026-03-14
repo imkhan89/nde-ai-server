@@ -13,6 +13,7 @@ const vehicles = JSON.parse(fs.readFileSync("./vehicle_dictionary.json"))
 const parts = JSON.parse(fs.readFileSync("./part_dictionary.json"))
 const spelling = JSON.parse(fs.readFileSync("./spelling_dictionary.json"))
 const language = JSON.parse(fs.readFileSync("./language_dictionary.json"))
+const currency = JSON.parse(fs.readFileSync("./currency_rates.json"))
 
 const { MessagingResponse } = twilio.twiml
 
@@ -22,15 +23,15 @@ app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
 const db = await open({
-  filename:"./nde.db",
-  driver:sqlite3.Database
+filename:"./nde.db",
+driver:sqlite3.Database
 })
 
 await db.exec(`
-
 CREATE TABLE IF NOT EXISTS customers(
 id INTEGER PRIMARY KEY,
 phone TEXT UNIQUE,
+country TEXT,
 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -56,7 +57,6 @@ price REAL,
 url TEXT,
 sku TEXT
 );
-
 `)
 
 const shortLinks = {}
@@ -112,6 +112,16 @@ shortLinks[id] = url
 return `${process.env.BASE_URL}/s/${id}`
 }
 
+function convertCurrency(price){
+
+return {
+PKR: price,
+USD: (price * currency.USD).toFixed(2),
+AED: (price * currency.AED).toFixed(2)
+}
+
+}
+
 async function searchProducts(part){
 
 const rows = await db.all(
@@ -147,19 +157,26 @@ if(products.length===0){
 return `We could not find ${part} for ${vehicle}.
 
 Our team will check availability and get back to you shortly.`
+
 }
 
 let msg = `Found ${part} for ${vehicle}:\n\n`
 
 for(const p of products){
 
+const price = convertCurrency(p.price)
+
 const short = shorten(p.url)
 
 msg += `${p.title}
-PKR ${p.price}
+PKR ${price.PKR}
+USD ${price.USD}
+AED ${price.AED}
+
 ${short}
 
 `
+
 }
 
 return msg
