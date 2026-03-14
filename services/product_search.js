@@ -1,6 +1,6 @@
-const db = require('../database/database');
+import db from "../database/database.js"
 
-function searchProducts(part) {
+export function searchProducts(part) {
 
   return new Promise((resolve, reject) => {
 
@@ -9,22 +9,18 @@ function searchProducts(part) {
       FROM products
       WHERE title LIKE ?
       LIMIT 5
-    `;
+    `
 
     db.all(query, [`%${part}%`], (err, rows) => {
 
       if (err) {
-        reject(err);
+        reject(err)
       } else {
-        resolve(rows);
+        resolve(rows)
       }
 
-    });
+    })
 
-  });
+  })
 
 }
-
-module.exports = {
-  searchProducts
-};
