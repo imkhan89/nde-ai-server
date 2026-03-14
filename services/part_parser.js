@@ -1,15 +1,34 @@
-import parts from "../knowledge/part_dictionary.json" with { type: "json" }
+const parts = [
+  "wiper",
+  "wiper blade",
+  "brake pad",
+  "brake pads",
+  "air filter",
+  "oil filter",
+  "cabin filter",
+  "spark plug",
+  "radiator",
+  "coolant",
+  "horn",
+  "bumper",
+  "bonnet",
+  "fender",
+  "radiator cap"
+];
 
-export function detectPart(text){
+function detectPart(message) {
 
-for(const p of parts){
+  const msg = message.toLowerCase();
 
-if(text.includes(p)){
-return p
+  for (const part of parts) {
+    if (msg.includes(part)) {
+      return part;
+    }
+  }
+
+  return null;
 }
 
-}
-
-return null
-
-}
+module.exports = {
+  detectPart
+};
