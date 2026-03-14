@@ -24,6 +24,11 @@ export function initDB() {
         )
       `)
 
+      db.run(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
+        USING fts5(title, handle)
+      `)
+
     })
 
   }
