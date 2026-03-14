@@ -5,126 +5,24 @@ import { parseVehicle } from "./vehicle_parser.js";
 import { detectProductName } from "./product_name_parser.js";
 import { getFitmentData } from "./fitment_engine.js";
 import { productSearch } from "./product_search.js";
+import { detectIntent } from "./intent_detector.js";
+import {
+    buildGreetingResponse,
+    buildRecommendationResponse,
+    buildPriceResponse,
+    buildAvailabilityResponse,
+    buildTechnicalResponse
+} from "./sales_response_builder.js";
 
-function detectIntent(message) {
+import {
+    getSession,
+    updateVehicle,
+    updateProduct,
+    updateSearchResults,
+    updateLastQuery
+} from "./conversation_memory.js";
 
-    const text = message.toLowerCase();
-
-    const intent = {
-        price: false,
-        availability: false,
-        technical: false,
-        installation: false
-    };
-
-    const priceWords = ["price", "cost", "rate", "how much"];
-    const stockWords = ["available", "availability", "in stock", "have"];
-    const technicalWords = [
-        "size",
-        "inch",
-        "mm",
-        "weight",
-        "spec",
-        "specification",
-        "dimension"
-    ];
-    const installWords = [
-        "install",
-        "installation",
-        "how to install",
-        "how to use",
-        "fit",
-        "fitting"
-    ];
-
-    for (const w of priceWords) {
-        if (text.includes(w)) intent.price = true;
-    }
-
-    for (const w of stockWords) {
-        if (text.includes(w)) intent.availability = true;
-    }
-
-    for (const w of technicalWords) {
-        if (text.includes(w)) intent.technical = true;
-    }
-
-    for (const w of installWords) {
-        if (text.includes(w)) intent.installation = true;
-    }
-
-    return intent;
-}
-
-function buildSalesMessage(vehicle, product, products) {
-
-    let response = "";
-
-    if (vehicle && vehicle.make && vehicle.model) {
-
-        response += `Vehicle detected:\n`;
-        response += `${vehicle.make} ${vehicle.model}`;
-
-        if (vehicle.year) {
-            response += ` ${vehicle.year}`;
-        }
-
-        response += `\n\n`;
-    }
-
-    if (product) {
-
-        response += `Product requested:\n`;
-        response += `${product}\n\n`;
-    }
-
-    if (products && products.length > 0) {
-
-        response += `Available options at ndestore.com:\n\n`;
-
-        products.slice(0, 5).forEach((p, index) => {
-            response += `${index + 1}. ${p.title}\n`;
-        });
-
-        response += `\n`;
-        response += `These products are available for nationwide delivery.\n`;
-        response += `Please let us know your preferred brand or budget and we will assist you further.\n`;
-
-    } else {
-
-        response += `Please provide the vehicle make, model, year and required part so we can assist you.\n`;
-        response += `Example:\nToyota Corolla 2018 brake pads\n`;
-    }
-
-    return response;
-}
-
-function buildTechnicalMessage(intent, fitment, product) {
-
-    let response = "";
-
-    if (intent.technical && fitment) {
-
-        if (product && product.toLowerCase().includes("wiper") && fitment.wiper) {
-
-            response += `Technical specification:\n`;
-            response += `Driver side: ${fitment.wiper.driver}\n`;
-            response += `Passenger side: ${fitment.wiper.passenger}\n\n`;
-        }
-    }
-
-    if (intent.installation) {
-
-        response += `Installation guidance:\n`;
-        response += `Ensure the vehicle ignition is off before replacing the component.\n`;
-        response += `Remove the old part carefully and install the new component following the original mounting points.\n`;
-        response += `If unsure, professional installation is recommended.\n\n`;
-    }
-
-    return response;
-}
-
-export async function processCustomerMessage(db, message) {
+export async function processCustomerMessage(db, sessionId, message) {
 
     try {
 
@@ -134,11 +32,23 @@ export async function processCustomerMessage(db, message) {
 
         const normalizedQuery = queryNormalizer(message);
 
-        const vehicle = parseVehicle(normalizedQuery);
-
-        const product = detectProductName(normalizedQuery);
-
         const intent = detectIntent(message);
+
+        const session = getSession(sessionId);
+
+        const detectedVehicle = parseVehicle(normalizedQuery);
+
+        const detectedProduct = detectProductName(normalizedQuery);
+
+        let vehicle = detectedVehicle || session.vehicle;
+        let product = detectedProduct || session.product;
+
+        if (detectedVehicle) updateVehicle(sessionId, detectedVehicle);
+        if (detectedProduct) updateProduct(sessionId, detectedProduct);
+
+        if (intent.greeting && !vehicle && !product) {
+            return buildGreetingResponse();
+        }
 
         let fitment = null;
 
@@ -156,19 +66,31 @@ export async function processCustomerMessage(db, message) {
 
         const products = await productSearch(db, searchQuery);
 
+        updateSearchResults(sessionId, products);
+        updateLastQuery(sessionId, searchQuery);
+
+        if (intent.price) {
+            return buildPriceResponse(products);
+        }
+
+        if (intent.availability) {
+            return buildAvailabilityResponse(products);
+        }
+
         let response = "";
 
-        response += buildSalesMessage(vehicle, product, products);
+        response += buildRecommendationResponse(vehicle, product, products);
 
-        response += buildTechnicalMessage(intent, fitment, product);
+        response += buildTechnicalResponse(intent, fitment, product);
 
         return response;
 
     } catch (error) {
 
-        console.error("AI Engine Error:", error);
+        console.error("AI engine error:", error);
 
         return "Sorry, something went wrong. Please send vehicle details and required part.";
 
     }
+
 }
