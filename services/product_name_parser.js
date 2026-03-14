@@ -1,28 +1,46 @@
-export function detectProductName(message) {
+// services/product_name_parser.js
 
-  const parts = [
-    "wiper blade",
-    "wiper",
-    "brake pad",
-    "air filter",
-    "oil filter",
-    "cabin filter",
-    "spark plug",
-    "radiator",
-    "coolant",
-    "horn",
-    "bumper",
-    "bonnet",
-    "fender"
-  ]
+import { PRODUCT_SYNONYMS } from "../data/product_synonyms.js";
 
-  const msg = message.toLowerCase()
+export function detectProductName(query) {
 
-  for (const part of parts) {
-    if (msg.includes(part)) {
-      return part
+    if (!query || typeof query !== "string") {
+        return null;
     }
-  }
 
-  return null
+    const normalized = query.toLowerCase();
+
+    for (const productKey in PRODUCT_SYNONYMS) {
+
+        const synonyms = PRODUCT_SYNONYMS[productKey];
+
+        for (const synonym of synonyms) {
+
+            if (normalized.includes(synonym)) {
+                return formatProductName(productKey);
+            }
+
+        }
+
+    }
+
+    return null;
+
+}
+
+function formatProductName(productKey) {
+
+    const productMap = {
+
+        wiper: "Wiper Blade",
+        brake: "Brake Pad",
+        filter: "Filter",
+        horn: "Car Horn",
+        coolant: "Radiator Coolant",
+        sparkplug: "Spark Plug"
+
+    };
+
+    return productMap[productKey] || productKey;
+
 }
