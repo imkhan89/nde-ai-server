@@ -1,4 +1,4 @@
-import rates from "../knowledge/currency_rates.json" assert { type: "json" }
+import rates from "../knowledge/currency_rates.json" with { type: "json" }
 
 export function convert(price,currency){
 
