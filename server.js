@@ -4,6 +4,9 @@ import sqlite3 from "sqlite3"
 import { open } from "sqlite"
 import shortid from "shortid"
 import twilio from "twilio"
+import dotenv from "dotenv"
+
+dotenv.config()
 
 const { MessagingResponse } = twilio.twiml
 
@@ -13,8 +16,8 @@ app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
 const db = await open({
-  filename:"./nde.db",
-  driver:sqlite3.Database
+filename:"./nde.db",
+driver:sqlite3.Database
 })
 
 await db.exec(`
@@ -122,7 +125,7 @@ const id = shortid.generate()
 
 shortLinks[id] = url
 
-return `https://ndestore.com/s/${id}`
+return `${process.env.BASE_URL}/s/${id}`
 
 }
 
@@ -171,76 +174,4 @@ let msg = `Available ${part} for ${vehicle}:
 
 for(const p of products){
 
-const short = shorten(p.url)
-
-msg += `${p.title}
-PKR ${p.price}
-${short}
-
-`
-
-}
-
-return msg
-
-}
-
-async function processMessage(message,phone){
-
-const text = normalize(message)
-
-const vehicle = detectVehicle(text)
-const part = detectPart(text)
-
-await learn(phone,message)
-
-if(!part){
-
-return `Please tell us which part you need.
-
-Example:
-Wiper Blade
-Brake Pad
-Oil Filter`
-
-}
-
-if(!vehicle){
-
-return `Please share your vehicle details.
-
-Example:
-Toyota Corolla 2018`
-
-}
-
-const products = await searchProducts(part)
-
-if(products.length===0){
-await saveLead(phone,vehicle,part)
-}
-
-return buildResponse(products,vehicle,part)
-
-}
-
-app.get("/",(req,res)=>{
-res.send("NDE Automotive AI Running")
-})
-
-app.get("/s/:id",(req,res)=>{
-
-const id = req.params.id
-
-if(shortLinks[id]){
-res.redirect(shortLinks[id])
-}else{
-res.send("Invalid link")
-}
-
-})
-
-app.post("/whatsapp",async(req,res)=>{
-
-const message = req.body.Body || ""
-const ph
+co
