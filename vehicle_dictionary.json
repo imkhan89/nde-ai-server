@@ -1,0 +1,17 @@
+[
+  {"make":"toyota","model":"corolla"},
+  {"make":"toyota","model":"yaris"},
+  {"make":"toyota","model":"hilux"},
+  {"make":"honda","model":"civic"},
+  {"make":"honda","model":"city"},
+  {"make":"suzuki","model":"swift"},
+  {"make":"suzuki","model":"cultus"},
+  {"make":"suzuki","model":"mehran"},
+  {"make":"suzuki","model":"alto"},
+  {"make":"suzuki","model":"wagon r"},
+  {"make":"kia","model":"sportage"},
+  {"make":"kia","model":"picanto"},
+  {"make":"hyundai","model":"elantra"},
+  {"make":"hyundai","model":"tucson"},
+  {"make":"mg","model":"hs"}
+]
