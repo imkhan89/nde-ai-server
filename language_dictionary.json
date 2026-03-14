@@ -1,9 +1,37 @@
 {
-  "wiper": ["wiper", "wipr", "wiper blade", "wiper blades"],
-  "brake pad": ["brake pad", "brake pads", "brek pad", "brak pad"],
-  "oil filter": ["oil filter", "oil filtr", "oil flter"],
-  "air filter": ["air filter", "air filtr", "air flter"],
-  "spark plug": ["spark plug", "spak plug", "spark plg"],
-  "radiator cap": ["radiator cap", "rad cap"],
-  "horn": ["horn", "car horn"]
+  "wiper":[
+    "wiper",
+    "wipr",
+    "wiper blade",
+    "wiper blades"
+  ],
+  "brake pad":[
+    "brake pad",
+    "brake pads",
+    "brek pad",
+    "brak pad"
+  ],
+  "oil filter":[
+    "oil filter",
+    "oil filtr",
+    "oil flter"
+  ],
+  "air filter":[
+    "air filter",
+    "air filtr",
+    "air flter"
+  ],
+  "spark plug":[
+    "spark plug",
+    "spak plug",
+    "spark plg"
+  ],
+  "radiator cap":[
+    "radiator cap",
+    "rad cap"
+  ],
+  "horn":[
+    "horn",
+    "car horn"
+  ]
 }
