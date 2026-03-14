@@ -16,7 +16,10 @@ export async function processMessage(message) {
 
   const fitment = getFitment(vehicle, year, part)
 
-  const searchQuery = part || message
+  // Vehicle-aware search query
+  const searchQuery = vehicle
+    ? `${vehicle} ${part || ""}`
+    : part || message
 
   const products = await searchProducts(searchQuery)
 
@@ -26,7 +29,7 @@ export async function processMessage(message) {
     response += `Vehicle: ${vehicle} ${year}\n\n`
   }
 
-  if (fitment) {
+  if (fitment && part) {
 
     response += `Correct ${part} specification:\n`
 
@@ -35,10 +38,9 @@ export async function processMessage(message) {
     }
 
     response += "\n"
-
   }
 
-  if (products.length === 0) {
+  if (!products || products.length === 0) {
     response += "No matching products found."
     return response
   }
