@@ -11,27 +11,22 @@ console.log("Shopify credentials missing")
 return
 }
 
-try{
-
 let url = `https://${store}/admin/api/${version}/products.json?limit=250`
 let total = 0
-let page = 1
+
+try{
 
 while(url){
 
-console.log("Fetching Shopify page:", page)
+console.log("Fetching:", url)
 
 const response = await axios.get(url,{
 headers:{
-"X-Shopify-Access-Token": token,
-"Content-Type":"application/json"
-},
-timeout:15000
+"X-Shopify-Access-Token": token
+}
 })
 
-const products = response.data.products || []
-
-console.log("Products received:", products.length)
+const products = response.data.products
 
 for(const product of products){
 
@@ -52,14 +47,16 @@ product.handle
 )
 
 total++
+
 }
 
-const link = response.headers.link
+const linkHeader = response.headers.link
 
-if(link && link.includes('rel="next"')){
+if(linkHeader && linkHeader.includes('rel="next"')){
 
-url = link.split(";")[0].replace("<","").replace(">","")
-page++
+const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
+
+url = match ? match[1] : null
 
 }else{
 
@@ -69,11 +66,11 @@ url = null
 
 }
 
-console.log("Shopify sync completed:", total,"products")
+console.log("Shopify sync completed:", total)
 
 }catch(err){
 
-console.log("Shopify sync failed:", err.message)
+console.log("Shopify sync error:", err.message)
 
 }
 
