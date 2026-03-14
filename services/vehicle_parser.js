@@ -1,4 +1,4 @@
-import vehicles from "../knowledge/vehicle_dictionary.json" assert { type: "json" }
+import vehicles from "../knowledge/vehicle_dictionary.json" with { type: "json" }
 
 export function detectVehicle(text){
 
