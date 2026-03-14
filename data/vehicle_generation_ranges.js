@@ -1,24 +1,11 @@
-export const vehicleGenerationRanges = {
+export const VEHICLE_GENERATION_RANGES = {
 
-  corolla: [
-    {
-      start: 2008,
-      end: 2026
-    }
-  ],
+    "toyota_corolla": [
+        { start: 2008, end: 2026 }
+    ],
 
-  civic: [
-    {
-      start: 2016,
-      end: 2025
-    }
-  ],
+    "toyota_vios": [
+        { start: 2013, end: 2022 }
+    ]
 
-  hilux: [
-    {
-      start: 2015,
-      end: 2024
-    }
-  ]
-
-}
+};
