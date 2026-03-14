@@ -1,31 +1,59 @@
 const fs = require("fs")
 const path = require("path")
 
-const indexPath = path.join(__dirname,"../data/product_index.json")
+const INDEX_PATH = path.join(__dirname,"../data/product_index.json")
+const FITMENT_PATH = path.join(__dirname,"../data/product_fitment.json")
 
 let productIndex = []
+let fitmentDB = []
 
 function loadIndex(){
 
 try{
 
-const raw = fs.readFileSync(indexPath,"utf8")
-
+const raw = fs.readFileSync(INDEX_PATH,"utf8")
 productIndex = JSON.parse(raw)
 
-console.log("Local product index loaded:",productIndex.length)
+console.log("Product index loaded:",productIndex.length)
 
 }catch(err){
 
 console.log("Product index load error:",err.message)
-
 productIndex = []
 
 }
 
 }
 
+function loadFitment(){
+
+try{
+
+if(!fs.existsSync(FITMENT_PATH)){
+
+console.log("Fitment DB not found")
+fitmentDB = []
+return
+
+}
+
+const raw = fs.readFileSync(FITMENT_PATH,"utf8")
+
+fitmentDB = JSON.parse(raw)
+
+console.log("Fitment DB loaded:",fitmentDB.length)
+
+}catch(err){
+
+console.log("Fitment DB error:",err.message)
+fitmentDB = []
+
+}
+
+}
+
 loadIndex()
+loadFitment()
 
 function normalize(text){
 
@@ -37,6 +65,67 @@ return (text || "")
 
 }
 
+function detectVehicle(query){
+
+query = normalize(query)
+
+let vehicle = {
+make:null,
+model:null,
+year:null
+}
+
+const yearMatch = query.match(/\b(19|20)\d{2}\b/)
+
+if(yearMatch){
+
+vehicle.year = yearMatch[0]
+
+}
+
+if(query.includes("corolla")){
+vehicle.make="toyota"
+vehicle.model="corolla"
+}
+
+if(query.includes("civic")){
+vehicle.make="honda"
+vehicle.model="civic"
+}
+
+if(query.includes("swift")){
+vehicle.make="suzuki"
+vehicle.model="swift"
+}
+
+if(query.includes("cultus")){
+vehicle.make="suzuki"
+vehicle.model="cultus"
+}
+
+return vehicle
+
+}
+
+function vehicleMatch(product,vehicle){
+
+if(!vehicle.model) return true
+
+const pMake = normalize(product.make)
+const pModel = normalize(product.model)
+
+if(vehicle.make && pMake && !pMake.includes(vehicle.make)){
+return false
+}
+
+if(vehicle.model && pModel && !pModel.includes(vehicle.model)){
+return false
+}
+
+return true
+
+}
+
 function searchProducts(query){
 
 if(!query) return {success:false}
@@ -44,6 +133,8 @@ if(!query) return {success:false}
 const q = normalize(query)
 
 const words = q.split(" ")
+
+const vehicle = detectVehicle(query)
 
 let results = []
 
@@ -53,6 +144,10 @@ const title = normalize(p.title)
 const part = normalize(p.part)
 const make = normalize(p.make)
 const model = normalize(p.model)
+
+if(!vehicleMatch(p,vehicle)){
+return
+}
 
 let score = 0
 
@@ -87,6 +182,7 @@ return {success:false}
 
 return {
 success:true,
+vehicle,
 products:results
 }
 
