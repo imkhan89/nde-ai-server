@@ -1,5 +1,7 @@
 export function detectPart(message) {
 
+  const msg = message.toLowerCase()
+
   const parts = [
     "wiper",
     "wiper blade",
@@ -18,11 +20,9 @@ export function detectPart(message) {
     "radiator cap"
   ]
 
-  const msg = message.toLowerCase()
-
-  for (const part of parts) {
-    if (msg.includes(part)) {
-      return part
+  for (let i = 0; i < parts.length; i++) {
+    if (msg.includes(parts[i])) {
+      return parts[i]
     }
   }
 
