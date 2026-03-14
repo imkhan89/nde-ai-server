@@ -1,14 +1,30 @@
-export async function searchProduct(db,part){
+const db = require('../database/database');
 
-const products = await db.all(
-"SELECT * FROM products WHERE title LIKE ?",
-[`%${part}%`]
-)
+function searchProducts(part) {
 
-if(!products || products.length === 0){
-return null
+  return new Promise((resolve, reject) => {
+
+    const query = `
+      SELECT title, handle
+      FROM products
+      WHERE title LIKE ?
+      LIMIT 5
+    `;
+
+    db.all(query, [`%${part}%`], (err, rows) => {
+
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+
+    });
+
+  });
+
 }
 
-return products[0]
-
-}
+module.exports = {
+  searchProducts
+};
