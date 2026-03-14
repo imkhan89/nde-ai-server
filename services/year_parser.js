@@ -1,14 +1,10 @@
-function detectYear(message) {
+export function detectYear(message) {
 
-  const yearMatch = message.match(/\b(19|20)\d{2}\b/);
+  const match = message.match(/\b(19|20)\d{2}\b/)
 
-  if (yearMatch) {
-    return parseInt(yearMatch[0]);
+  if (match) {
+    return parseInt(match[0])
   }
 
-  return null;
+  return null
 }
-
-module.exports = {
-  detectYear
-};
