@@ -11,17 +11,18 @@ dotenv.config()
 
 const vehicles = JSON.parse(fs.readFileSync("./vehicle_dictionary.json"))
 const parts = JSON.parse(fs.readFileSync("./part_dictionary.json"))
+const spelling = JSON.parse(fs.readFileSync("./spelling_dictionary.json"))
 
 const { MessagingResponse } = twilio.twiml
 
 const app = express()
 
-app.use(bodyParser.urlencoded({extended:false}))
+app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
 const db = await open({
-filename:"./nde.db",
-driver:sqlite3.Database
+  filename:"./nde.db",
+  driver:sqlite3.Database
 })
 
 await db.exec(`
@@ -66,6 +67,16 @@ return text
 .replace(/[^a-z0-9 ]/g," ")
 .replace(/\s+/g," ")
 .trim()
+
+}
+
+function correctSpelling(text){
+
+let words = text.split(" ")
+
+let corrected = words.map(w => spelling[w] || w)
+
+return corrected.join(" ")
 
 }
 
@@ -166,7 +177,9 @@ return msg
 
 async function processMessage(message,phone){
 
-const text = normalize(message)
+let text = normalize(message)
+
+text = correctSpelling(text)
 
 await learn(phone,message)
 
