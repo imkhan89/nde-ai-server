@@ -1,9 +1,20 @@
 import db from "../database/database.js"
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
+const SHOPIFY_TOKEN =
+  process.env.SHOPIFY_ADMIN_API_TOKEN ||
+  process.env.SHOPIFY_ACCESS_TOKEN ||
+  process.env.SHOPIFY_TOKEN
+
+console.log("Shopify Store:", SHOPIFY_STORE)
+console.log("Shopify Token Loaded:", SHOPIFY_TOKEN ? "YES" : "NO")
 
 export async function syncShopifyProducts() {
+
+  if (!SHOPIFY_STORE || !SHOPIFY_TOKEN) {
+    console.error("Shopify environment variables missing")
+    return 0
+  }
 
   let total = 0
   let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
@@ -19,7 +30,10 @@ export async function syncShopifyProducts() {
 
     const data = await response.json()
 
-    if (!data.products) break
+    if (!data.products) {
+      console.error("Invalid Shopify response")
+      break
+    }
 
     for (const product of data.products) {
 
@@ -54,6 +68,8 @@ export async function syncShopifyProducts() {
     }
 
   }
+
+  console.log(`Shopify sync completed: ${total} products`)
 
   return total
 }
