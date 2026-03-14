@@ -1,34 +1,57 @@
+// data/product_synonyms.js
+
 export const PRODUCT_SYNONYMS = {
 
     wiper: [
         "wiper",
         "wipers",
+        "wiper blade",
+        "wiper blades",
         "windshield wiper",
         "windshield blade",
         "vipar",
         "vipr",
         "viper",
-        "blade"
+        "wipe"
     ],
 
     brake: [
         "brake",
-        "break",
         "brakes",
         "brake pad",
         "brake pads",
+        "break",
         "disc pad",
         "pad"
     ],
 
-    filter: [
-        "filter",
-        "filters",
-        "filtr",
+    air_filter: [
         "air filter",
-        "oil filter",
+        "engine air filter",
+        "filter",
+        "air cleaner",
+        "filtr"
+    ],
+
+    cabin_filter: [
+        "cabin filter",
         "ac filter",
-        "cabin filter"
+        "aircon filter",
+        "air conditioning filter",
+        "pollen filter"
+    ],
+
+    oil_filter: [
+        "oil filter",
+        "engine oil filter",
+        "oil filtr"
+    ],
+
+    spark_plug: [
+        "spark plug",
+        "spark plugs",
+        "plug",
+        "ignition plug"
     ],
 
     horn: [
@@ -45,11 +68,41 @@ export const PRODUCT_SYNONYMS = {
         "antifreeze"
     ],
 
-    sparkplug: [
-        "spark plug",
-        "spark plugs",
-        "plug",
-        "ignition plug"
+    radiator: [
+        "radiator",
+        "car radiator",
+        "engine radiator"
+    ],
+
+    bumper: [
+        "bumper",
+        "front bumper",
+        "rear bumper",
+        "bumper assembly"
+    ],
+
+    bonnet: [
+        "bonnet",
+        "hood",
+        "engine hood"
+    ],
+
+    mirror: [
+        "side mirror",
+        "door mirror",
+        "wing mirror"
+    ],
+
+    headlight: [
+        "headlight",
+        "head lamp",
+        "front light"
+    ],
+
+    taillight: [
+        "tail light",
+        "rear light",
+        "tail lamp"
     ]
 
 };
