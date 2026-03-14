@@ -1,4 +1,7 @@
-import { MessagingResponse } from "twilio/lib/twiml/MessagingResponse.js"
+import pkg from "twilio"
+
+const { twiml } = pkg
+const MessagingResponse = twiml.MessagingResponse
 
 export function whatsappRoute(app, handler){
 
@@ -9,13 +12,13 @@ const message = req.body.Body
 
 const reply = await handler(phone,message)
 
-const twiml = new MessagingResponse()
+const response = new MessagingResponse()
 
-twiml.message(reply)
+response.message(reply)
 
 res.type("text/xml")
 
-res.send(twiml.toString())
+res.send(response.toString())
 
 })
 
