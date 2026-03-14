@@ -4,10 +4,7 @@ import cors from "cors"
 import config from "./config.js"
 
 import { initDB } from "./database/database.js"
-import { saveConversation } from "./database/queries.js"
 import { processMessage } from "./services/ai_engine.js"
-import { syncShopify } from "./sync/shopify_sync.js"
-import { log } from "./utils/logger.js"
 
 import pkg from "twilio"
 const { twiml } = pkg
@@ -17,61 +14,63 @@ const app = express()
 
 app.use(cors())
 
-// REQUIRED FOR TWILIO WEBHOOK
+// REQUIRED FOR TWILIO
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
-const db = await initDB()
+let db
 
-log("Database initialized")
+try {
 
-await syncShopify(db)
+db = await initDB()
+console.log("Database initialized")
 
-log("Shopify products synced")
+} catch (e) {
+
+console.error("Database failed", e)
+
+}
 
 app.post("/whatsapp", async (req,res)=>{
 
-try{
-
-const phone = req.body.From
-const message = req.body.Body
-
-log(`Incoming message: ${phone} ${message}`)
-
-await saveConversation(db, phone, message, "incoming")
-
-const reply = await processMessage(db, phone, message)
-
-await saveConversation(db, phone, reply, "outgoing")
-
 const response = new MessagingResponse()
+
+try {
+
+console.log("Webhook body:", req.body)
+
+const phone = req.body?.From || "unknown"
+const message = req.body?.Body || ""
+
+console.log("Incoming:", phone, message)
+
+let reply = "Message received."
+
+if(db && message){
+
+reply = await processMessage(db, phone, message)
+
+}
 
 response.message(reply)
 
-res.type("text/xml")
+} catch (error) {
 
-res.send(response.toString())
-
-}catch(error){
-
-console.error("Webhook error:", error)
-
-const response = new MessagingResponse()
+console.error("Webhook crash:", error)
 
 response.message("System error. Please try again.")
 
-res.type("text/xml")
-
-res.send(response.toString())
-
 }
+
+res.type("text/xml")
+res.send(response.toString())
 
 })
 
 app.get("/", (req,res)=>{
-res.send("NDE Automotive AI Server Running")
+res.send("AI Server Running")
 })
 
 app.listen(config.SERVER_PORT, ()=>{
-log(`Server running on port ${config.SERVER_PORT}`)
+console.log("Server running on port", config.SERVER_PORT)
 })
