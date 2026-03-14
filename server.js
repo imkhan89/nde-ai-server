@@ -4,11 +4,13 @@ import sqlite3 from "sqlite3"
 import { open } from "sqlite"
 import axios from "axios"
 import shortid from "shortid"
-import { MessagingResponse } from "twilio/lib/twiml/MessagingResponse.js"
+import twilio from "twilio"
+
+const { MessagingResponse } = twilio.twiml
 
 const app = express()
 
-app.use(bodyParser.urlencoded({extended:false}))
+app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
 const db = await open({
@@ -124,11 +126,8 @@ return `https://ndestore.com/s/${id}`
 async function searchProducts(part){
 
 const rows = await db.all(
-
 `SELECT * FROM products WHERE title LIKE ?`,
-
 [`%${part}%`]
-
 )
 
 return rows.slice(0,3)
@@ -138,11 +137,8 @@ return rows.slice(0,3)
 async function learn(phone,message){
 
 await db.run(
-
 `INSERT INTO conversations(phone,message) VALUES(?,?)`,
-
 [phone,message]
-
 )
 
 }
@@ -221,13 +217,9 @@ app.get("/s/:id",(req,res)=>{
 const id = req.params.id
 
 if(shortLinks[id]){
-
 res.redirect(shortLinks[id])
-
 }else{
-
 res.send("Invalid link")
-
 }
 
 })
@@ -248,7 +240,7 @@ const twiml = new MessagingResponse()
 
 twiml.message(reply)
 
-res.writeHead(200,{'Content-Type':'text/xml'})
+res.writeHead(200,{"Content-Type":"text/xml"})
 res.end(twiml.toString())
 
 })
