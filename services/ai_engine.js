@@ -1,8 +1,8 @@
 import { detectVehicle } from "./vehicle_parser.js"
 import { detectYear } from "./year_parser.js"
 import { detectPart } from "./part_parser.js"
-import { searchProducts } from "./product_search.js"
 import { getFitment } from "./fitment_engine.js"
+import { searchProducts } from "./product_search.js"
 
 export async function processMessage(message) {
 
@@ -10,13 +10,15 @@ export async function processMessage(message) {
   const year = detectYear(message)
   const part = detectPart(message)
 
-  if (!part) {
-    return "Please tell us which auto part you need."
+  if (!vehicle && !part) {
+    return "Please tell us the vehicle and auto part you need."
   }
 
   const fitment = getFitment(vehicle, year, part)
 
-  const products = await searchProducts(part)
+  const searchQuery = part || message
+
+  const products = await searchProducts(searchQuery)
 
   let response = ""
 
@@ -33,6 +35,12 @@ export async function processMessage(message) {
     }
 
     response += "\n"
+
+  }
+
+  if (products.length === 0) {
+    response += "No matching products found."
+    return response
   }
 
   response += "Available products:\n\n"
