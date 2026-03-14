@@ -1,78 +1,59 @@
-import db from "../database/database.js"
+import fetch from "node-fetch";
 
-const SHOPIFY_STORE =
-  process.env.SHOPIFY_STORE ||
-  process.env.SHOPIFY_STORE_DOMAIN
+export async function syncShopifyProducts(db) {
 
-const SHOPIFY_TOKEN =
-  process.env.SHOPIFY_ADMIN_API_TOKEN ||
-  process.env.SHOPIFY_ACCESS_TOKEN ||
-  process.env.SHOPIFY_TOKEN
+    const store = process.env.SHOPIFY_STORE_DOMAIN;
+    const token = process.env.SHOPIFY_ADMIN_API_TOKEN;
 
-console.log("Shopify Store:", SHOPIFY_STORE)
-console.log("Shopify Token Loaded:", SHOPIFY_TOKEN ? "YES" : "NO")
+    const url = `https://${store}/admin/api/2024-01/products.json?limit=250`;
 
-export async function syncShopifyProducts() {
+    try {
 
-  if (!SHOPIFY_STORE || !SHOPIFY_TOKEN) {
-    console.error("Shopify environment variables missing")
-    return 0
-  }
+        const response = await fetch(url, {
+            headers: {
+                "X-Shopify-Access-Token": token,
+                "Content-Type": "application/json"
+            }
+        });
 
-  let total = 0
-  let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
+        const data = await response.json();
 
-  while (url) {
+        if (!data.products) {
+            console.log("No products returned from Shopify");
+            return;
+        }
 
-    const response = await fetch(url, {
-      headers: {
-        "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-        "Content-Type": "application/json"
-      }
-    })
+        for (const product of data.products) {
 
-    const data = await response.json()
+            const id = product.id;
+            const title = product.title;
+            const handle = product.handle;
 
-    if (!data.products) {
-      console.error("Invalid Shopify response")
-      break
+            await db.run(
+                `
+                INSERT OR REPLACE INTO products (id, title, handle)
+                VALUES (?, ?, ?)
+                `,
+                [id, title, handle]
+            );
+
+        }
+
+        console.log(`Synced ${data.products.length} products from Shopify`);
+
+        // Update FTS index
+        await db.exec(`
+            INSERT INTO products_fts(rowid, title, handle)
+            SELECT id, title, handle FROM products
+            WHERE id NOT IN (SELECT rowid FROM products_fts)
+        `);
+
+        console.log("FTS index updated");
+
+    } catch (error) {
+
+        console.error("Shopify sync error:", error);
+
     }
 
-    for (const product of data.products) {
-
-      db.run(
-        `INSERT OR REPLACE INTO products (id, title, handle)
-         VALUES (?, ?, ?)`,
-        [
-          product.id,
-          product.title,
-          product.handle
-        ]
-      )
-
-      total++
-
-    }
-
-    const linkHeader = response.headers.get("link")
-
-    if (linkHeader && linkHeader.includes('rel="next"')) {
-
-      const match = linkHeader.match(/<([^>]+)>; rel="next"/)
-
-      if (match) {
-        url = match[1]
-      } else {
-        url = null
-      }
-
-    } else {
-      url = null
-    }
-
-  }
-
-  console.log(`Shopify sync completed: ${total} products`)
-
-  return total
 }
