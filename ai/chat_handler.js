@@ -49,7 +49,8 @@ const vehicle = vinDecoder.decodeVIN(message)
 
 vehicleMemory.saveCustomerVehicle(phone,{
 make:vehicle.make,
-model:vehicle.model
+model:vehicle.model,
+year:vehicle.year
 })
 
 return `
@@ -57,6 +58,7 @@ Vehicle detected from VIN
 
 Make: ${vehicle.make}
 Model: ${vehicle.model}
+Year: ${vehicle.year || ""}
 
 You can now search parts.
 
@@ -143,7 +145,7 @@ const searchQuery = parsed.part || message
 
 insights.trackDemand(searchQuery)
 
-const search = productSearch.searchProducts(searchQuery)
+const search = productSearch.searchProducts(message)
 
 let reply = ""
 
