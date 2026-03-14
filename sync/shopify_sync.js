@@ -1,4 +1,3 @@
-import fetch from "node-fetch"
 import db from "../database/database.js"
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE
@@ -7,16 +6,9 @@ const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
 export async function syncShopifyProducts() {
 
   let total = 0
-  let hasNextPage = true
-  let cursor = null
+  let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
 
-  while (hasNextPage) {
-
-    let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
-
-    if (cursor) {
-      url += `&page_info=${cursor}`
-    }
+  while (url) {
 
     const response = await fetch(url, {
       headers: {
@@ -49,14 +41,16 @@ export async function syncShopifyProducts() {
 
     if (linkHeader && linkHeader.includes('rel="next"')) {
 
-      const match = linkHeader.match(/page_info=([^&>]+)/)
+      const match = linkHeader.match(/<([^>]+)>; rel="next"/)
 
       if (match) {
-        cursor = match[1]
+        url = match[1]
+      } else {
+        url = null
       }
 
     } else {
-      hasNextPage = false
+      url = null
     }
 
   }
