@@ -1,0 +1,13 @@
+{
+"corolla": {
+"wiper": "26 inch driver + 14 inch passenger",
+"air filter": "17801-0D060",
+"oil filter": "90915-YZZF2"
+},
+
+"civic": {
+"wiper": "26 inch + 16 inch",
+"air filter": "17220-RNA-A00",
+"oil filter": "15400-PLM-A02"
+}
+}
