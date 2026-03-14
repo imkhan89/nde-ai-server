@@ -6,40 +6,62 @@ import { detectProductName } from "./product_name_parser.js";
 import { getFitmentData } from "./fitment_engine.js";
 import { productSearch } from "./product_search.js";
 
-function customerAskedTechnical(message) {
+function detectIntent(message) {
 
     const text = message.toLowerCase();
 
+    const intent = {
+        price: false,
+        availability: false,
+        technical: false,
+        installation: false
+    };
+
+    const priceWords = ["price", "cost", "rate", "how much"];
+    const stockWords = ["available", "availability", "in stock", "have"];
     const technicalWords = [
         "size",
-        "length",
         "inch",
         "mm",
-        "dimension",
+        "weight",
         "spec",
         "specification",
-        "weight"
+        "dimension"
+    ];
+    const installWords = [
+        "install",
+        "installation",
+        "how to install",
+        "how to use",
+        "fit",
+        "fitting"
     ];
 
-    for (const word of technicalWords) {
-        if (text.includes(word)) {
-            return true;
-        }
+    for (const w of priceWords) {
+        if (text.includes(w)) intent.price = true;
     }
 
-    return false;
+    for (const w of stockWords) {
+        if (text.includes(w)) intent.availability = true;
+    }
 
+    for (const w of technicalWords) {
+        if (text.includes(w)) intent.technical = true;
+    }
+
+    for (const w of installWords) {
+        if (text.includes(w)) intent.installation = true;
+    }
+
+    return intent;
 }
 
-function buildSalesResponse(vehicle, product, products, fitment, originalMessage) {
+function buildSalesMessage(vehicle, product, products) {
 
     let response = "";
 
-    const askedTechnical = customerAskedTechnical(originalMessage);
-
     if (vehicle && vehicle.make && vehicle.model) {
 
-        response += `Thank you for your inquiry.\n\n`;
         response += `Vehicle detected:\n`;
         response += `${vehicle.make} ${vehicle.model}`;
 
@@ -48,61 +70,58 @@ function buildSalesResponse(vehicle, product, products, fitment, originalMessage
         }
 
         response += `\n\n`;
-
     }
 
     if (product) {
 
-        response += `You are looking for:\n`;
+        response += `Product requested:\n`;
         response += `${product}\n\n`;
-
     }
 
     if (products && products.length > 0) {
 
-        response += `We have the following options available:\n\n`;
+        response += `Available options at ndestore.com:\n\n`;
 
         products.slice(0, 5).forEach((p, index) => {
-
             response += `${index + 1}. ${p.title}\n`;
-
         });
 
         response += `\n`;
-
-        response += `All products are available at ndestore.com and can be shipped nationwide.\n\n`;
-
-        response += `Please let us know if you would like:\n`;
-        response += `• Original brand\n`;
-        response += `• OEM equivalent\n`;
-        response += `• Budget option\n`;
-
-        response += `\nWe will assist you with the best option for your vehicle.`;
+        response += `These products are available for nationwide delivery.\n`;
+        response += `Please let us know your preferred brand or budget and we will assist you further.\n`;
 
     } else {
 
-        response += `Thank you for your message.\n\n`;
-        response += `To assist you better, please send:\n`;
-        response += `• Vehicle make\n`;
-        response += `• Model\n`;
-        response += `• Year\n`;
-        response += `• Required part\n`;
-
-        response += `Example:\n`;
-        response += `Toyota Corolla 2018 wiper blade`;
-
-    }
-
-    if (askedTechnical && fitment && fitment.wiper) {
-
-        response += `\n\nTechnical specification:\n`;
-        response += `Driver side: ${fitment.wiper.driver}\n`;
-        response += `Passenger side: ${fitment.wiper.passenger}\n`;
-
+        response += `Please provide the vehicle make, model, year and required part so we can assist you.\n`;
+        response += `Example:\nToyota Corolla 2018 brake pads\n`;
     }
 
     return response;
+}
 
+function buildTechnicalMessage(intent, fitment, product) {
+
+    let response = "";
+
+    if (intent.technical && fitment) {
+
+        if (product && product.toLowerCase().includes("wiper") && fitment.wiper) {
+
+            response += `Technical specification:\n`;
+            response += `Driver side: ${fitment.wiper.driver}\n`;
+            response += `Passenger side: ${fitment.wiper.passenger}\n\n`;
+        }
+    }
+
+    if (intent.installation) {
+
+        response += `Installation guidance:\n`;
+        response += `Ensure the vehicle ignition is off before replacing the component.\n`;
+        response += `Remove the old part carefully and install the new component following the original mounting points.\n`;
+        response += `If unsure, professional installation is recommended.\n\n`;
+    }
+
+    return response;
 }
 
 export async function processCustomerMessage(db, message) {
@@ -110,7 +129,7 @@ export async function processCustomerMessage(db, message) {
     try {
 
         if (!message || typeof message !== "string") {
-            return "Please send vehicle details and the part you require.";
+            return "Please send vehicle details and the required part.";
         }
 
         const normalizedQuery = queryNormalizer(message);
@@ -118,6 +137,8 @@ export async function processCustomerMessage(db, message) {
         const vehicle = parseVehicle(normalizedQuery);
 
         const product = detectProductName(normalizedQuery);
+
+        const intent = detectIntent(message);
 
         let fitment = null;
 
@@ -135,22 +156,19 @@ export async function processCustomerMessage(db, message) {
 
         const products = await productSearch(db, searchQuery);
 
-        const response = buildSalesResponse(
-            vehicle,
-            product,
-            products,
-            fitment,
-            message
-        );
+        let response = "";
+
+        response += buildSalesMessage(vehicle, product, products);
+
+        response += buildTechnicalMessage(intent, fitment, product);
 
         return response;
 
     } catch (error) {
 
-        console.error("AI engine error:", error);
+        console.error("AI Engine Error:", error);
 
-        return "Sorry, something went wrong. Please send your vehicle details and required part.";
+        return "Sorry, something went wrong. Please send vehicle details and required part.";
 
     }
-
 }
