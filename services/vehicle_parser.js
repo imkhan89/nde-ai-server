@@ -1,15 +1,32 @@
-import vehicles from "../knowledge/vehicle_dictionary.json" with { type: "json" }
+const vehicles = [
+  "corolla",
+  "civic",
+  "city",
+  "hilux",
+  "prado",
+  "vigo",
+  "revo",
+  "fortuner",
+  "yaris",
+  "mehran",
+  "cultus",
+  "alto",
+  "wagon r",
+  "swift"
+];
 
-export function detectVehicle(text){
+function detectVehicle(message) {
+  const msg = message.toLowerCase();
 
-for(const v of vehicles){
+  for (const vehicle of vehicles) {
+    if (msg.includes(vehicle)) {
+      return vehicle;
+    }
+  }
 
-if(text.includes(v)){
-return v
+  return null;
 }
 
-}
-
-return null
-
-}
+module.exports = {
+  detectVehicle
+};
