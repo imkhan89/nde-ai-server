@@ -243,26 +243,4 @@ res.send("Invalid link")
 app.post("/whatsapp",async(req,res)=>{
 
 const message = req.body.Body || ""
-const phone = req.body.From || ""
-
-await db.run(
-`INSERT OR IGNORE INTO customers(phone) VALUES(?)`,
-[phone]
-)
-
-const reply = await processMessage(message,phone)
-
-const twiml = new MessagingResponse()
-
-twiml.message(reply)
-
-res.writeHead(200,{"Content-Type":"text/xml"})
-res.end(twiml.toString())
-
-})
-
-const PORT = process.env.PORT || 3000
-
-app.listen(PORT,()=>{
-console.log("Server running on port",PORT)
-})
+const ph
