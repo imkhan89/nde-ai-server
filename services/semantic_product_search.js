@@ -3,6 +3,7 @@
 import { PRODUCT_SYNONYMS } from "../data/product_synonyms.js";
 
 function expandQuery(query) {
+
     const tokens = query.toLowerCase().split(/\s+/);
 
     let expandedTokens = [];
@@ -42,7 +43,7 @@ export async function semanticProductSearch(db, query) {
                 handle
             FROM products_fts
             WHERE products_fts MATCH ?
-            LIMIT 10
+            LIMIT 20
             `,
             [expandedQuery]
         );
