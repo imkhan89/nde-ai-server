@@ -1,61 +1,83 @@
-// services/semantic_product_search.js
+import db from "../database/database.js";
 
-import { PRODUCT_SYNONYMS } from "../data/product_synonyms.js";
-
-function expandQuery(query) {
-
-    const tokens = query.toLowerCase().split(/\s+/);
-
-    let expandedTokens = [];
-
-    for (const token of tokens) {
-
-        expandedTokens.push(token);
-
-        for (const key in PRODUCT_SYNONYMS) {
-
-            const synonyms = PRODUCT_SYNONYMS[key];
-
-            if (synonyms.includes(token)) {
-                expandedTokens = expandedTokens.concat(synonyms);
-            }
-
-        }
-
-    }
-
-    expandedTokens = [...new Set(expandedTokens)];
-
-    return expandedTokens.join(" OR ");
+/*
+Normalize search query
+*/
+function normalizeQuery(query) {
+  return query
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-export async function semanticProductSearch(db, query) {
+/*
+Generate search tokens
+*/
+function generateSearchTokens(query) {
+  const tokens = query.split(" ");
 
-    try {
+  /*
+  Remove short useless tokens
+  */
+  return tokens.filter(token => token.length > 2);
+}
 
-        const expandedQuery = expandQuery(query);
+/*
+Build FTS query
+*/
+function buildFTSQuery(tokens) {
 
-        const results = await db.all(
-            `
-            SELECT
-                rowid as id,
-                title,
-                handle
-            FROM products_fts
-            WHERE products_fts MATCH ?
-            LIMIT 20
-            `,
-            [expandedQuery]
-        );
+  /*
+  Convert tokens into FTS MATCH query
+  Example:
+  corolla wiper -> corolla* AND wiper*
+  */
 
-        return results;
+  const terms = tokens.map(t => `${t}*`);
 
-    } catch (error) {
+  return terms.join(" AND ");
+}
 
-        console.error("Semantic search error:", error);
+/*
+Main semantic search function
+*/
+export function semanticProductSearch(query, limit = 10) {
 
-        return [];
+  try {
 
+    const normalized = normalizeQuery(query);
+
+    const tokens = generateSearchTokens(normalized);
+
+    if (tokens.length === 0) {
+      return [];
     }
 
+    const ftsQuery = buildFTSQuery(tokens);
+
+    const stmt = db.prepare(`
+      SELECT
+        p.id,
+        p.title,
+        p.handle,
+        rank
+      FROM products_fts
+      JOIN products p ON p.id = products_fts.rowid
+      WHERE products_fts MATCH ?
+      ORDER BY rank
+      LIMIT ?
+    `);
+
+    const results = stmt.all(ftsQuery, limit);
+
+    return results;
+
+  } catch (error) {
+
+    console.error("Semantic product search error:", error.message);
+
+    return [];
+
+  }
 }
