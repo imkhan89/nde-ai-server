@@ -1,148 +1,60 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-
-const catalogEngine = require("./shopify_catalog_sync_engine");
-
-const productSearchEngine = require("./product_search_engine.js");
-const vehicleDetectionEngine = require("./vehicle_detection_engine.js");
-const semanticPartsEngine = require("./semantic_parts_engine.js");
+const { MessagingResponse } = require("twilio").twiml;
 
 const app = express();
 
-app.use(bodyParser.json());
+// Twilio sends data as URL encoded
+app.use(bodyParser.urlencoded({ extended: false }));
 
+// Health check
+app.get("/", (req, res) => {
+  res.send("NDE Automotive AI Server Running");
+});
+
+// WhatsApp webhook
+app.post("/webhook", async (req, res) => {
+  try {
+    const incomingMsg = req.body.Body || "";
+    const from = req.body.From || "";
+
+    console.log("Incoming message:", incomingMsg);
+    console.log("From:", from);
+
+    const twiml = new MessagingResponse();
+
+    // Simple response logic
+    if (!incomingMsg || incomingMsg.trim() === "") {
+      twiml.message(
+        "Welcome to NDE Automotive AI.\n\nPlease share your vehicle details:\nMake Model Year\n\nExample:\nToyota Corolla 2015"
+      );
+    } else {
+      twiml.message(
+        "NDE Automotive AI received your message:\n\n" +
+          incomingMsg +
+          "\n\nPlease also share vehicle details if missing.\nExample:\nHonda Civic 2018"
+      );
+    }
+
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
+
+  } catch (error) {
+    console.error("Webhook Error:", error);
+
+    const twiml = new MessagingResponse();
+    twiml.message(
+      "Sorry, something went wrong. Please try again or send your vehicle details.\nExample: Toyota Corolla 2015"
+    );
+
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
+  }
+});
+
+// Start server
 const PORT = process.env.PORT || 3000;
 
-/*
-ROOT
-*/
-
-app.get("/", (req, res) => {
-    res.send("NDE Automotive AI Server Running");
-});
-
-/*
-HEALTH CHECK
-*/
-
-app.get("/health", (req, res) => {
-
-    res.json({
-        status: "ok",
-        service: "nde-ai-server"
-    });
-
-});
-
-/*
-VERIFY SHOPIFY CATALOG SYNC
-*/
-
-app.get("/catalog-status", (req, res) => {
-
-    const totalProducts = catalogEngine.getProductCount();
-
-    res.json({
-        status: "ok",
-        cached_products: totalProducts
-    });
-
-});
-
-/*
-SEARCH API
-*/
-
-app.post("/search", async (req, res) => {
-
-    try {
-
-        const query = req.body.query;
-
-        if (!query) {
-
-            return res.json({
-                success: false,
-                message: "Query required"
-            });
-
-        }
-
-        console.log("User Query:", query);
-
-        /*
-        VEHICLE DETECTION
-        */
-
-        let vehicle = null;
-
-        if (vehicleDetectionEngine.detectVehicle) {
-
-            vehicle = vehicleDetectionEngine.detectVehicle(query);
-
-        }
-
-        /*
-        PART DETECTION
-        */
-
-        let part = null;
-
-        if (semanticPartsEngine.detectPart) {
-
-            part = semanticPartsEngine.detectPart(query);
-
-        }
-
-        /*
-        PRODUCT SEARCH
-        */
-
-        let results = [];
-
-        if (productSearchEngine.searchProducts) {
-
-            results = productSearchEngine.searchProducts(query);
-
-        } else {
-
-            results = catalogEngine.searchProducts(query);
-
-        }
-
-        res.json({
-            success: true,
-            query: query,
-            vehicle: vehicle,
-            part: part,
-            results: results
-        });
-
-    } catch (error) {
-
-        console.error("Search Error:", error);
-
-        res.status(500).json({
-            success: false,
-            error: "Internal Server Error"
-        });
-
-    }
-
-});
-
-/*
-START SERVER
-*/
-
-app.listen(PORT, async () => {
-
-    console.log("NDE AI Server Running on port:", PORT);
-
-    if (catalogEngine.startCatalogSync) {
-
-        await catalogEngine.startCatalogSync();
-
-    }
-
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
 });
