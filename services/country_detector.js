@@ -1,4 +1,4 @@
-import countries from "../knowledge/country_detection.json" assert { type: "json" }
+import countries from "../knowledge/country_detection.json" with { type: "json" }
 
 export function detectCountry(phone){
 
