@@ -13,61 +13,62 @@ const app = express()
 
 app.use(cors())
 
+// Required for Twilio webhook
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
 let db
 
 async function start() {
-
-db = await initDB()
-
-console.log("Database initialized")
-
+  db = await initDB()
+  console.log("Database initialized")
 }
 
 await start()
 
-app.post("/whatsapp", async (req,res)=>{
+app.post("/whatsapp", async (req, res) => {
 
-const twiml = new MessagingResponse()
+  const twiml = new MessagingResponse()
 
-try{
+  try {
 
-// Safety parsing
-const phone = req.body?.From || ""
-const message = req.body?.Body || ""
+    const phone = req.body?.From || ""
+    const message = req.body?.Body || ""
 
-console.log("Webhook payload:", req.body)
-console.log("Incoming:", phone, message)
+    console.log("Webhook payload:", req.body)
+    console.log("Incoming:", phone, message)
 
-let reply = "Message received."
+    let reply = "Message received."
 
-if(phone && message){
+    if (phone && message) {
+      reply = await processMessage(db, phone, message)
+    }
 
-reply = await processMessage(db, phone, message)
+    twiml.message(reply)
 
-}
+  } catch (error) {
 
-twiml.message(reply)
+    console.error("Webhook error:", error)
 
-}catch(err){
+    twiml.message("System temporarily unavailable.")
 
-console.error("Webhook error:", err)
+  }
 
-twiml.message("System error. Please try again.")
-
-}
-
-res.set("Content-Type","text/xml")
-res.status(200).send(twiml.toString())
+  res.set("Content-Type", "text/xml")
+  res.status(200).send(twiml.toString())
 
 })
 
-app.get("/", (req,res)=>{
-res.send("NDE Automotive AI Server Running")
+app.get("/", (req, res) => {
+  res.send("NDE Automotive AI Server Running")
 })
 
-app.listen(config.SERVER_PORT, ()=>{
-console.log("Server running on port", config.SERVER_PORT)
+/*
+CRITICAL FIX FOR RAILWAY
+Railway assigns dynamic PORT
+*/
+const PORT = process.env.PORT || config.SERVER_PORT || 3000
+
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT)
 })
