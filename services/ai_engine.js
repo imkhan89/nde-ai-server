@@ -1,52 +1,39 @@
-import { normalizeText } from "../utils/helpers.js"
-import { correctSpelling } from "./spelling_corrector.js"
-import { detectVehicle } from "./vehicle_parser.js"
-import { detectPart } from "./part_parser.js"
-import { searchProduct } from "./product_search.js"
+const { detectVehicle } = require('./vehicle_parser');
+const { detectYear } = require('./year_parser');
+const { detectPart } = require('./part_parser');
+const { searchProducts } = require('./product_search');
 
-export async function processMessage(db, phone, message){
+async function processMessage(message) {
 
-try{
+  const vehicle = detectVehicle(message);
+  const year = detectYear(message);
+  const part = detectPart(message);
 
-let text = normalizeText(message)
+  if (!part) {
+    return "Please tell us which auto part you need.";
+  }
 
-text = correctSpelling(text)
+  const products = await searchProducts(part);
 
-const vehicle = detectVehicle(text)
-const part = detectPart(text)
+  if (!products.length) {
+    return "Sorry, we couldn't find that product.";
+  }
 
-if(!part){
+  let response = "";
 
-return `Send request in format:
+  if (vehicle && year) {
+    response += `For ${vehicle} ${year}:\n\n`;
+  }
 
-Part + Make + Model + Year
+  response += "Available options:\n\n";
 
-Example:
-corolla 2016 wiper`
+  products.forEach((p, index) => {
+    response += `${index + 1}. ${p.title}\n`;
+  });
+
+  return response;
 }
 
-const product = await searchProduct(db,part)
-
-if(!product){
-
-return `Product not found.
-
-Our team will contact you shortly.`
-
-}
-
-return `${product.title}
-
-Price: ${product.price}
-
-https://ndestore.com/products/${product.handle}`
-
-}catch(error){
-
-console.error("AI error:", error)
-
-return "System error. Please try again."
-
-}
-
-}
+module.exports = {
+  processMessage
+};
