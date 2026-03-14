@@ -13,10 +13,42 @@ app.get("/", (req,res)=>{
   res.send("NDE AI Admin Running")
 })
 
+app.get("/stats", async (req,res)=>{
+
+  const customers = await db.get(
+    `SELECT COUNT(*) as total FROM customers`
+  )
+
+  const conversations = await db.get(
+    `SELECT COUNT(*) as total FROM conversations`
+  )
+
+  const leads = await db.get(
+    `SELECT COUNT(*) as total FROM leads`
+  )
+
+  const products = await db.get(
+    `SELECT COUNT(*) as total FROM products`
+  )
+
+  const orders = await db.get(
+    `SELECT COUNT(*) as total FROM orders`
+  )
+
+  res.json({
+    customers: customers.total,
+    conversations: conversations.total,
+    leads: leads.total,
+    products: products.total,
+    orders: orders.total
+  })
+
+})
+
 app.get("/customers", async (req,res)=>{
 
   const rows = await db.all(
-    `SELECT * FROM customers ORDER BY created_at DESC LIMIT 100`
+    `SELECT * FROM customers ORDER BY created_at DESC LIMIT 200`
   )
 
   res.json(rows)
@@ -26,7 +58,7 @@ app.get("/customers", async (req,res)=>{
 app.get("/conversations", async (req,res)=>{
 
   const rows = await db.all(
-    `SELECT * FROM conversations ORDER BY created_at DESC LIMIT 200`
+    `SELECT * FROM conversations ORDER BY created_at DESC LIMIT 500`
   )
 
   res.json(rows)
@@ -46,37 +78,20 @@ app.get("/leads", async (req,res)=>{
 app.get("/products", async (req,res)=>{
 
   const rows = await db.all(
-    `SELECT * FROM products LIMIT 100`
+    `SELECT * FROM products ORDER BY id DESC LIMIT 200`
   )
 
   res.json(rows)
 
 })
 
-app.get("/stats", async (req,res)=>{
+app.get("/orders", async (req,res)=>{
 
-  const customers = await db.get(
-    `SELECT COUNT(*) as total FROM customers`
+  const rows = await db.all(
+    `SELECT * FROM orders ORDER BY created_at DESC`
   )
 
-  const conversations = await db.get(
-    `SELECT COUNT(*) as total FROM conversations`
-  )
-
-  const leads = await db.get(
-    `SELECT COUNT(*) as total FROM leads`
-  )
-
-  const products = await db.get(
-    `SELECT COUNT(*) as total FROM products`
-  )
-
-  res.json({
-    customers: customers.total,
-    conversations: conversations.total,
-    leads: leads.total,
-    products: products.total
-  })
+  res.json(rows)
 
 })
 
