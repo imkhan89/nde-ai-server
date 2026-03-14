@@ -14,6 +14,7 @@ const parts = JSON.parse(fs.readFileSync("./part_dictionary.json"))
 const spelling = JSON.parse(fs.readFileSync("./spelling_dictionary.json"))
 const language = JSON.parse(fs.readFileSync("./language_dictionary.json"))
 const currency = JSON.parse(fs.readFileSync("./currency_rates.json"))
+const countries = JSON.parse(fs.readFileSync("./country_detection.json"))
 
 const { MessagingResponse } = twilio.twiml
 
@@ -73,6 +74,20 @@ function correctSpelling(text){
 let words = text.split(" ")
 let corrected = words.map(w => spelling[w] || w)
 return corrected.join(" ")
+}
+
+function detectCountry(phone){
+
+for(const prefix in countries){
+
+if(phone.startsWith(`whatsapp:${prefix}`)){
+return countries[prefix]
+}
+
+}
+
+return "International"
+
 }
 
 function detectVehicle(text){
@@ -190,6 +205,8 @@ text = correctSpelling(text)
 
 await learn(phone,message)
 
+const country = detectCountry(phone)
+
 const vehicle = detectVehicle(text)
 const part = detectPart(text)
 
@@ -217,7 +234,16 @@ if(products.length===0){
 await saveLead(phone,vehicle,part)
 }
 
-return buildResponse(products,vehicle,part)
+let response = buildResponse(products,vehicle,part)
+
+if(country !== "Pakistan"){
+
+response += `\nInternational shipping available.
+Please share your full delivery address including city and country.`
+
+}
+
+return response
 }
 
 app.get("/",(req,res)=>{
@@ -241,9 +267,11 @@ app.post("/whatsapp",async(req,res)=>{
 const message = req.body.Body || ""
 const phone = req.body.From || ""
 
+const country = detectCountry(phone)
+
 await db.run(
-`INSERT OR IGNORE INTO customers(phone) VALUES(?)`,
-[phone]
+`INSERT OR IGNORE INTO customers(phone,country) VALUES(?,?)`,
+[phone,country]
 )
 
 const reply = await processMessage(message,phone)
