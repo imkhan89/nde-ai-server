@@ -2,7 +2,6 @@ import express from "express"
 import bodyParser from "body-parser"
 import sqlite3 from "sqlite3"
 import { open } from "sqlite"
-import axios from "axios"
 import shortid from "shortid"
 import twilio from "twilio"
 
@@ -14,8 +13,8 @@ app.use(bodyParser.urlencoded({ extended:false }))
 app.use(bodyParser.json())
 
 const db = await open({
-filename:"./nde.db",
-driver:sqlite3.Database
+  filename:"./nde.db",
+  driver:sqlite3.Database
 })
 
 await db.exec(`
@@ -88,11 +87,9 @@ return text
 function detectVehicle(text){
 
 for(const v of vehicles){
-
 if(text.includes(v)){
 return v
 }
-
 }
 
 return null
@@ -102,11 +99,9 @@ return null
 function detectPart(text){
 
 for(const p of parts){
-
 if(text.includes(p)){
 return p
 }
-
 }
 
 return null
@@ -143,13 +138,22 @@ await db.run(
 
 }
 
+async function saveLead(phone,vehicle,part){
+
+await db.run(
+`INSERT INTO leads(phone,vehicle,part) VALUES(?,?,?)`,
+[phone,vehicle,part]
+)
+
+}
+
 function buildResponse(products,vehicle,part){
 
 if(products.length===0){
 
 return `We could not find ${part} for ${vehicle}.
 
-Our team will assist shortly.`
+Our team will check availability and assist shortly.`
 
 }
 
@@ -184,18 +188,18 @@ await learn(phone,message)
 
 if(!part){
 
-return `Please share which part you need.
+return `Please tell us which part you need.
 
 Example:
+Wiper Blade
 Brake Pad
-Oil Filter
-Wiper Blade`
+Oil Filter`
 
 }
 
 if(!vehicle){
 
-return `Please share vehicle details.
+return `Please share your vehicle details.
 
 Example:
 Toyota Corolla 2018`
@@ -203,6 +207,12 @@ Toyota Corolla 2018`
 }
 
 const products = await searchProducts(part)
+
+if(products.length===0){
+
+await saveLead(phone,vehicle,part)
+
+}
 
 return buildResponse(products,vehicle,part)
 
