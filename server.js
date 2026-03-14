@@ -1,5 +1,6 @@
 import express from "express"
 import cors from "cors"
+import bodyParser from "body-parser"
 
 import config from "./config.js"
 
@@ -14,12 +15,13 @@ const app = express()
 
 app.use(cors())
 
-app.use(express.urlencoded({ extended: true }))
-app.use(express.json())
+// REQUIRED FOR TWILIO
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
 
 let db
 
-async function start() {
+async function start(){
 
 db = await initDB()
 
@@ -31,50 +33,36 @@ await start()
 
 app.post("/whatsapp", async (req,res)=>{
 
-try {
+const twimlResponse = new MessagingResponse()
 
-const phone = req.body?.From
-const message = req.body?.Body
+try{
+
+console.log("Webhook received:", req.body)
+
+const phone = req.body.From
+const message = req.body.Body
 
 console.log("Incoming:", phone, message)
 
-const response = new MessagingResponse()
+const reply = await processMessage(db, phone, message)
 
-response.message("Processing your request...")
+twimlResponse.message(reply)
 
-res.type("text/xml")
-res.send(response.toString())
+}catch(error){
 
-// Process AI after response
-if(phone && message){
+console.error("Webhook error:", error)
 
-processMessage(db, phone, message)
-.then(reply => {
-console.log("AI reply:", reply)
-})
-.catch(err => {
-console.error("AI error:", err)
-})
+twimlResponse.message("System temporarily unavailable.")
 
 }
 
-} catch (error) {
-
-console.error("Webhook crash:", error)
-
-const response = new MessagingResponse()
-
-response.message("System error")
-
 res.type("text/xml")
-res.send(response.toString())
-
-}
+res.send(twimlResponse.toString())
 
 })
 
 app.get("/", (req,res)=>{
-res.send("AI Server Running")
+res.send("NDE Automotive AI Server Running")
 })
 
 app.listen(config.SERVER_PORT, ()=>{
