@@ -1,133 +1,95 @@
 const fs = require("fs")
 const path = require("path")
 
-const PRODUCT_INDEX_PATH =
+const INDEX_FILE =
 path.join(__dirname,"../data/product_index.json")
 
-let productIndex = []
+let productIndex=[]
 
-function normalize(text){
-
-if(!text) return ""
-
-return text
-.toLowerCase()
-.replace(/[^a-z0-9 ]/g," ")
-.trim()
-
-}
-
-function loadProductIndex(){
+function loadIndex(){
 
 try{
 
-if(!fs.existsSync(PRODUCT_INDEX_PATH)){
-
-console.log("Fast search index not found")
-
-productIndex = []
-
+if(!fs.existsSync(INDEX_FILE)){
+console.log("Product index missing")
 return
-
 }
 
-const raw = fs.readFileSync(PRODUCT_INDEX_PATH)
+const raw=fs.readFileSync(INDEX_FILE,"utf8")
 
-productIndex = JSON.parse(raw)
+productIndex=JSON.parse(raw)
 
-console.log("Fast product search index loaded:",productIndex.length)
+console.log("Product index loaded:",productIndex.length)
 
 }catch(err){
 
-console.log("Fast search index error:",err.message)
-
-productIndex = []
+console.log("Index load error:",err.message)
 
 }
+
+}
+
+loadIndex()
+
+function normalize(text){
+
+return (text||"")
+.toLowerCase()
+.replace(/[^a-z0-9 ]/g," ")
+.replace(/\s+/g," ")
+.trim()
 
 }
 
 function searchProducts(query){
 
-if(!query) return []
+const q=normalize(query)
 
-const q = normalize(query)
+const words=q.split(" ")
 
-const words = q.split(" ")
+let results=[]
 
-let results = []
+productIndex.forEach(p=>{
 
-for(let product of productIndex){
+const title=normalize(p.title)
 
-if(!product.title) continue
-
-const title = normalize(product.title)
-
-let score = 0
+let score=0
 
 words.forEach(w=>{
 
 if(title.includes(w)){
-
 score++
-
 }
 
 })
 
-if(score > 0){
+if(score>0){
 
 results.push({
-
-title:product.title,
-url:product.url,
-score:score
-
+score,
+title:p.title,
+url:p.url
 })
 
 }
 
-}
-
-results.sort((a,b)=> b.score - a.score)
-
-return results.slice(0,3)
-
-}
-
-function buildSearchResponse(query){
-
-const results = searchProducts(query)
-
-if(!results.length){
-
-return null
-
-}
-
-let msg = "Top Matching Products\n\n"
-
-results.forEach((r,index)=>{
-
-msg += (index+1)+". "+r.title+"\n"
-
-if(r.url){
-
-msg += r.url+"\n"
-
-}
-
-msg += "\n"
-
 })
 
-return msg
+results=results
+.sort((a,b)=>b.score-a.score)
+.slice(0,5)
+
+if(results.length===0){
+return {success:false}
+}
+
+return {
+success:true,
+products:results
+}
 
 }
 
-module.exports = {
-
-loadProductIndex,
-buildSearchResponse
-
+module.exports={
+searchProducts
 }
