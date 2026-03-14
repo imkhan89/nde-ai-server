@@ -1,4 +1,4 @@
-import dictionary from "../knowledge/spelling_dictionary.json" assert { type: "json" }
+import dictionary from "../knowledge/spelling_dictionary.json" with { type: "json" }
 
 export function correctSpelling(text){
 
