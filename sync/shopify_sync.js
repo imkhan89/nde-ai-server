@@ -1,3 +1,5 @@
+// sync/shopify_sync.js
+
 import fetch from "node-fetch";
 
 export async function syncShopifyProducts(db) {
@@ -39,7 +41,7 @@ export async function syncShopifyProducts(db) {
 
         }
 
-        console.log(`Synced ${data.products.length} products from Shopify`);
+        console.log(`Synced ${data.products.length} products`);
 
         // Update FTS index
         await db.exec(`
