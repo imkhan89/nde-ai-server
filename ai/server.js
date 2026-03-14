@@ -1,19 +1,19 @@
 const express = require("express")
 const bodyParser = require("body-parser")
-const MessagingResponse = require("twilio").twiml.MessagingResponse
+const { MessagingResponse } = require("twilio").twiml
 
 const chatHandler = require("./chat_handler")
 const catalogSync = require("./shopify_catalog_sync_engine")
 
 const app = express()
 
+app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
 
 const PORT = process.env.PORT || 8080
 
 
-/* HEALTH CHECK */
+/* SERVER STATUS */
 
 app.get("/", (req,res)=>{
 res.send("NDE AI Server Running")
@@ -23,8 +23,6 @@ res.send("NDE AI Server Running")
 /* CATALOG STATUS */
 
 app.get("/catalog-status",(req,res)=>{
-
-try{
 
 const fs = require("fs")
 const path = require("path")
@@ -43,20 +41,16 @@ status:"ok",
 cached_products:products.length
 })
 
-}catch(err){
-
-res.json({status:"error"})
-
-}
-
 })
 
 
-/* WHATSAPP WEBHOOK */
+/* TWILIO WHATSAPP WEBHOOK */
 
 app.post("/webhook", async (req,res)=>{
 
 try{
+
+console.log("Incoming message:",req.body.Body)
 
 const incomingMessage = req.body.Body || ""
 const phone = req.body.From || ""
@@ -75,7 +69,7 @@ res.send(twiml.toString())
 console.log("Webhook error:",err.message)
 
 const twiml = new MessagingResponse()
-twiml.message("System error. Please contact support.")
+twiml.message("System error.")
 
 res.type("text/xml")
 res.send(twiml.toString())
