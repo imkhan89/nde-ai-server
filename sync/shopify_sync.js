@@ -7,32 +7,35 @@ const token = process.env.SHOPIFY_ADMIN_API_TOKEN
 const version = process.env.SHOPIFY_API_VERSION || "2024-01"
 
 if(!store || !token){
-
 console.log("Shopify credentials missing")
 return
-
 }
 
 try{
 
 let url = `https://${store}/admin/api/${version}/products.json?limit=250`
 let total = 0
+let page = 1
 
 while(url){
+
+console.log("Fetching Shopify page:", page)
 
 const response = await axios.get(url,{
 headers:{
 "X-Shopify-Access-Token": token,
 "Content-Type":"application/json"
-}
+},
+timeout:15000
 })
 
-const products = response.data.products
+const products = response.data.products || []
+
+console.log("Products received:", products.length)
 
 for(const product of products){
 
 const variant = product.variants?.[0]
-
 if(!variant) continue
 
 await db.run(
@@ -49,7 +52,6 @@ product.handle
 )
 
 total++
-
 }
 
 const link = response.headers.link
@@ -57,6 +59,7 @@ const link = response.headers.link
 if(link && link.includes('rel="next"')){
 
 url = link.split(";")[0].replace("<","").replace(">","")
+page++
 
 }else{
 
@@ -66,7 +69,7 @@ url = null
 
 }
 
-console.log("Shopify sync completed:", total, "products")
+console.log("Shopify sync completed:", total,"products")
 
 }catch(err){
 
