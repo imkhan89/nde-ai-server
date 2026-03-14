@@ -1,6 +1,7 @@
 {
   "name": "nde-ai-server",
   "version": "1.0.0",
+  "description": "NDE Automotive Commerce AI Server",
   "type": "module",
   "main": "server.js",
   "scripts": {
