@@ -1,97 +1,98 @@
-import { normalizeQuery } from "./query_normalizer.js"
-import { detectVehicle } from "./vehicle_parser.js"
-import { detectYear } from "./year_parser.js"
-import { detectProductName } from "./product_name_parser.js"
-import { detectMake } from "./make_detector.js"
-import { detectGeneration } from "./generation_detector.js"
-import { getFitment } from "./fitment_engine.js"
-import { searchProducts } from "./product_search.js"
+import { queryNormalizer } from "./query_normalizer.js";
+import { parseVehicle } from "./vehicle_parser.js";
+import { detectProductName } from "./product_name_parser.js";
+import { getFitmentData } from "./fitment_engine.js";
+import { productSearch } from "./product_search.js";
 
-export async function processMessage(message) {
+export async function processCustomerMessage(db, message) {
 
-  // Normalize user message (fix typos)
-  const normalizedMessage = normalizeQuery(message)
+    try {
 
-  // Extract automotive entities
-  const model = detectVehicle(normalizedMessage)
-  const year = detectYear(normalizedMessage)
-  const product = detectProductName(normalizedMessage)
-  const make = detectMake(model)
+        if (!message || typeof message !== "string") {
+            return "Sorry, I could not understand your message. Please send the vehicle and part required.";
+        }
 
-  const generation = detectGeneration(model, year)
+        // Step 1 — Normalize the query
+        const normalizedQuery = queryNormalizer(message);
 
-  if (!model && !product) {
-    return "Please tell us the vehicle and auto part you need."
-  }
+        // Step 2 — Detect vehicle information
+        const vehicle = parseVehicle(normalizedQuery);
 
-  const fitment = getFitment(model, year, product)
+        // Step 3 — Detect product name
+        const product = detectProductName(normalizedQuery);
 
-  let products = []
+        // Step 4 — Retrieve fitment data
+        let fitment = null;
 
-  // Intelligent search strategy
+        if (vehicle && vehicle.make && vehicle.model && vehicle.year) {
+            fitment = getFitmentData(vehicle.make, vehicle.model, vehicle.year);
+        }
 
-  // 1. Vehicle + product
-  if (model && product) {
-    products = await searchProducts(`${model} ${product}`)
-  }
+        // Step 5 — Build search query
+        let searchQuery = normalizedQuery;
 
-  // 2. Product only
-  if (products.length === 0 && product) {
-    products = await searchProducts(product)
-  }
+        if (vehicle && product) {
+            searchQuery = `${vehicle.model} ${product}`;
+        } else if (product) {
+            searchQuery = product;
+        }
 
-  // 3. Full query fallback
-  if (products.length === 0) {
-    products = await searchProducts(normalizedMessage)
-  }
+        // Step 6 — Search products
+        const products = await productSearch(db, searchQuery);
 
-  let response = ""
+        // Step 7 — Build response message
+        let response = "";
 
-  response += `Vehicle Identification:\n`
+        if (vehicle && vehicle.make && vehicle.model) {
 
-  if (make) {
-    response += `Make: ${make}\n`
-  }
+            response += "Vehicle Identification\n";
+            response += `Make: ${vehicle.make}\n`;
+            response += `Model: ${vehicle.model}\n`;
 
-  if (model) {
-    response += `Model: ${model}\n`
-  }
+            if (vehicle.year) {
+                response += `Year: ${vehicle.year}\n`;
+            }
 
-  if (year) {
-    response += `Year: ${year}\n`
-  }
+            response += "\n";
 
-  if (generation) {
-    response += `Generation Range: ${generation.generationStart}-${generation.generationEnd}\n`
-  }
+        }
 
-  response += "\n"
+        if (product) {
+            response += `Product Requested\n${product}\n\n`;
+        }
 
-  if (product) {
-    response += `Product Requested: ${product}\n\n`
-  }
+        if (fitment && fitment.wiper) {
 
-  if (fitment && product) {
+            response += "Correct Wiper Specification\n";
+            response += `Driver: ${fitment.wiper.driver}\n`;
+            response += `Passenger: ${fitment.wiper.passenger}\n\n`;
 
-    response += `Correct ${product} specification:\n`
+        }
 
-    for (const key in fitment) {
-      response += `${key}: ${fitment[key]}"\n`
+        if (products && products.length > 0) {
+
+            response += "Available Products\n\n";
+
+            products.slice(0, 5).forEach((p, index) => {
+
+                response += `${index + 1}. ${p.title}\n`;
+
+            });
+
+        } else {
+
+            response += "No matching products found. Please send vehicle details and part required.";
+
+        }
+
+        return response;
+
+    } catch (error) {
+
+        console.error("AI engine error:", error);
+
+        return "Sorry, something went wrong while processing your request.";
+
     }
 
-    response += "\n"
-  }
-
-  if (!products || products.length === 0) {
-    response += "No matching products found."
-    return response
-  }
-
-  response += "Available products:\n\n"
-
-  products.forEach((p, i) => {
-    response += `${i + 1}. ${p.title}\n`
-  })
-
-  return response
 }
