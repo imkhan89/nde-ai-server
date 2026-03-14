@@ -1,3 +1,4 @@
+import { normalizeQuery } from "./query_normalizer.js"
 import { detectVehicle } from "./vehicle_parser.js"
 import { detectYear } from "./year_parser.js"
 import { detectProductName } from "./product_name_parser.js"
@@ -8,9 +9,13 @@ import { searchProducts } from "./product_search.js"
 
 export async function processMessage(message) {
 
-  const model = detectVehicle(message)
-  const year = detectYear(message)
-  const product = detectProductName(message)
+  // Normalize user message (fix typos)
+  const normalizedMessage = normalizeQuery(message)
+
+  // Extract automotive entities
+  const model = detectVehicle(normalizedMessage)
+  const year = detectYear(normalizedMessage)
+  const product = detectProductName(normalizedMessage)
   const make = detectMake(model)
 
   const generation = detectGeneration(model, year)
@@ -25,19 +30,19 @@ export async function processMessage(message) {
 
   // Intelligent search strategy
 
-  // 1. vehicle + product
+  // 1. Vehicle + product
   if (model && product) {
     products = await searchProducts(`${model} ${product}`)
   }
 
-  // 2. product only
+  // 2. Product only
   if (products.length === 0 && product) {
     products = await searchProducts(product)
   }
 
-  // 3. full message fallback
+  // 3. Full query fallback
   if (products.length === 0) {
-    products = await searchProducts(message)
+    products = await searchProducts(normalizedMessage)
   }
 
   let response = ""
@@ -75,7 +80,6 @@ export async function processMessage(message) {
     }
 
     response += "\n"
-
   }
 
   if (!products || products.length === 0) {
