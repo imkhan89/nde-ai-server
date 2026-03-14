@@ -1,25 +1,25 @@
 import express from "express"
-import bodyParser from "body-parser"
 import cors from "cors"
 
 import config from "./config.js"
 
 import { initDB } from "./database/database.js"
 import { saveConversation } from "./database/queries.js"
-
 import { processMessage } from "./services/ai_engine.js"
-
-import { whatsappRoute } from "./routes/whatsapp.js"
-
 import { syncShopify } from "./sync/shopify_sync.js"
-
 import { log } from "./utils/logger.js"
+
+import pkg from "twilio"
+const { twiml } = pkg
+const MessagingResponse = twiml.MessagingResponse
 
 const app = express()
 
 app.use(cors())
-app.use(bodyParser.urlencoded({ extended:false }))
-app.use(bodyParser.json())
+
+// REQUIRED FOR TWILIO WEBHOOK
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
 
 const db = await initDB()
 
@@ -29,30 +29,49 @@ await syncShopify(db)
 
 log("Shopify products synced")
 
-async function messageHandler(phone,message){
+app.post("/whatsapp", async (req,res)=>{
 
-log(`Incoming message from ${phone}: ${message}`)
+try{
 
-await saveConversation(db,phone,message,"incoming")
+const phone = req.body.From
+const message = req.body.Body
 
-const reply = await processMessage(db,phone,message)
+log(`Incoming message: ${phone} ${message}`)
 
-await saveConversation(db,phone,reply,"outgoing")
+await saveConversation(db, phone, message, "incoming")
 
-return reply
+const reply = await processMessage(db, phone, message)
+
+await saveConversation(db, phone, reply, "outgoing")
+
+const response = new MessagingResponse()
+
+response.message(reply)
+
+res.type("text/xml")
+
+res.send(response.toString())
+
+}catch(error){
+
+console.error("Webhook error:", error)
+
+const response = new MessagingResponse()
+
+response.message("System error. Please try again.")
+
+res.type("text/xml")
+
+res.send(response.toString())
 
 }
 
-whatsappRoute(app,messageHandler)
-
-app.get("/",(req,res)=>{
-
-res.send("NDE Automotive AI Server Running")
-
 })
 
-app.listen(config.SERVER_PORT,()=>{
+app.get("/", (req,res)=>{
+res.send("NDE Automotive AI Server Running")
+})
 
+app.listen(config.SERVER_PORT, ()=>{
 log(`Server running on port ${config.SERVER_PORT}`)
-
 })
