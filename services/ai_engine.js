@@ -6,27 +6,72 @@ import { searchProducts } from "./product_search.js"
 
 export async function processMessage(message) {
 
-  const vehicle = detectVehicle(message)
+  const vehicleModel = detectVehicle(message)
   const year = detectYear(message)
   const part = detectPart(message)
 
-  if (!vehicle && !part) {
+  // Detect make based on model
+  let make = null
+
+  const toyotaModels = [
+    "corolla",
+    "yaris",
+    "hilux",
+    "vigo",
+    "revo",
+    "fortuner",
+    "prado"
+  ]
+
+  const hondaModels = [
+    "civic",
+    "city"
+  ]
+
+  if (toyotaModels.includes(vehicleModel)) {
+    make = "Toyota"
+  }
+
+  if (hondaModels.includes(vehicleModel)) {
+    make = "Honda"
+  }
+
+  if (!vehicleModel && !part) {
     return "Please tell us the vehicle and auto part you need."
   }
 
-  const fitment = getFitment(vehicle, year, part)
+  const fitment = getFitment(vehicleModel, year, part)
 
-  // Vehicle-aware search query
-  const searchQuery = vehicle
-    ? `${vehicle} ${part || ""}`
+  // Intelligent search query
+  const searchQuery = vehicleModel
+    ? `${vehicleModel} ${part || ""}`
     : part || message
 
   const products = await searchProducts(searchQuery)
 
   let response = ""
 
-  if (vehicle && year) {
-    response += `Vehicle: ${vehicle} ${year}\n\n`
+  if (make || vehicleModel || year) {
+
+    response += `Vehicle Details:\n`
+
+    if (make) {
+      response += `Make: ${make}\n`
+    }
+
+    if (vehicleModel) {
+      response += `Model: ${vehicleModel}\n`
+    }
+
+    if (year) {
+      response += `Year: ${year}\n`
+    }
+
+    response += "\n"
+  }
+
+  if (part) {
+    response += `Product Requested: ${part}\n\n`
   }
 
   if (fitment && part) {
@@ -48,8 +93,4 @@ export async function processMessage(message) {
   response += "Available products:\n\n"
 
   products.forEach((p, i) => {
-    response += `${i + 1}. ${p.title}\n`
-  })
-
-  return response
-}
+    response += `${i + 1}. ${p.tit
