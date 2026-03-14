@@ -2,71 +2,72 @@ import axios from "axios"
 import sqlite3 from "sqlite3"
 import { open } from "sqlite"
 
-const SHOPIFY_STORE = "YOURSTORE.myshopify.com"
-const SHOPIFY_TOKEN = "SHOPIFY_ADMIN_API_TOKEN"
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE
+const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN
 
 const db = await open({
-filename:"./nde.db",
-driver:sqlite3.Database
+  filename: "./nde.db",
+  driver: sqlite3.Database
 })
 
 async function syncProducts(){
 
-let url = `https://${SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250`
+  console.log("Starting Shopify Sync...")
 
-let total = 0
+  let pageInfo = null
+  let total = 0
 
-while(url){
+  while(true){
 
-const res = await axios.get(url,{
-headers:{
-"X-Shopify-Access-Token":SHOPIFY_TOKEN
-}
-})
+    let url = `https://${SHOPIFY_STORE}/admin/api/2024-01/products.json?limit=250`
 
-const products = res.data.products
+    if(pageInfo){
+      url += `&page_info=${pageInfo}`
+    }
 
-for(const p of products){
+    const res = await axios.get(url,{
+      headers:{
+        "X-Shopify-Access-Token":SHOPIFY_TOKEN
+      }
+    })
 
-const price = p.variants[0]?.price || 0
-const sku = p.variants[0]?.sku || ""
+    const products = res.data.products
 
-await db.run(
+    if(!products.length) break
 
-`INSERT OR REPLACE INTO products(title,price,url,sku)
-VALUES(?,?,?,?)`,
+    for(const p of products){
 
-[
-p.title,
-price,
-`https://ndestore.com/products/${p.handle}`,
-sku
-]
+      const variant = p.variants?.[0] || {}
 
-)
+      const title = p.title
+      const price = variant.price || 0
+      const sku = variant.sku || ""
+      const url = `https://ndestore.com/products/${p.handle}`
 
-total++
+      await db.run(
+        `INSERT OR REPLACE INTO products(title,price,url,sku)
+         VALUES(?,?,?,?)`,
+        [title,price,url,sku]
+      )
 
-}
+      total++
+    }
 
-const linkHeader = res.headers.link
+    const link = res.headers.link
 
-if(linkHeader && linkHeader.includes('rel="next"')){
+    if(link && link.includes('rel="next"')){
+      const match = link.match(/page_info=([^&>]+)/)
+      pageInfo = match ? match[1] : null
+    }else{
+      break
+    }
 
-const match = linkHeader.match(/<([^>]+)>; rel="next"/)
+    console.log("Products Synced:",total)
 
-url = match ? match[1] : null
+  }
 
-}else{
-
-url = null
-
-}
-
-}
-
-console.log("Shopify Sync Completed")
-console.log("Products Synced:",total)
+  console.log("Shopify Sync Completed")
+  console.log("Total Products:",total)
 
 }
 
