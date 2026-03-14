@@ -48,6 +48,14 @@ url TEXT,
 sku TEXT
 );
 
+CREATE TABLE IF NOT EXISTS orders(
+id INTEGER PRIMARY KEY,
+order_number TEXT,
+phone TEXT,
+status TEXT,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 `)
 
 const vehicles = [
@@ -209,9 +217,7 @@ Toyota Corolla 2018`
 const products = await searchProducts(part)
 
 if(products.length===0){
-
 await saveLead(phone,vehicle,part)
-
 }
 
 return buildResponse(products,vehicle,part)
