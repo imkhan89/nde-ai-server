@@ -1,26 +1,22 @@
-import db from "../database/database.js"
+import { semanticProductSearch } from "./semantic_product_search.js";
 
-export function searchProducts(query) {
+export async function productSearch(db, query) {
 
-  return new Promise((resolve, reject) => {
+    try {
 
-    const sql = `
-      SELECT title, handle
-      FROM products
-      WHERE title LIKE ?
-      LIMIT 5
-    `
+        if (!query || query.trim() === "") {
+            return [];
+        }
 
-    db.all(sql, [`%${query}%`], (err, rows) => {
+        const results = await semanticProductSearch(db, query);
 
-      if (err) {
-        reject(err)
-      } else {
-        resolve(rows)
-      }
+        return results;
 
-    })
+    } catch (error) {
 
-  })
+        console.error("Product search error:", error);
+        return [];
+
+    }
 
 }
