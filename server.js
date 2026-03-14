@@ -14,13 +14,12 @@ const app = express()
 
 app.use(cors())
 
-// Twilio requires urlencoded parsing
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 
 let db
 
-async function start(){
+async function start() {
 
 db = await initDB()
 
@@ -30,15 +29,42 @@ console.log("Database initialized")
 
 await start()
 
-app.post("/whatsapp", async (req,res)=>{
-
-console.log("Webhook received")
+app.post("/whatsapp", async (req, res) => {
 
 const twiml = new MessagingResponse()
 
-try{
+try {
 
 const phone = req.body.From
 const message = req.body.Body
 
-console.log("Incoming:", p
+console.log("Incoming:", phone, message)
+
+const reply = await processMessage(db, phone, message)
+
+twiml.message(reply)
+
+} catch (error) {
+
+console.error("Webhook error:", error)
+
+twiml.message("System temporarily unavailable.")
+
+}
+
+res.writeHead(200, { "Content-Type": "text/xml" })
+res.end(twiml.toString())
+
+})
+
+app.get("/", (req, res) => {
+
+res.send("NDE Automotive AI Server Running")
+
+})
+
+app.listen(config.SERVER_PORT, () => {
+
+console.log("Server running on port", config.SERVER_PORT)
+
+})
