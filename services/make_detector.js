@@ -1,35 +1,40 @@
-export function detectMake(model) {
+// services/make_detector.js
 
-  const makes = {
-    Toyota: [
-      "corolla",
-      "yaris",
-      "hilux",
-      "vigo",
-      "revo",
-      "fortuner",
-      "prado"
-    ],
+export function detectMake(query) {
 
-    Honda: [
-      "civic",
-      "city"
-    ],
-
-    Suzuki: [
-      "mehran",
-      "alto",
-      "cultus",
-      "wagon r",
-      "swift"
-    ]
-  }
-
-  for (const make in makes) {
-    if (makes[make].includes(model)) {
-      return make
+    if (!query || typeof query !== "string") {
+        return null;
     }
-  }
 
-  return null
+    const makes = [
+        "toyota",
+        "honda",
+        "suzuki",
+        "hyundai",
+        "kia",
+        "mitsubishi",
+        "nissan",
+        "daihatsu"
+    ];
+
+    const normalized = query.toLowerCase();
+
+    for (const make of makes) {
+
+        if (normalized.includes(make)) {
+            return capitalize(make);
+        }
+
+    }
+
+    return null;
+
+}
+
+function capitalize(text) {
+
+    if (!text) return text;
+
+    return text.charAt(0).toUpperCase() + text.slice(1);
+
 }
