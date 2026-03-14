@@ -8,16 +8,14 @@ export function queryNormalizer(message) {
         return "";
     }
 
-    // convert to lowercase
     let normalized = message.toLowerCase();
 
-    // remove punctuation
+    // Remove punctuation
     normalized = normalized.replace(/[^\w\s]/g, " ");
 
-    // normalize whitespace
+    // Normalize whitespace
     normalized = normalized.replace(/\s+/g, " ").trim();
 
-    // tokenize
     const tokens = normalized.split(" ");
 
     const correctedTokens = tokens.map(token => {
