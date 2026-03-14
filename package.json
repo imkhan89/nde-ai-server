@@ -1,12 +1,12 @@
 {
   "name": "nde-ai-server",
   "version": "1.0.0",
-  "description": "NDE Automotive AI Server",
+  "description": "NDE Automotive AI WhatsApp Server",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "admin": "node admin_server.js"
+    "dev": "node server.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -14,8 +14,9 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
     "express": "^4.19.2",
+    "node-cron": "^3.0.3",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
+    "sqlite3": "^5.1.6",
     "twilio": "^4.23.0"
   }
 }
