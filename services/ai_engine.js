@@ -2,6 +2,7 @@ import { detectVehicle } from "./vehicle_parser.js"
 import { detectYear } from "./year_parser.js"
 import { detectProductName } from "./product_name_parser.js"
 import { detectMake } from "./make_detector.js"
+import { detectGeneration } from "./generation_detector.js"
 import { getFitment } from "./fitment_engine.js"
 import { searchProducts } from "./product_search.js"
 
@@ -10,8 +11,9 @@ export async function processMessage(message) {
   const model = detectVehicle(message)
   const year = detectYear(message)
   const product = detectProductName(message)
-
   const make = detectMake(model)
+
+  const generation = detectGeneration(model, year)
 
   if (!model && !product) {
     return "Please tell us the vehicle and auto part you need."
@@ -19,11 +21,24 @@ export async function processMessage(message) {
 
   const fitment = getFitment(model, year, product)
 
-  const searchQuery = model
-    ? `${model} ${product || ""}`
-    : product || message
+  let products = []
 
-  const products = await searchProducts(searchQuery)
+  // Intelligent search strategy
+
+  // 1. vehicle + product
+  if (model && product) {
+    products = await searchProducts(`${model} ${product}`)
+  }
+
+  // 2. product only
+  if (products.length === 0 && product) {
+    products = await searchProducts(product)
+  }
+
+  // 3. full message fallback
+  if (products.length === 0) {
+    products = await searchProducts(message)
+  }
 
   let response = ""
 
@@ -41,6 +56,10 @@ export async function processMessage(message) {
     response += `Year: ${year}\n`
   }
 
+  if (generation) {
+    response += `Generation Range: ${generation.generationStart}-${generation.generationEnd}\n`
+  }
+
   response += "\n"
 
   if (product) {
@@ -56,6 +75,7 @@ export async function processMessage(message) {
     }
 
     response += "\n"
+
   }
 
   if (!products || products.length === 0) {
