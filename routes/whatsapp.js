@@ -7,18 +7,36 @@ export function whatsappRoute(app, handler){
 
 app.post("/whatsapp", async (req,res)=>{
 
-const phone = req.body.From
-const message = req.body.Body
+try{
+
+const phone = req.body?.From || "unknown"
+const message = req.body?.Body || ""
+
+console.log("Incoming:", phone, message)
 
 const reply = await handler(phone,message)
 
 const response = new MessagingResponse()
 
-response.message(reply)
+response.message(reply || "OK")
 
 res.type("text/xml")
 
 res.send(response.toString())
+
+}catch(error){
+
+console.error("Webhook error:", error)
+
+const response = new MessagingResponse()
+
+response.message("System temporarily unavailable.")
+
+res.type("text/xml")
+
+res.send(response.toString())
+
+}
 
 })
 
