@@ -1,94 +1,100 @@
-import express from "express"
-import bodyParser from "body-parser"
-import cron from "node-cron"
+// server.js
 
-import { initDB } from "./database/database.js"
-import { processMessage } from "./services/ai_engine.js"
-import { syncShopifyProducts } from "./sync/shopify_sync.js"
+import express from "express";
+import bodyParser from "body-parser";
+import dotenv from "dotenv";
 
-const app = express()
-const PORT = process.env.PORT || 8080
+import { initDatabase } from "./database/database.js";
+import { syncShopifyProducts } from "./sync/shopify_sync.js";
+import { processCustomerMessage } from "./services/ai_engine.js";
 
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: true }))
+dotenv.config();
 
-// Initialize database
-const db = initDB()
+const app = express();
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-// Shopify initial sync
-async function initialSync() {
-  try {
-    console.log("Starting Shopify product sync...")
-    const count = await syncShopifyProducts()
-    console.log(`Shopify sync completed: ${count} products`)
-  } catch (error) {
-    console.error("Shopify sync failed:", error)
-  }
+let db;
+
+// Initialize database and sync products
+async function initialize() {
+
+    try {
+
+        db = await initDatabase();
+
+        console.log("Database connected");
+
+        await syncShopifyProducts(db);
+
+        console.log("Initial Shopify sync completed");
+
+        // Schedule product sync every 6 hours
+        setInterval(async () => {
+
+            console.log("Running scheduled Shopify sync...");
+
+            await syncShopifyProducts(db);
+
+        }, 6 * 60 * 60 * 1000);
+
+    } catch (error) {
+
+        console.error("Initialization error:", error);
+
+    }
+
 }
 
-initialSync()
+initialize();
 
-// Scheduled sync every 6 hours
-cron.schedule("0 */6 * * *", async () => {
-  console.log("Running scheduled Shopify sync...")
-  await syncShopifyProducts()
-})
+// Health check route
+app.get("/", (req, res) => {
 
-// WhatsApp webhook endpoint
-app.post("/webhook/whatsapp", async (req, res) => {
-  try {
+    res.send("NDE Automotive AI Server Running");
 
-    const message = req.body.Body || ""
-    const from = req.body.From || ""
+});
 
-    console.log("Incoming message:", message)
+// WhatsApp webhook
+app.post("/whatsapp", async (req, res) => {
 
-    const reply = await processMessage(message)
+    try {
 
-    res.set("Content-Type", "text/xml")
+        const incomingMessage = req.body.Body;
 
-    res.send(`
+        console.log("Incoming message:", incomingMessage);
+
+        const reply = await processCustomerMessage(db, incomingMessage);
+
+        const twiml = `
 <Response>
 <Message>${reply}</Message>
 </Response>
-    `)
+`;
 
-  } catch (error) {
+        res.set("Content-Type", "text/xml");
+        res.send(twiml);
 
-    console.error("Webhook error:", error)
+    } catch (error) {
 
-    res.set("Content-Type", "text/xml")
+        console.error("Webhook error:", error);
 
-    res.send(`
+        res.set("Content-Type", "text/xml");
+
+        res.send(`
 <Response>
-<Message>Sorry, something went wrong.</Message>
+<Message>Sorry, something went wrong. Please try again.</Message>
 </Response>
-    `)
+`);
 
-  }
-})
-
-// Debug endpoint
-app.get("/debug/products", (req, res) => {
-
-  db.get("SELECT COUNT(*) as count FROM products", (err, row) => {
-
-    if (err) {
-      return res.status(500).json({ error: err.message })
     }
 
-    res.json(row)
+});
 
-  })
+const PORT = process.env.PORT || 3000;
 
-})
-
-// Health check
-app.get("/", (req, res) => {
-  res.send("NDE Automotive AI Server Running")
-})
-
-// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+
+    console.log(`Server running on port ${PORT}`);
+
+});
