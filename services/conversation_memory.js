@@ -1,49 +1,74 @@
-export async function getContext(db, phone){
+// services/conversation_memory.js
 
-const row = await db.get(
-"SELECT vehicle,part FROM conversation_context WHERE phone=?",
-[phone]
-)
+const conversationStore = new Map();
 
-if(!row){
-return {}
+function createEmptySession() {
+    return {
+        vehicle: null,
+        product: null,
+        lastQuery: null,
+        lastResults: []
+    };
 }
 
-return row
+export function getSession(sessionId) {
+
+    if (!sessionId) return createEmptySession();
+
+    if (!conversationStore.has(sessionId)) {
+        conversationStore.set(sessionId, createEmptySession());
+    }
+
+    return conversationStore.get(sessionId);
 }
 
-export async function setContext(db, phone, data){
+export function updateVehicle(sessionId, vehicle) {
 
-const existing = await db.get(
-"SELECT * FROM conversation_context WHERE phone=?",
-[phone]
-)
+    if (!sessionId || !vehicle) return;
 
-if(!existing){
+    const session = getSession(sessionId);
 
-await db.run(
-"INSERT INTO conversation_context(phone,vehicle,part) VALUES(?,?,?)",
-[
-phone,
-data.vehicle || null,
-data.part || null
-]
-)
+    session.vehicle = vehicle;
 
-}else{
-
-await db.run(
-`UPDATE conversation_context
-SET vehicle = COALESCE(?,vehicle),
-part = COALESCE(?,part)
-WHERE phone=?`,
-[
-data.vehicle || null,
-data.part || null,
-phone
-]
-)
-
+    conversationStore.set(sessionId, session);
 }
 
+export function updateProduct(sessionId, product) {
+
+    if (!sessionId || !product) return;
+
+    const session = getSession(sessionId);
+
+    session.product = product;
+
+    conversationStore.set(sessionId, session);
+}
+
+export function updateSearchResults(sessionId, results) {
+
+    if (!sessionId) return;
+
+    const session = getSession(sessionId);
+
+    session.lastResults = results || [];
+
+    conversationStore.set(sessionId, session);
+}
+
+export function updateLastQuery(sessionId, query) {
+
+    if (!sessionId) return;
+
+    const session = getSession(sessionId);
+
+    session.lastQuery = query;
+
+    conversationStore.set(sessionId, session);
+}
+
+export function clearSession(sessionId) {
+
+    if (!sessionId) return;
+
+    conversationStore.delete(sessionId);
 }
