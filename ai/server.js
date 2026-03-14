@@ -1,7 +1,50 @@
+const express = require("express");
+const bodyParser = require("body-parser");
 const { MessagingResponse } = require("twilio").twiml;
 
+const chatHandler = require("./chat_handler");
+const catalogSync = require("./shopify_catalog_sync_engine");
 
-/* CENTRAL WEBHOOK HANDLER */
+const app = express();
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+const PORT = process.env.PORT || 8080;
+
+
+/* SERVER STATUS */
+
+app.get("/", (req, res) => {
+  res.send("NDE AI Server Running");
+});
+
+
+/* CATALOG STATUS */
+
+app.get("/catalog-status", (req, res) => {
+
+  const fs = require("fs");
+  const path = require("path");
+
+  const file = path.join(__dirname, "../data/shopify_products.json");
+
+  if (!fs.existsSync(file)) {
+    return res.json({ status: "loading", cached_products: 0 });
+  }
+
+  const raw = fs.readFileSync(file, "utf8");
+  const products = JSON.parse(raw);
+
+  res.json({
+    status: "ok",
+    cached_products: products.length
+  });
+
+});
+
+
+/* WHATSAPP HANDLER */
 
 async function handleWebhook(req, res) {
 
@@ -32,7 +75,39 @@ async function handleWebhook(req, res) {
 }
 
 
-/* SUPPORT BOTH ROUTES */
+/* BOTH ROUTES */
 
 app.post("/webhook", handleWebhook);
 app.post("/whatsapp", handleWebhook);
+
+
+/* START SERVER */
+
+app.listen(PORT, () => {
+
+  console.log("NDE AI Server Running on port:", PORT);
+
+  startSystem();
+
+});
+
+
+/* START SYSTEM */
+
+async function startSystem() {
+
+  try {
+
+    console.log("Starting Shopify full catalog sync...");
+
+    await catalogSync.fetchAllProducts();
+
+    console.log("Catalog sync finished");
+
+  } catch (err) {
+
+    console.log("Startup error:", err.message);
+
+  }
+
+}
