@@ -1,6 +1,7 @@
 // services/product_search.js
 
 import { semanticProductSearch } from "./semantic_product_search.js";
+import { rankProducts } from "./product_ranker.js";
 
 export async function productSearch(db, query) {
 
@@ -16,9 +17,17 @@ export async function productSearch(db, query) {
             return [];
         }
 
+        // Step 1 — Semantic search (FTS)
         const results = await semanticProductSearch(db, cleanedQuery);
 
-        return results;
+        if (!results || results.length === 0) {
+            return [];
+        }
+
+        // Step 2 — Rank products for better recommendation
+        const rankedProducts = rankProducts(results, cleanedQuery);
+
+        return rankedProducts;
 
     } catch (error) {
 
