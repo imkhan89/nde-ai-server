@@ -1,5 +1,3 @@
-// data/spelling_dictionary.js
-
 export const SPELLING_DICTIONARY = {
 
     // vehicle models
