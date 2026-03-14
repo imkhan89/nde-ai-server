@@ -1,111 +1,107 @@
-const express = require("express")
-const bodyParser = require("body-parser")
-const { MessagingResponse } = require("twilio").twiml
+const express = require("express");
+const bodyParser = require("body-parser");
+const { MessagingResponse } = require("twilio").twiml;
 
-const chatHandler = require("./chat_handler")
-const catalogSync = require("./shopify_catalog_sync_engine")
+const chatHandler = require("./chat_handler");
+const catalogSync = require("./shopify_catalog_sync_engine");
 
-const app = express()
+const app = express();
 
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-const PORT = process.env.PORT || 8080
+const PORT = process.env.PORT || 8080;
 
 
 /* SERVER STATUS */
 
-app.get("/", (req,res)=>{
-res.send("NDE AI Server Running")
-})
+app.get("/", (req, res) => {
+  res.send("NDE AI Server Running");
+});
 
 
 /* CATALOG STATUS */
 
-app.get("/catalog-status",(req,res)=>{
+app.get("/catalog-status", (req, res) => {
 
-const fs = require("fs")
-const path = require("path")
+  const fs = require("fs");
+  const path = require("path");
 
-const file = path.join(__dirname,"../data/shopify_products.json")
+  const file = path.join(__dirname, "../data/shopify_products.json");
 
-if(!fs.existsSync(file)){
-return res.json({status:"loading",cached_products:0})
-}
+  if (!fs.existsSync(file)) {
+    return res.json({ status: "loading", cached_products: 0 });
+  }
 
-const raw = fs.readFileSync(file,"utf8")
-const products = JSON.parse(raw)
+  const raw = fs.readFileSync(file, "utf8");
+  const products = JSON.parse(raw);
 
-res.json({
-status:"ok",
-cached_products:products.length
-})
+  res.json({
+    status: "ok",
+    cached_products: products.length
+  });
 
-})
+});
 
 
 /* TWILIO WHATSAPP WEBHOOK */
 
-app.post("/webhook", async (req,res)=>{
+app.post("/webhook", async (req, res) => {
 
-try{
+  const twiml = new MessagingResponse();
 
-console.log("Incoming message:",req.body.Body)
+  try {
 
-const incomingMessage = req.body.Body || ""
-const phone = req.body.From || ""
+    const incomingMessage = req.body.Body || "";
+    const phone = req.body.From || "";
 
-const reply = await chatHandler.handleMessage(incomingMessage,phone)
+    console.log("Incoming message:", incomingMessage);
 
-const twiml = new MessagingResponse()
+    const reply = await chatHandler.handleMessage(incomingMessage, phone);
 
-twiml.message(reply)
+    twiml.message(reply);
 
-res.type("text/xml")
-res.send(twiml.toString())
+  } catch (err) {
 
-}catch(err){
+    console.log("Webhook error:", err.message);
 
-console.log("Webhook error:",err.message)
+    twiml.message("System error. Please try again.");
 
-const twiml = new MessagingResponse()
-twiml.message("System error.")
+  }
 
-res.type("text/xml")
-res.send(twiml.toString())
+  res.writeHead(200, { "Content-Type": "text/xml" });
+  res.end(twiml.toString());
 
-}
-
-})
+});
 
 
 /* START SERVER */
 
-app.listen(PORT,()=>{
+app.listen(PORT, () => {
 
-console.log("NDE AI Server Running on port:",PORT)
+  console.log("NDE AI Server Running on port:", PORT);
 
-startSystem()
+  startSystem();
 
-})
+});
 
 
 /* START SYSTEM */
 
-async function startSystem(){
+async function startSystem() {
 
-try{
+  try {
 
-console.log("Starting Shopify full catalog sync...")
+    console.log("Starting Shopify full catalog sync...");
 
-await catalogSync.fetchAllProducts()
+    await catalogSync.fetchAllProducts();
 
-console.log("Catalog sync finished")
+    console.log("Catalog sync finished");
 
-}catch(err){
+  } catch (err) {
 
-console.log("Startup error:",err.message)
+    console.log("Startup error:", err.message);
 
-}
+  }
 
 }
