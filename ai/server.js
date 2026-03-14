@@ -17,75 +17,78 @@ const PORT = process.env.PORT || 3000
 // =====================================
 
 app.get("/", (req, res) => {
+
   res.send("NDESTORE Automotive AI Server Running")
+
 })
 
 
 
 // =====================================
-// WHATSAPP WEBHOOK
+// WHATSAPP WEBHOOK (TWILIO)
 // =====================================
 
-app.post("/webhook", async (req, res) => {
+app.post("/whatsapp", async (req, res) => {
 
-  console.log("====================================")
-  console.log("Webhook hit")
-  console.log("Incoming Request Body:")
+  console.log("================================")
+  console.log("WhatsApp webhook triggered")
+  console.log("Request Body:")
   console.log(req.body)
-  console.log("====================================")
+  console.log("================================")
 
   const incomingMessage = req.body.Body || ""
   const sender = req.body.From || ""
 
   console.log("Customer Message:", incomingMessage)
-  console.log("From:", sender)
+  console.log("Sender:", sender)
 
   const message = incomingMessage.toLowerCase()
 
-  let reply = "Welcome to ndestore.com automotive assistant.\n\nPlease send your request in this format:\n\nPart + Make + Model + Year\n\nExample:\nWiper Blade Suzuki Swift 2022"
+  let reply =
+    "Welcome to ndestore.com 🚗\n\nSend request in this format:\n\nPart + Make + Model + Year\n\nExample:\nWiper Blade Suzuki Swift 2022"
 
 
 
-  // ============================
-  // BASIC INTENT DETECTION
-  // ============================
+  // =====================================
+  // SIMPLE INTENT DETECTION
+  // =====================================
 
   if (message.includes("wiper")) {
 
     reply =
-      "Please share your vehicle details to find the correct wiper blades.\n\nExample:\nSuzuki Swift 2021"
+      "Please share your vehicle Make, Model and Year to find correct wiper blades.\n\nExample:\nSuzuki Swift 2021"
 
   }
 
   else if (message.includes("brake")) {
 
     reply =
-      "Please share your vehicle Make Model and Year to find the correct brake pads."
+      "Please share your vehicle Make Model and Year to find correct brake pads."
 
   }
 
   else if (message.includes("filter")) {
 
     reply =
-      "Please share your vehicle Make Model and Year to find the correct filters."
+      "Please share your vehicle Make Model and Year to find the correct filter."
 
   }
 
   else if (message.includes("hello") || message.includes("hi")) {
 
     reply =
-      "Welcome to ndestore.com 🚗\n\n1️⃣ Auto Parts\n2️⃣ Accessories\n3️⃣ Decal Stickers\n4️⃣ Order Status\n5️⃣ Support\n6️⃣ Complaints\n\nReply with a number to continue."
+      "Welcome to ndestore.com 🚗\n\n1 Auto Parts\n2 Accessories\n3 Decal Stickers\n4 Order Status\n5 Support\n6 Complaints\n\nReply with a number to continue."
 
   }
 
 
 
-  console.log("AI Reply:", reply)
+  console.log("Reply:", reply)
 
 
 
   // =====================================
-  // TWILIO RESPONSE (THIS SENDS WHATSAPP MESSAGE)
+  // TWILIO RESPONSE (TWiML)
   // =====================================
 
   res.set("Content-Type", "text/xml")
@@ -106,10 +109,10 @@ app.post("/webhook", async (req, res) => {
 
 app.listen(PORT, () => {
 
-  console.log("====================================")
-  console.log("NDESTORE Automotive AI Server Started")
+  console.log("================================")
+  console.log("NDESTORE AI Server Started")
   console.log("Port:", PORT)
-  console.log("Webhook URL: /webhook")
-  console.log("====================================")
+  console.log("Webhook Endpoint: /whatsapp")
+  console.log("================================")
 
 })
