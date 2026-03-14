@@ -1,3 +1,5 @@
+// services/ai_engine.js
+
 import { queryNormalizer } from "./query_normalizer.js";
 import { parseVehicle } from "./vehicle_parser.js";
 import { detectProductName } from "./product_name_parser.js";
@@ -12,23 +14,23 @@ export async function processCustomerMessage(db, message) {
             return "Sorry, I could not understand your message. Please send the vehicle and part required.";
         }
 
-        // Step 1 — Normalize the query
+        // STEP 1 — Normalize user query
         const normalizedQuery = queryNormalizer(message);
 
-        // Step 2 — Detect vehicle information
+        // STEP 2 — Detect vehicle information
         const vehicle = parseVehicle(normalizedQuery);
 
-        // Step 3 — Detect product name
+        // STEP 3 — Detect product name
         const product = detectProductName(normalizedQuery);
 
-        // Step 4 — Retrieve fitment data
+        // STEP 4 — Get vehicle fitment data if possible
         let fitment = null;
 
         if (vehicle && vehicle.make && vehicle.model && vehicle.year) {
             fitment = getFitmentData(vehicle.make, vehicle.model, vehicle.year);
         }
 
-        // Step 5 — Build search query
+        // STEP 5 — Build search query
         let searchQuery = normalizedQuery;
 
         if (vehicle && product) {
@@ -37,10 +39,10 @@ export async function processCustomerMessage(db, message) {
             searchQuery = product;
         }
 
-        // Step 6 — Search products
+        // STEP 6 — Search products
         const products = await productSearch(db, searchQuery);
 
-        // Step 7 — Build response message
+        // STEP 7 — Build WhatsApp response
         let response = "";
 
         if (vehicle && vehicle.make && vehicle.model) {
@@ -58,7 +60,10 @@ export async function processCustomerMessage(db, message) {
         }
 
         if (product) {
-            response += `Product Requested\n${product}\n\n`;
+
+            response += "Product Requested\n";
+            response += `${product}\n\n`;
+
         }
 
         if (fitment && fitment.wiper) {
@@ -73,9 +78,9 @@ export async function processCustomerMessage(db, message) {
 
             response += "Available Products\n\n";
 
-            products.slice(0, 5).forEach((p, index) => {
+            products.slice(0, 5).forEach((product, index) => {
 
-                response += `${index + 1}. ${p.title}\n`;
+                response += `${index + 1}. ${product.title}\n`;
 
             });
 
@@ -89,7 +94,7 @@ export async function processCustomerMessage(db, message) {
 
     } catch (error) {
 
-        console.error("AI engine error:", error);
+        console.error("AI Engine Error:", error);
 
         return "Sorry, something went wrong while processing your request.";
 
