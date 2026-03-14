@@ -1,10 +1,14 @@
 export async function searchProduct(db,part){
 
-const product = await db.get(
-"SELECT * FROM products WHERE title LIKE ? LIMIT 1",
+const products = await db.all(
+"SELECT * FROM products WHERE title LIKE ?",
 [`%${part}%`]
 )
 
-return product
+if(!products || products.length === 0){
+return null
+}
+
+return products[0]
 
 }
