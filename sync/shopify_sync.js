@@ -1,77 +1,65 @@
-import axios from "axios"
+import fetch from "node-fetch"
+import db from "../database/database.js"
 
-export async function syncShopify(db){
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
 
-const store = process.env.SHOPIFY_STORE_DOMAIN
-const token = process.env.SHOPIFY_ADMIN_API_TOKEN
-const version = process.env.SHOPIFY_API_VERSION || "2024-01"
+export async function syncShopifyProducts() {
 
-if(!store || !token){
-console.log("Shopify credentials missing")
-return
-}
+  let total = 0
+  let hasNextPage = true
+  let cursor = null
 
-let url = `https://${store}/admin/api/${version}/products.json?limit=250`
-let total = 0
+  while (hasNextPage) {
 
-try{
+    let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
 
-while(url){
+    if (cursor) {
+      url += `&page_info=${cursor}`
+    }
 
-console.log("Fetching:", url)
+    const response = await fetch(url, {
+      headers: {
+        "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+        "Content-Type": "application/json"
+      }
+    })
 
-const response = await axios.get(url,{
-headers:{
-"X-Shopify-Access-Token": token
-}
-})
+    const data = await response.json()
 
-const products = response.data.products
+    if (!data.products) break
 
-for(const product of products){
+    for (const product of data.products) {
 
-const variant = product.variants?.[0]
-if(!variant) continue
+      db.run(
+        `INSERT OR REPLACE INTO products (id, title, handle)
+         VALUES (?, ?, ?)`,
+        [
+          product.id,
+          product.title,
+          product.handle
+        ]
+      )
 
-await db.run(
-`INSERT OR REPLACE INTO products
-(id,title,price,sku,handle)
-VALUES (?,?,?,?,?)`,
-[
-product.id,
-product.title,
-variant.price,
-variant.sku,
-product.handle
-]
-)
+      total++
 
-total++
+    }
 
-}
+    const linkHeader = response.headers.get("link")
 
-const linkHeader = response.headers.link
+    if (linkHeader && linkHeader.includes('rel="next"')) {
 
-if(linkHeader && linkHeader.includes('rel="next"')){
+      const match = linkHeader.match(/page_info=([^&>]+)/)
 
-const match = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
+      if (match) {
+        cursor = match[1]
+      }
 
-url = match ? match[1] : null
+    } else {
+      hasNextPage = false
+    }
 
-}else{
+  }
 
-url = null
-
-}
-
-}
-
-console.log("Shopify sync completed:", total)
-
-}catch(err){
-
-console.log("Shopify sync error:", err.message)
-
-}
-
+  return total
 }
