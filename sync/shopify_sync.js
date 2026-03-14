@@ -15,24 +15,19 @@ return
 
 try{
 
-let page = 1
+let url = `https://${store}/admin/api/${version}/products.json?limit=250`
 let total = 0
 
-while(true){
+while(url){
 
-const url = `https://${store}/admin/api/${version}/products.json?limit=250&page=${page}`
-
-const res = await axios.get(url,{
+const response = await axios.get(url,{
 headers:{
-"X-Shopify-Access-Token": token
+"X-Shopify-Access-Token": token,
+"Content-Type":"application/json"
 }
 })
 
-const products = res.data.products
-
-if(!products || products.length === 0){
-break
-}
+const products = response.data.products
 
 for(const product of products){
 
@@ -57,7 +52,17 @@ total++
 
 }
 
-page++
+const link = response.headers.link
+
+if(link && link.includes('rel="next"')){
+
+url = link.split(";")[0].replace("<","").replace(">","")
+
+}else{
+
+url = null
+
+}
 
 }
 
