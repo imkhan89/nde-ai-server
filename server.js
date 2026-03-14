@@ -6,6 +6,7 @@ import shortid from "shortid"
 import twilio from "twilio"
 import dotenv from "dotenv"
 import fs from "fs"
+import axios from "axios"
 
 dotenv.config()
 
@@ -17,8 +18,14 @@ const currency = JSON.parse(fs.readFileSync("./currency_rates.json"))
 const countries = JSON.parse(fs.readFileSync("./country_detection.json"))
 const payments = JSON.parse(fs.readFileSync("./payment_methods.json"))
 const bank = JSON.parse(fs.readFileSync("./bank_details.json"))
+const notify = JSON.parse(fs.readFileSync("./notification_numbers.json"))
 
 const { MessagingResponse } = twilio.twiml
+
+const client = twilio(
+process.env.TWILIO_ACCOUNT_SID,
+process.env.TWILIO_AUTH_TOKEN
+)
 
 const app = express()
 
@@ -59,14 +66,6 @@ title TEXT,
 price REAL,
 url TEXT,
 sku TEXT
-);
-
-CREATE TABLE IF NOT EXISTS payments(
-id INTEGER PRIMARY KEY,
-phone TEXT,
-order_id TEXT,
-amount REAL,
-created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 `)
 
@@ -129,6 +128,20 @@ AED: (price * currency.AED).toFixed(2)
 }
 }
 
+async function notifyAdmins(message){
+
+for(const number of notify.admins){
+
+await client.messages.create({
+from: process.env.TWILIO_WHATSAPP_NUMBER,
+to: `whatsapp:${number}`,
+body: message
+})
+
+}
+
+}
+
 async function searchProducts(part){
 const rows = await db.all(
 `SELECT * FROM products WHERE title LIKE ?`,
@@ -145,48 +158,17 @@ await db.run(
 }
 
 async function saveLead(phone,vehicle,part){
+
 await db.run(
 `INSERT INTO leads(phone,vehicle,part) VALUES(?,?,?)`,
 [phone,vehicle,part]
 )
-}
 
-function paymentMessage(order,amount){
+await notifyAdmins(`New Lead
 
-return `Thank you for placing an order at ndestore.com.
-
-Please proceed with the bank transfer using the details below:
-
-${bank.bank}
-Account Title: ${bank.title}
-Account Number: ${bank.account}
-IBAN: ${bank.iban}
-
-Amount Requested: Rs. ${amount}
-
-Kindly share the payment receipt or transfer screenshot for confirmation.
-
-Best Regards
-Syed Usman
-ndestore.com
-Order ID: ${order}`
-}
-
-function paymentOptions(){
-
-return `You may also pay using:
-
-JazzCash
-${payments.jazzcash}
-
-EasyPaisa
-${payments.easypaisa}
-
-NayaPay
-${payments.nayapay}
-
-SadaPay
-${payments.sadapay}`
+Customer: ${phone}
+Vehicle: ${vehicle}
+Part: ${part}`)
 }
 
 function buildResponse(products,vehicle,part){
@@ -227,10 +209,6 @@ let text = normalize(message)
 text = correctSpelling(text)
 
 await learn(phone,message)
-
-if(text.includes("payment methods")){
-return paymentOptions()
-}
 
 const country = detectCountry(phone)
 
