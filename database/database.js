@@ -2,4 +2,8 @@ import sqlite3 from "sqlite3"
 
 const db = new sqlite3.Database("nde.db")
 
+export function initDB() {
+  return db
+}
+
 export default db
