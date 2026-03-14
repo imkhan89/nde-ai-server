@@ -1,17 +1,17 @@
 import db from "../database/database.js"
 
-export function searchProducts(part) {
+export function searchProducts(query) {
 
   return new Promise((resolve, reject) => {
 
-    const query = `
+    const sql = `
       SELECT title, handle
       FROM products
       WHERE title LIKE ?
       LIMIT 5
     `
 
-    db.all(query, [`%${part}%`], (err, rows) => {
+    db.all(sql, [`%${query}%`], (err, rows) => {
 
       if (err) {
         reject(err)
