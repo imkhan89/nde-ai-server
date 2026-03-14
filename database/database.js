@@ -1,3 +1,5 @@
+// database/database.js
+
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
@@ -9,54 +11,44 @@ export async function initDatabase() {
         return db;
     }
 
-    try {
+    db = await open({
+        filename: "./nde.db",
+        driver: sqlite3.Database
+    });
 
-        db = await open({
-            filename: "./nde.db",
-            driver: sqlite3.Database
-        });
+    // Performance settings
+    await db.exec(`
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+        PRAGMA temp_store = MEMORY;
+    `);
 
-        // Improve performance
-        await db.exec(`
-            PRAGMA journal_mode = WAL;
-            PRAGMA synchronous = NORMAL;
-            PRAGMA temp_store = MEMORY;
-        `);
+    // Main products table
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS products (
+            id INTEGER PRIMARY KEY,
+            title TEXT NOT NULL,
+            handle TEXT NOT NULL
+        );
+    `);
 
-        // Create main product table
-        await db.exec(`
-            CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
-                handle TEXT NOT NULL
-            );
-        `);
+    // FTS5 semantic search table
+    await db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
+        USING fts5(
+            title,
+            handle,
+            content='products',
+            content_rowid='id'
+        );
+    `);
 
-        // Create FTS5 table for semantic search
-        await db.exec(`
-            CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
-            USING fts5(
-                title,
-                handle,
-                content='products',
-                content_rowid='id'
-            );
-        `);
+    // Rebuild FTS index if needed
+    await rebuildFTSIndex();
 
-        // Rebuild FTS index to ensure sync
-        await rebuildFTSIndex();
+    console.log("Database initialized");
 
-        console.log("Database initialized successfully");
-
-        return db;
-
-    } catch (error) {
-
-        console.error("Database initialization error:", error);
-        throw error;
-
-    }
-
+    return db;
 }
 
 export function getDatabase() {
@@ -66,27 +58,24 @@ export function getDatabase() {
     }
 
     return db;
-
 }
 
 export async function rebuildFTSIndex() {
 
+    if (!db) return;
+
     try {
 
-        if (!db) return;
-
-        // Clear existing index
         await db.exec(`
             DELETE FROM products_fts;
         `);
 
-        // Rebuild index from products table
         await db.exec(`
             INSERT INTO products_fts(rowid, title, handle)
             SELECT id, title, handle FROM products;
         `);
 
-        console.log("FTS index rebuilt successfully");
+        console.log("FTS index rebuilt");
 
     } catch (error) {
 
