@@ -28,7 +28,6 @@ export function getVehicleGeneration(make, model, year) {
     }
 
     return null;
-
 }
 
 export function getFitmentData(make, model, year) {
@@ -46,5 +45,4 @@ export function getFitmentData(make, model, year) {
     }
 
     return fitment;
-
 }
