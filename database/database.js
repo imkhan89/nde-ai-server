@@ -1,39 +1,25 @@
-import sqlite3 from "sqlite3"
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 
-let db = null
+export async function initDatabase() {
 
-export function initDB() {
+    const db = await open({
+        filename: "./nde.db",
+        driver: sqlite3.Database
+    });
 
-  if (!db) {
-
-    db = new sqlite3.Database("nde.db", (err) => {
-      if (err) {
-        console.error("Database connection error:", err.message)
-      } else {
-        console.log("SQLite database connected")
-      }
-    })
-
-    db.serialize(() => {
-
-      db.run(`
+    await db.exec(`
         CREATE TABLE IF NOT EXISTS products (
-          id INTEGER PRIMARY KEY,
-          title TEXT,
-          handle TEXT
-        )
-      `)
+            id INTEGER PRIMARY KEY,
+            title TEXT,
+            handle TEXT
+        );
+    `);
 
-      db.run(`
+    await db.exec(`
         CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
-        USING fts5(title, handle)
-      `)
+        USING fts5(title, handle, content='products', content_rowid='id');
+    `);
 
-    })
-
-  }
-
-  return db
+    return db;
 }
-
-export default initDB()
