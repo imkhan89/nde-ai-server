@@ -1,48 +1,24 @@
 import express from "express";
-import { runShopifySync } from "../services/shopify_sync_engine.js";
+import { runShopifySync } from "../sync/shopify_sync.js";
 
 const router = express.Router();
 
-/*
-NDE Automotive AI
-Shopify Sync Routes
-*/
-
-router.post("/sync/shopify", async (req, res) => {
-
+router.post("/shopify", async (req, res) => {
   try {
-
-    const result = await runShopifySync();
+    await runShopifySync();
 
     res.json({
-      success: result.success,
-      indexed: result.indexed
+      success: true,
+      message: "Shopify sync completed"
     });
-
   } catch (error) {
-
-    console.error("Shopify sync route error:", error);
+    console.error("Shopify Sync Error:", error);
 
     res.status(500).json({
       success: false,
-      indexed: 0
+      message: "Shopify sync failed"
     });
-
   }
-
-});
-
-/*
-Sync health
-*/
-
-router.get("/sync/health", (req, res) => {
-
-  res.json({
-    status: "ok",
-    service: "Shopify Sync Engine"
-  });
-
 });
 
 export default router;
