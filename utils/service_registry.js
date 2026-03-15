@@ -1,50 +1,33 @@
-/*
-NDE Automotive AI
-Service Registry
-*/
+const services = new Map();
 
-class ServiceRegistry {
-
-  constructor() {
-
-    this.services = new Map();
-
+export function registerService(name, instance) {
+  if (!name) {
+    throw new Error("Service name is required");
   }
 
-  register(name, instance) {
-
-    if (!name || !instance) {
-      throw new Error("Service name and instance required");
-    }
-
-    this.services.set(name, instance);
-
-  }
-
-  get(name) {
-
-    if (!this.services.has(name)) {
-
-      throw new Error(`Service not found: ${name}`);
-
-    }
-
-    return this.services.get(name);
-
-  }
-
-  has(name) {
-
-    return this.services.has(name);
-
-  }
-
-  list() {
-
-    return Array.from(this.services.keys());
-
-  }
-
+  services.set(name, instance);
 }
 
-export const serviceRegistry = new ServiceRegistry();
+export function getService(name) {
+  return services.get(name);
+}
+
+export function hasService(name) {
+  return services.has(name);
+}
+
+export function listServices() {
+  return Array.from(services.keys());
+}
+
+export function removeService(name) {
+  services.delete(name);
+}
+
+export default {
+  registerService,
+  getService,
+  hasService,
+  listServices,
+  removeService
+};
