@@ -3,8 +3,9 @@ import { setCachedProducts } from "../services/shopify_cache.js"
 
 let productCache = []
 
-const SHOPIFY_STORE = "347657-7d.myshopify.com"
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || "2024-01"
 
 export async function syncShopifyProducts() {
 
@@ -12,54 +13,30 @@ export async function syncShopifyProducts() {
 
         console.log("Starting Shopify product sync...")
 
-        const url = `https://${SHOPIFY_STORE}/admin/api/2024-01/graphql.json`
-
-        const query = `
-        {
-          products(first: 50) {
-            edges {
-              node {
-                id
-                title
-                handle
-                variants(first:1){
-                  edges{
-                    node{
-                      price
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-        `
+        const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=50`
 
         const response = await fetch(url, {
-            method: "POST",
+            method: "GET",
             headers: {
-                "Content-Type": "application/json",
-                "X-Shopify-Access-Token": SHOPIFY_TOKEN
-            },
-            body: JSON.stringify({ query })
+                "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+                "Content-Type": "application/json"
+            }
         })
 
-        const json = await response.json()
+        const data = await response.json()
 
-        if (!json.data) {
-            console.log("Shopify API response:", JSON.stringify(json, null, 2))
+        if (!data.products) {
+            console.log("Shopify API response:", JSON.stringify(data, null, 2))
             return []
         }
 
-        const products = json.data.products.edges.map(edge => {
-
-            const node = edge.node
+        const products = data.products.map(product => {
 
             return {
-                id: node.id,
-                title: node.title,
-                handle: node.handle,
-                price: node.variants.edges[0]?.node?.price || null
+                id: product.id,
+                title: product.title,
+                handle: product.handle,
+                price: product.variants[0]?.price || null
             }
 
         })
