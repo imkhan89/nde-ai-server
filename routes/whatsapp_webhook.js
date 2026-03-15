@@ -1,30 +1,24 @@
 import express from "express";
+import generateAIReply from "../services/ai_service.js";
 
 const router = express.Router();
 
-/* Twilio webhook endpoint */
-router.post("/whatsapp", (req, res) => {
+router.post("/whatsapp", async (req, res) => {
 
-  const incomingMessage = req.body.Body || "";
-  const sender = req.body.From || "";
+  const message = req.body.Body || "";
+  const from = req.body.From || "";
 
   console.log("WhatsApp message received");
-  console.log("Sender:", sender);
-  console.log("Message:", incomingMessage);
+  console.log("From:", from);
+  console.log("Message:", message);
 
-  const replyMessage =
-`Hello 👋
-
-You said: ${incomingMessage}
-
-NDE Automotive AI is now connected successfully.`;
-
+  const aiReply = await generateAIReply(message);
 
   res.set("Content-Type", "text/xml");
 
   res.send(`
 <Response>
-<Message>${replyMessage}</Message>
+<Message>${aiReply}</Message>
 </Response>
 `);
 });
