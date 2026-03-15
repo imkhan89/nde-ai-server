@@ -1,7 +1,3 @@
-app.get("/", (req, res) => {
-  res.send("NDE AI BOT Server Running");
-});
-
 import express from "express";
 import dotenv from "dotenv";
 
