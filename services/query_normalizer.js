@@ -1,29 +1,21 @@
-export function normalizeQuery(text) {
+export function normalizeQuery(query) {
+  if (!query) return "";
 
-  if (!text) return ""
-
-  let q = text.toLowerCase()
-
-  q = q.replace(/[^a-z0-9\s]/g, " ")
-
-  q = q.replace(/\s+/g, " ").trim()
+  let q = query.toLowerCase();
 
   const replacements = {
-    corolla: "toyota corolla",
-    civic: "honda civic",
-    city: "honda city",
-    gli: "corolla gli",
-    altis: "corolla altis",
-    grande: "corolla grande",
-    reborn: "honda civic reborn",
-    rebirth: "honda civic rebirth"
+    rebirth: "civic 2012 2016",
+    reborn: "civic 2006 2011",
+    grande: "corolla 2014 2020",
+    gli: "corolla",
+    xli: "corolla"
+  };
+
+  for (const key in replacements) {
+    if (q.includes(key)) {
+      q = q.replace(key, replacements[key]);
+    }
   }
 
-  Object.keys(replacements).forEach(key => {
-    if (q.includes(key)) {
-      q = q.replace(key, replacements[key])
-    }
-  })
-
-  return q
+  return q;
 }
