@@ -1,69 +1,30 @@
-/*
-NDE Automotive AI
-URL Utilities
-*/
-
 export function buildQueryString(params = {}) {
+  const esc = encodeURIComponent;
 
-  const parts = [];
-
-  for (const key in params) {
-
-    const value = params[key];
-
-    if (value === undefined || value === null) {
-      continue;
-    }
-
-    parts.push(
-      encodeURIComponent(key) +
-      "=" +
-      encodeURIComponent(String(value))
-    );
-
-  }
-
-  return parts.length ? "?" + parts.join("&") : "";
-
+  return Object.keys(params)
+    .map(key => `${esc(key)}=${esc(params[key])}`)
+    .join("&");
 }
 
 export function parseQueryString(query = "") {
+  const result = {};
 
-  const params = {};
+  if (!query) return result;
 
-  const clean = query.startsWith("?")
-    ? query.slice(1)
-    : query;
-
-  const pairs = clean.split("&");
+  const pairs = query.replace(/^\?/, "").split("&");
 
   for (const pair of pairs) {
-
-    if (!pair) continue;
-
     const [key, value] = pair.split("=");
 
-    params[decodeURIComponent(key)] =
-      decodeURIComponent(value || "");
-
+    if (key) {
+      result[decodeURIComponent(key)] = decodeURIComponent(value || "");
+    }
   }
 
-  return params;
-
+  return result;
 }
 
-export function isValidUrl(url) {
-
-  try {
-
-    new URL(url);
-
-    return true;
-
-  } catch {
-
-    return false;
-
-  }
-
-}
+export default {
+  buildQueryString,
+  parseQueryString
+};
