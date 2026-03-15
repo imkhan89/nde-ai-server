@@ -1,87 +1,47 @@
-/*
-NDE Automotive AI
-Search Cache Engine
+const cache = new Map();
 
-Caches frequent search queries
-to dramatically improve response speed.
-Self-optimizing and auto-cleaning.
-*/
+const DEFAULT_TTL = 1000 * 60 * 10;
 
-const CACHE = new Map();
+function setCache(key, value, ttl = DEFAULT_TTL) {
+  const expires = Date.now() + ttl;
 
-const MAX_CACHE_SIZE = 1000;
-
-const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
-
-function now() {
-  return Date.now();
-}
-
-/*
-Get cached search result
-*/
-
-export function getCachedSearch(query) {
-
-  const entry = CACHE.get(query);
-
-  if (!entry) return null;
-
-  if (now() - entry.time > CACHE_TTL) {
-
-    CACHE.delete(query);
-
-    return null;
-
-  }
-
-  return entry.data;
-
-}
-
-/*
-Store cache
-*/
-
-export function setCachedSearch(query, data) {
-
-  if (!query) return;
-
-  if (CACHE.size > MAX_CACHE_SIZE) {
-
-    const firstKey = CACHE.keys().next().value;
-
-    CACHE.delete(firstKey);
-
-  }
-
-  CACHE.set(query, {
-    data,
-    time: now()
+  cache.set(key, {
+    value,
+    expires
   });
-
 }
 
-/*
-Clear cache
-*/
+function getCache(key) {
+  const item = cache.get(key);
 
-export function clearSearchCache() {
+  if (!item) return null;
 
-  CACHE.clear();
+  if (Date.now() > item.expires) {
+    cache.delete(key);
+    return null;
+  }
 
+  return item.value;
 }
 
-/*
-Cache stats
-*/
-
-export function getCacheStats() {
-
-  return {
-    size: CACHE.size,
-    max: MAX_CACHE_SIZE,
-    ttl_minutes: CACHE_TTL / 60000
-  };
-
+function clearCache() {
+  cache.clear();
 }
+
+function deleteCache(key) {
+  cache.delete(key);
+}
+
+export {
+  setCache,
+  getCache,
+  clearCache,
+  deleteCache
+};
+
+export default {
+  setCache,
+  getCache,
+  clearCache,
+  deleteCache
+};
