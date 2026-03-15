@@ -1,14 +1,14 @@
-import express from "express"
+import express from "express";
 
-const router = express.Router()
+const router = express.Router();
 
-router.get("/", (req, res) => {
+router.get("/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "NDE Automotive AI",
+    service: "ndestore.com Automotive AI",
     uptime: process.uptime(),
-    timestamp: new Date().toISOString()
-  })
-})
+    timestamp: Date.now()
+  });
+});
 
-export default router
+export default router;
