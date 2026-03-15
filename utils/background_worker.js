@@ -1,60 +1,42 @@
-/*
-NDE Automotive AI
-Background Worker Utility
-*/
+const workers = new Map();
 
-export class BackgroundWorker {
-
-  constructor(intervalMs = 60000) {
-
-    this.intervalMs = intervalMs;
-    this.timer = null;
-    this.task = null;
-
+export function startWorker(name, task, intervalMs = 60000) {
+  if (!name || typeof task !== "function") {
+    throw new Error("Worker requires a name and a task function");
   }
 
-  start(task) {
+  if (workers.has(name)) {
+    return workers.get(name);
+  }
 
-    if (typeof task !== "function") {
-      throw new Error("Worker task must be a function");
+  const interval = setInterval(async () => {
+    try {
+      await task();
+    } catch (err) {
+      console.error(`Worker ${name} failed:`, err);
     }
+  }, intervalMs);
 
-    this.task = task;
+  workers.set(name, interval);
 
-    if (this.timer) return;
-
-    this.timer = setInterval(async () => {
-
-      try {
-
-        await this.task();
-
-      } catch (err) {
-
-        console.error("Background worker error:", err);
-
-      }
-
-    }, this.intervalMs);
-
-  }
-
-  stop() {
-
-    if (this.timer) {
-
-      clearInterval(this.timer);
-
-      this.timer = null;
-
-    }
-
-  }
-
-  isRunning() {
-
-    return !!this.timer;
-
-  }
-
+  return interval;
 }
+
+export function stopWorker(name) {
+  const worker = workers.get(name);
+
+  if (worker) {
+    clearInterval(worker);
+    workers.delete(name);
+  }
+}
+
+export function listWorkers() {
+  return Array.from(workers.keys());
+}
+
+export default {
+  startWorker,
+  stopWorker,
+  listWorkers
+};
