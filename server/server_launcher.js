@@ -1,38 +1,17 @@
-import http from "http";
-import { bootstrapServer } from "./server_bootstrap.js";
-import { setupGracefulShutdown } from "./graceful_shutdown.js";
+import { createHTTPServer } from "./http_server.js";
 
-/*
-NDE Automotive AI
-Server Launcher
-*/
+export function launchServer() {
+  const app = createHTTPServer();
 
-export async function launchServer() {
+  const PORT = process.env.PORT || 3000;
 
-  try {
+  const server = app.listen(PORT, () => {
+    console.log(`NDE Automotive AI Server running on port ${PORT}`);
+  });
 
-    const app = await bootstrapServer();
-
-    const PORT = process.env.PORT || 3000;
-
-    const server = http.createServer(app);
-
-    server.listen(PORT, () => {
-
-      console.log(`NDE Automotive AI running on port ${PORT}`);
-
-    });
-
-    setupGracefulShutdown(server);
-
-    return server;
-
-  } catch (error) {
-
-    console.error("Server launch failed:", error);
-
-    process.exit(1);
-
-  }
-
+  return server;
 }
+
+export default {
+  launchServer
+};
