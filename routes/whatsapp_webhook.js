@@ -1,50 +1,84 @@
 import express from "express"
 import twilio from "twilio"
 
+import { searchProducts } from "../services/product_search.js"
+
 const router = express.Router()
 
 router.post("/whatsapp", async (req, res) => {
 
     try {
 
-        const incomingMessage = req.body.Body || ""
+        const message = (req.body.Body || "").toLowerCase()
         const sender = req.body.From || ""
 
         console.log("WhatsApp message received")
         console.log("From:", sender)
-        console.log("Message:", incomingMessage)
+        console.log("Message:", message)
 
         const twiml = new twilio.twiml.MessagingResponse()
 
-        let reply
+        let reply = ""
 
-        const msg = incomingMessage.toLowerCase()
-
-        if (msg.includes("hello") || msg.includes("hi")) {
+        if (
+            message.includes("hello") ||
+            message.includes("hi") ||
+            message.includes("assalam")
+        ) {
 
             reply = `Hello 👋
+
 Welcome to ndestore.com Automotive Parts.
 
-Ask me about:
+You can ask me about:
 
 • Brake Pads
 • Air Filters
 • Oil Filters
 • Wiper Blades
-• Car Accessories`
+• Car Accessories
+
+Example:
+"Civic air filter"`
 
         } else {
 
-            reply = `Thank you for contacting ndestore.com.
+            const products = searchProducts(message)
 
-Our automotive AI is processing your request.`
+            if (products.length === 0) {
+
+                reply = `Sorry, I couldn't find a matching product.
+
+Please try something like:
+
+• Civic air filter
+• Corolla brake pads
+• Vitz wiper blades`
+
+            } else {
+
+                reply = "Here are the best options:\n\n"
+
+                products.slice(0,3).forEach((p, i) => {
+
+                    reply += `${i+1}️⃣ ${p.title}
+Price: PKR ${p.price}
+
+https://ndestore.com/products/${p.handle}
+
+`
+
+                })
+
+                reply += "Reply with product number to order."
+
+            }
 
         }
 
         twiml.message(reply)
 
-        res.type("text/xml")
-        res.send(twiml.toString())
+        res.type("text/xml").send(twiml.toString())
 
     } catch (error) {
 
