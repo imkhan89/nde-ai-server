@@ -61,7 +61,7 @@ export async function syncShopifyProducts() {
 
     productCache = allProducts;
 
-    console.log(`Shopify Sync: ${productCache.length} products loaded`);
+    console.log(`Shopify Sync Complete: ${productCache.length} products loaded`);
 
     return productCache;
 
