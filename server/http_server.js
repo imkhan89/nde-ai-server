@@ -1,89 +1,68 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import http from "http";
+import express from "express"
+import cors from "cors"
+import helmet from "helmet"
+import http from "http"
 
 export default function createHttpServer() {
 
-  const app = express();
+  const app = express()
 
-  /* -----------------------------
-     Security
-  ----------------------------- */
-  app.use(helmet());
+  app.use(helmet())
 
-  /* -----------------------------
-     CORS
-  ----------------------------- */
   app.use(cors({
     origin: "*",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"]
-  }));
+    methods: ["GET","POST","PUT","DELETE"],
+    allowedHeaders: ["Content-Type","Authorization"]
+  }))
 
-  /* -----------------------------
-     Body Parser
-  ----------------------------- */
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: "10mb" }))
+  app.use(express.urlencoded({ extended: true }))
 
-  /* -----------------------------
-     Health Check
-  ----------------------------- */
-  app.get("/", (req, res) => {
+  app.get("/", (req,res)=>{
     res.json({
-      status: "running",
-      service: "NDE Automotive AI Server",
-      version: "1.0"
-    });
-  });
+      status:"running",
+      app:"NDE Automotive AI",
+      version:"1.0"
+    })
+  })
 
-  app.get("/health", (req, res) => {
+  app.get("/health",(req,res)=>{
     res.json({
-      status: "ok",
-      uptime: process.uptime()
-    });
-  });
+      status:"ok",
+      uptime:process.uptime()
+    })
+  })
 
-  /* -----------------------------
-     Chat Endpoint
-  ----------------------------- */
-  app.post("/chat", async (req, res) => {
+  app.post("/chat", async (req,res)=>{
+    try{
 
-    try {
+      const { message } = req.body
 
-      const { message } = req.body;
-
-      if (!message) {
+      if(!message){
         return res.status(400).json({
-          error: "Message required"
-        });
+          error:"message required"
+        })
       }
 
-      // placeholder AI response
-      const reply = `AI received: ${message}`;
+      const reply = `AI received: ${message}`
 
       res.json({
-        success: true,
+        success:true,
         reply
-      });
+      })
 
-    } catch (error) {
+    }catch(err){
 
-      console.error("Chat Error:", error);
+      console.error(err)
 
       res.status(500).json({
-        error: "Internal server error"
-      });
+        error:"server error"
+      })
 
     }
+  })
 
-  });
+  const server = http.createServer(app)
 
-  /* -----------------------------
-     Create HTTP Server
-  ----------------------------- */
-  const server = http.createServer(app);
-
-  return server;
+  return server
 }
