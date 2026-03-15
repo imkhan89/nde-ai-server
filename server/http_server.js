@@ -1,29 +1,32 @@
-import http from "http";
-import { bootstrapServer } from "./server_bootstrap.js";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
 
-/*
-NDE Automotive AI
-HTTP Server Launcher
-*/
+import { registerAIRoutes } from "./register_ai_routes.js";
+import { registerSyncRoutes } from "./register_sync_routes.js";
+import { registerSystemRoutes } from "./register_system_routes.js";
 
-export async function startHttpServer() {
+export function createHTTPServer() {
+  const app = express();
 
-  const app = await bootstrapServer();
+  app.use(express.json());
+  app.use(cors());
+  app.use(helmet());
 
-  const PORT = process.env.PORT || 3000;
-
-  const server = http.createServer(app);
-
-  server.listen(PORT, () => {
-
-    console.log(`NDE Automotive AI Server running on port ${PORT}`);
-
+  app.get("/", (req, res) => {
+    res.json({
+      service: "NDE Automotive AI",
+      status: "running"
+    });
   });
 
-  server.on("error", (err) => {
+  registerAIRoutes(app);
+  registerSyncRoutes(app);
+  registerSystemRoutes(app);
 
-    console.error("Server error:", err);
-
-  });
-
+  return app;
 }
+
+export default {
+  createHTTPServer
+};
