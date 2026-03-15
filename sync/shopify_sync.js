@@ -1,88 +1,96 @@
 import db from "../database/database.js";
+import fetch from "node-fetch";
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN;
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN;
 
-/*
-Shopify API version
-*/
 const API_VERSION = "2024-01";
 
-/*
-Sync products from Shopify to SQLite database
-*/
-export async function syncShopifyProducts() {
-  try {
-    console.log("Starting Shopify product sync...");
+async function fetchProducts(pageInfo = null) {
+  let url = `https://${SHOPIFY_STORE}/admin/api/${API_VERSION}/products.json?limit=250`;
 
-    let hasNextPage = true;
-    let pageInfo = null;
-    let totalSynced = 0;
+  if (pageInfo) {
+    url += `&page_info=${pageInfo}`;
+  }
 
-    while (hasNextPage) {
+  const response = await fetch(url, {
+    headers: {
+      "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+      "Content-Type": "application/json",
+    },
+  });
 
-      let url = `https://${SHOPIFY_STORE}/admin/api/${API_VERSION}/products.json?limit=250`;
+  const data = await response.json();
 
-      if (pageInfo) {
-        url += `&page_info=${pageInfo}`;
-      }
+  return {
+    products: data.products || [],
+    link: response.headers.get("link"),
+  };
+}
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-          "Content-Type": "application/json"
-        }
-      });
+function extractNextPage(linkHeader) {
+  if (!linkHeader) return null;
 
-      if (!response.ok) {
-        throw new Error(`Shopify API error: ${response.status}`);
-      }
+  const match = linkHeader.match(/page_info=([^&>]+)/);
 
-      const data = await response.json();
-      const products = data.products || [];
+  if (match) {
+    return match[1];
+  }
 
-      for (const product of products) {
+  return null;
+}
 
-        db.prepare(`
-          INSERT OR REPLACE INTO products
-          (id, title, handle)
-          VALUES (?, ?, ?)
-        `).run(
-          product.id,
-          product.title,
-          product.handle
-        );
+function saveProduct(product) {
+  const stmt = db.prepare(`
+        INSERT OR REPLACE INTO products
+        (id, title, handle, vendor, product_type, price, sku, tags, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
 
-        totalSynced++;
-      }
+  const variant = product.variants?.[0] || {};
 
-      /*
-      Pagination handling
-      */
-      const linkHeader = response.headers.get("link");
+  stmt.run(
+    product.id,
+    product.title,
+    product.handle,
+    product.vendor,
+    product.product_type,
+    variant.price || 0,
+    variant.sku || "",
+    product.tags || "",
+    product.created_at,
+    product.updated_at
+  );
+}
 
-      if (linkHeader && linkHeader.includes('rel="next"')) {
+export async function runShopifySync() {
+  console.log("Starting Shopify Sync");
 
-        const match = linkHeader.match(/page_info=([^&>]+)/);
+  let pageInfo = null;
+  let total = 0;
 
-        if (match) {
-          pageInfo = match[1];
-        } else {
-          hasNextPage = false;
-        }
+  while (true) {
+    const { products, link } = await fetchProducts(pageInfo);
 
-      } else {
-        hasNextPage = false;
-      }
+    if (!products.length) break;
 
+    for (const product of products) {
+      saveProduct(product);
+      total++;
     }
 
-    console.log(`Shopify sync completed. Products synced: ${totalSynced}`);
+    console.log(`Synced products: ${total}`);
 
-  } catch (error) {
+    const next = extractNextPage(link);
 
-    console.error("Shopify sync failed:", error.message);
+    if (!next) break;
 
+    pageInfo = next;
   }
+
+  console.log(`Shopify Sync Completed. Total Products: ${total}`);
 }
+
+export default {
+  runShopifySync,
+};
