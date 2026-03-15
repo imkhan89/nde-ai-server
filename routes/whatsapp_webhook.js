@@ -5,32 +5,18 @@ const router = express.Router()
 
 router.post("/whatsapp", async (req, res) => {
 
-  try {
+  const message = req.body.Body || ""
 
-    const incomingMsg = req.body.Body || ""
+  const reply = await processUserMessage(message)
 
-    const reply = await processUserMessage(incomingMsg)
-
-    const twiml = `
+  const twiml = `
 <Response>
 <Message>${reply}</Message>
 </Response>
 `
 
-    res.set("Content-Type", "text/xml")
-    res.send(twiml)
-
-  } catch (error) {
-
-    console.error("WhatsApp Webhook Error:", error)
-
-    res.set("Content-Type", "text/xml")
-    res.send(`
-<Response>
-<Message>Server error. Please try again.</Message>
-</Response>
-`)
-  }
+  res.type("text/xml")
+  res.send(twiml)
 
 })
 
