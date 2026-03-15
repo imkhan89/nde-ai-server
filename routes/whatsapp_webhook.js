@@ -1,42 +1,59 @@
-import express from "express"
-import { processUserMessage } from "../services/ai_engine.js"
-import twilio from "twilio"
+import express from "express";
+import twilio from "twilio";
+import { processAIQuery } from "../services/ai_engine.js";
 
-const router = express.Router()
+const router = express.Router();
 
-async function handleWhatsapp(req, res) {
+const MessagingResponse = twilio.twiml.MessagingResponse;
 
+router.post("/webhook/whatsapp", async (req, res) => {
   try {
+    const incomingMsg = req.body.Body || "";
+    const from = req.body.From || "";
 
-    const message = req.body.Body || ""
+    const aiReply = await processAIQuery(incomingMsg, from);
 
-    const reply = await processUserMessage(message)
+    const twiml = new MessagingResponse();
+    twiml.message(aiReply);
 
-    const twiml = new twilio.twiml.MessagingResponse()
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
+  } catch (error) {
+    console.error("WhatsApp webhook error:", error);
 
-    twiml.message(reply)
+    const twiml = new MessagingResponse();
+    twiml.message(
+      "Thank you for contacting ndestore.com. Our system is temporarily unavailable. Please try again shortly."
+    );
 
-    res.type("text/xml")
-    res.send(twiml.toString())
-
-  } catch (err) {
-
-    console.error(err)
-
-    const twiml = new twilio.twiml.MessagingResponse()
-
-    twiml.message("Server error. Please try again.")
-
-    res.type("text/xml")
-    res.send(twiml.toString())
-
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
   }
+});
 
-}
+router.post("/whatsapp", async (req, res) => {
+  try {
+    const incomingMsg = req.body.Body || "";
+    const from = req.body.From || "";
 
-router.post("/whatsapp", handleWhatsapp)
+    const aiReply = await processAIQuery(incomingMsg, from);
 
-/* support second endpoint Twilio might call */
-router.post("/", handleWhatsapp)
+    const twiml = new MessagingResponse();
+    twiml.message(aiReply);
 
-export default router
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
+  } catch (error) {
+    console.error("WhatsApp route error:", error);
+
+    const twiml = new MessagingResponse();
+    twiml.message(
+      "Thank you for contacting ndestore.com. Please try again shortly."
+    );
+
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
+  }
+});
+
+export default router;
