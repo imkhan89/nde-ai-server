@@ -1,8 +1,6 @@
 import express from "express"
 import twilio from "twilio"
 
-import { searchProducts } from "../services/product_search.js"
-
 const router = express.Router()
 
 router.post("/whatsapp", async (req, res) => {
@@ -11,64 +9,19 @@ router.post("/whatsapp", async (req, res) => {
 
     try {
 
-        const message = (req.body.Body || "").trim()
+        const message = req.body.Body || ""
         const sender = req.body.From || ""
 
         console.log("WhatsApp message received")
         console.log("From:", sender)
         console.log("Message:", message)
 
-        let reply = ""
+        const reply = `Hello 👋
 
-        const text = message.toLowerCase()
+WhatsApp AI is working.
 
-        if (
-            text === "hello" ||
-            text === "hi" ||
-            text.includes("assalam")
-        ) {
-
-            reply = `Hello 👋
-
-Welcome to ndestore.com Automotive Parts.
-
-Try asking for:
-
-• Civic air filter
-• Corolla brake pads
-• Vitz wiper blades`
-
-        } else {
-
-            const products = searchProducts(text)
-
-            if (!products || products.length === 0) {
-
-                reply = `Sorry, I couldn't find a matching product.
-
-Try something like:
-
-• Civic air filter
-• Corolla brake pads`
-
-            } else {
-
-                reply = "Here are the best options:\n\n"
-
-                products.slice(0,3).forEach((p,i)=>{
-
-                    reply += `${i+1}️⃣ ${p.title}
-Price: PKR ${p.price}
-
-https://ndestore.com/products/${p.handle}
-
-`
-
-                })
-
-            }
-
-        }
+You said:
+${message}`
 
         twiml.message(reply)
 
@@ -76,7 +29,7 @@ https://ndestore.com/products/${p.handle}
 
         console.error("Webhook error:", error)
 
-        twiml.message("System temporarily unavailable. Please try again.")
+        twiml.message("System error.")
 
     }
 
