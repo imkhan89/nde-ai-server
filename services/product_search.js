@@ -1,72 +1,31 @@
-import { semanticProductSearch } from "./semantic_product_search.js";
-import { rankProducts } from "./product_ranker.js";
+import { getProducts } from "../sync/shopify_sync.js"
+import { normalizeQuery } from "./query_normalizer.js"
 
-function normalizeQuery(query) {
-  return query
-    .toLowerCase()
-    .replace(/[^\w\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+export function searchProduct(query) {
 
-function removeYearTokens(tokens) {
-  return tokens.filter(t => !/^(19|20)\d{2}$/.test(t));
-}
+  if (!query) return []
 
-function removeShortTokens(tokens) {
-  return tokens.filter(t => t.length > 2);
-}
+  const q = normalizeQuery(query)
 
-function tokenize(query) {
-  return normalizeQuery(query).split(" ");
-}
+  const products = getProducts()
 
-function buildQuery(tokens) {
-  return tokens.join(" ");
-}
+  if (!products || products.length === 0) return []
 
-export function searchProducts(query, limit = 10) {
+  const results = products.filter(product => {
 
-  try {
+    const title = (product.title || "").toLowerCase()
+    const body = (product.body_html || "").toLowerCase()
+    const vendor = (product.vendor || "").toLowerCase()
+    const type = (product.product_type || "").toLowerCase()
 
-    const tokens = tokenize(query);
-    const cleanTokens = removeShortTokens(tokens);
-    const withoutYears = removeYearTokens(cleanTokens);
+    return (
+      title.includes(q) ||
+      body.includes(q) ||
+      vendor.includes(q) ||
+      type.includes(q)
+    )
 
-    let results = [];
+  })
 
-    /*
-    Attempt 1: full query
-    */
-    results = semanticProductSearch(buildQuery(cleanTokens), limit);
-
-    /*
-    Attempt 2: remove year
-    */
-    if (results.length === 0 && withoutYears.length > 0) {
-      results = semanticProductSearch(buildQuery(withoutYears), limit);
-    }
-
-    /*
-    Attempt 3: product keyword only (last token)
-    */
-    if (results.length === 0 && withoutYears.length > 0) {
-      const lastToken = withoutYears[withoutYears.length - 1];
-      results = semanticProductSearch(lastToken, limit);
-    }
-
-    if (results.length === 0) {
-      return [];
-    }
-
-    const ranked = rankProducts(results, query);
-
-    return ranked.slice(0, limit);
-
-  } catch (error) {
-
-    console.error("Product search error:", error.message);
-
-    return [];
-  }
+  return results.slice(0,5)
 }
