@@ -1,0 +1,39 @@
+body{
+margin:0;
+font-family:Arial;
+}
+
+#container{
+display:flex;
+height:100vh;
+}
+
+#sidebar{
+width:300px;
+border-right:1px solid #ddd;
+overflow:auto;
+}
+
+#chatWindow{
+flex:1;
+padding:20px;
+overflow:auto;
+}
+
+.chatUser{
+padding:15px;
+border-bottom:1px solid #eee;
+cursor:pointer;
+}
+
+.msg{
+margin:10px 0;
+}
+
+.customer{
+color:black;
+}
+
+.ai{
+color:green;
+}
