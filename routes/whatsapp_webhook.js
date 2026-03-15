@@ -1,38 +1,38 @@
 import express from "express"
 import twilio from "twilio"
+
 import { searchProducts } from "../services/product_search.js"
 
 const router = express.Router()
 
 router.post("/whatsapp", async (req, res) => {
 
-    const MessagingResponse = twilio.twiml.MessagingResponse
-    const twiml = new MessagingResponse()
+    const twiml = new twilio.twiml.MessagingResponse()
 
     try {
 
-        const incomingMessage = (req.body.Body || "").trim()
+        const message = (req.body.Body || "").trim()
         const sender = req.body.From || ""
 
         console.log("WhatsApp message received")
         console.log("From:", sender)
-        console.log("Message:", incomingMessage)
-
-        const message = incomingMessage.toLowerCase()
+        console.log("Message:", message)
 
         let reply = ""
 
+        const text = message.toLowerCase()
+
         if (
-            message === "hello" ||
-            message === "hi" ||
-            message.includes("assalam")
+            text === "hello" ||
+            text === "hi" ||
+            text.includes("assalam")
         ) {
 
             reply = `Hello 👋
 
 Welcome to ndestore.com Automotive Parts.
 
-You can ask for parts like:
+Try asking for:
 
 • Civic air filter
 • Corolla brake pads
@@ -40,7 +40,7 @@ You can ask for parts like:
 
         } else {
 
-            const products = searchProducts(message)
+            const products = searchProducts(text)
 
             if (!products || products.length === 0) {
 
@@ -80,8 +80,8 @@ https://ndestore.com/products/${p.handle}
 
     }
 
-    res.writeHead(200, {'Content-Type': 'text/xml'})
-    res.end(twiml.toString())
+    res.type("text/xml")
+    res.send(twiml.toString())
 
 })
 
