@@ -3,19 +3,20 @@ import { setCachedProducts } from "../services/shopify_cache.js"
 
 let productCache = []
 
+/*
+Temporary hardcoded configuration
+Replace token later with environment variable
+*/
+
 const SHOPIFY_STORE = "347657-7d.myshopify.com"
-const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
+
+const SHOPIFY_TOKEN = "PASTE_YOUR_SHOPIFY_ADMIN_API_TOKEN_HERE"
 
 export async function syncShopifyProducts() {
 
     try {
 
         console.log("Starting Shopify product sync...")
-
-        if (!SHOPIFY_TOKEN) {
-            console.error("SHOPIFY_ADMIN_TOKEN missing in environment variables")
-            return []
-        }
 
         let allProducts = []
         let hasNextPage = true
