@@ -1,11 +1,13 @@
 import express from "express"
 import twilio from "twilio"
-
 import { searchProducts } from "../services/product_search.js"
 
 const router = express.Router()
 
 router.post("/whatsapp", async (req, res) => {
+
+    const MessagingResponse = twilio.twiml.MessagingResponse
+    const twiml = new MessagingResponse()
 
     try {
 
@@ -21,8 +23,8 @@ router.post("/whatsapp", async (req, res) => {
         let reply = ""
 
         if (
-            message === "hi" ||
             message === "hello" ||
+            message === "hi" ||
             message.includes("assalam")
         ) {
 
@@ -42,9 +44,9 @@ You can ask for parts like:
 
             if (!products || products.length === 0) {
 
-                reply = `Sorry, I could not find a matching product.
+                reply = `Sorry, I couldn't find a matching product.
 
-Try searching like:
+Try something like:
 
 • Civic air filter
 • Corolla brake pads`
@@ -68,23 +70,18 @@ https://ndestore.com/products/${p.handle}
 
         }
 
-        const twiml = new twilio.twiml.MessagingResponse()
         twiml.message(reply)
-
-        res.set("Content-Type", "text/xml")
-        res.status(200).send(twiml.toString())
 
     } catch (error) {
 
         console.error("Webhook error:", error)
 
-        const twiml = new twilio.twiml.MessagingResponse()
-        twiml.message("System is temporarily unavailable. Please try again.")
-
-        res.set("Content-Type", "text/xml")
-        res.status(200).send(twiml.toString())
+        twiml.message("System temporarily unavailable. Please try again.")
 
     }
+
+    res.writeHead(200, {'Content-Type': 'text/xml'})
+    res.end(twiml.toString())
 
 })
 
