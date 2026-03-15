@@ -1,41 +1,21 @@
-import { createApp } from "./app_initializer.js";
-import { registerRoutes } from "./register_routes.js";
-import { registerAIRoutes } from "./register_ai_routes.js";
-import { registerSyncRoutes } from "./register_sync_routes.js";
-import { registerSystemRoutes } from "./register_system_routes.js";
-
-import { startServices } from "./start_services.js";
-import { startScheduler } from "../services/scheduler.js";
-import { loadConfig } from "../services/config_manager.js";
-
-/*
-NDE Automotive AI
-Server Bootstrap
-*/
+import { launchServer } from "./server_launcher.js";
+import { startSyncScheduler } from "../scheduler/sync_scheduler.js";
 
 export async function bootstrapServer() {
+  try {
+    const server = launchServer();
 
-  loadConfig();
+    startSyncScheduler();
 
-  const app = createApp();
+    console.log("NDE Automotive AI Bootstrap Complete");
 
-  /*
-  Register routes
-  */
-
-  registerRoutes(app);
-  registerAIRoutes(app);
-  registerSyncRoutes(app);
-  registerSystemRoutes(app);
-
-  /*
-  Start background services
-  */
-
-  await startServices();
-
-  startScheduler();
-
-  return app;
-
+    return server;
+  } catch (error) {
+    console.error("Server bootstrap failed:", error);
+    process.exit(1);
+  }
 }
+
+export default {
+  bootstrapServer
+};
