@@ -1,73 +1,32 @@
-/*
-NDE Automotive AI
-Result Formatter
-
-Formats product results before sending them to the API.
-Ensures consistent structure and safe output.
-*/
-
 export function formatResults(products = []) {
-
-  if (!Array.isArray(products)) {
-    return [];
-  }
-
-  return products.map(formatProduct);
-
+  return products.map((p) => ({
+    id: p.id,
+    title: p.title,
+    handle: p.handle,
+    vendor: p.vendor,
+    type: p.product_type,
+    price: p.price,
+    sku: p.sku,
+    tags: p.tags
+  }));
 }
 
-function formatProduct(product) {
-
-  if (!product) {
-    return null;
-  }
+export function formatSingleResult(product) {
+  if (!product) return null;
 
   return {
-    id: product.id || null,
-    title: product.title || "",
-    sku: product.sku || "",
-    brand: product.brand || "",
-    category: product.category || "",
-    vehicle: {
-      make: product.vehicle_make || null,
-      model: product.vehicle_model || null,
-      year: product.vehicle_year || null
-    },
-    price: normalizePrice(product.price),
-    score: product.score || 0,
-    raw: safeParse(product.data)
+    id: product.id,
+    title: product.title,
+    handle: product.handle,
+    vendor: product.vendor,
+    type: product.product_type,
+    price: product.price,
+    sku: product.sku,
+    tags: product.tags
   };
-
 }
 
-function normalizePrice(price) {
-
-  const p = parseFloat(price);
-
-  if (isNaN(p)) {
-    return 0;
-  }
-
-  return Number(p.toFixed(2));
-
-}
-
-function safeParse(data) {
-
-  if (!data) return null;
-
-  try {
-
-    if (typeof data === "object") {
-      return data;
-    }
-
-    return JSON.parse(data);
-
-  } catch {
-
-    return null;
-
-  }
-
-}
+export default {
+  formatResults,
+  formatSingleResult
+};
