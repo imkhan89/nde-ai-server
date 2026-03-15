@@ -1,57 +1,58 @@
-import { parseQuery, scoreQueryIntent } from "./query_parser.js";
-import { expandQuery } from "./smart_query_expander.js";
-import { matchProducts, rankProducts } from "./product_matcher.js";
-import { getCachedSearch, setCachedSearch } from "./search_cache.js";
-import { learnFromQuery } from "../database/auto_optimizer.js";
+import { normalizeQuery } from "../query/query_normalizer.js";
+import { parseQuery } from "../query/query_parser.js";
+import { expandQuery } from "../query/smart_query_expander.js";
 
-/*
-NDE Automotive AI
-Search Pipeline
+import { detectVehicle } from "../vehicle/vehicle_extractor.js";
+import { detectParts } from "../parts/parts_intelligence.js";
+import { detectBrand } from "../brand/brand_intelligence.js";
 
-Full pipeline:
-Query → Cache → Parse → Expand → Match → Rank → Learn
-*/
+import { matchProducts } from "./product_matcher.js";
+import { formatResults } from "./result_formatter.js";
+import { logSearch } from "./search_logger.js";
 
-export async function runSearchPipeline(query) {
-
-  if (!query) {
-    return {
-      query: "",
-      results: []
-    };
+export async function runSearchPipeline(userQuery) {
+  if (!userQuery || typeof userQuery !== "string") {
+    return [];
   }
 
-  const cached = getCachedSearch(query);
+  // Step 1 Normalize
+  const normalized = normalizeQuery(userQuery);
 
-  if (cached) {
-    return cached;
-  }
+  // Step 2 Parse
+  const parsed = parseQuery(normalized);
 
-  const parsed = parseQuery(query);
+  // Step 3 Expand
+  const expanded = expandQuery(parsed);
 
-  const intentScore = scoreQueryIntent(parsed);
+  // Step 4 Detect Vehicle
+  const vehicle = detectVehicle(expanded);
 
-  const expandedTokens = expandQuery(parsed);
+  // Step 5 Detect Parts
+  const parts = detectParts(expanded);
 
-  const matched = await matchProducts({
-    ...parsed,
-    tokens: expandedTokens
+  // Step 6 Detect Brand
+  const brand = detectBrand(expanded);
+
+  // Step 7 Product Matching
+  const matchedProducts = await matchProducts({
+    query: expanded,
+    vehicle,
+    parts,
+    brand
   });
 
-  const ranked = rankProducts(matched, parsed);
+  // Step 8 Format Results
+  const results = formatResults(matchedProducts);
 
-  const response = {
-    query,
-    parsed,
-    expandedTokens,
-    intentScore,
-    results: ranked
-  };
+  // Step 9 Log Search
+  await logSearch({
+    query: userQuery,
+    normalized_query: normalized
+  });
 
-  setCachedSearch(query, response);
-
-  await learnFromQuery(query, ranked.slice(0, 5));
-
-  return response;
-
+  return results;
 }
+
+export default {
+  runSearchPipeline
+};
