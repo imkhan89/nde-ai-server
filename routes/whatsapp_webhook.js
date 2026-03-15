@@ -3,28 +3,29 @@ import twilio from "twilio"
 
 const router = express.Router()
 
-router.post("/whatsapp", (req, res) => {
+router.post("/whatsapp", async (req, res) => {
 
-    const incomingMessage = req.body.Body || ""
-    const sender = req.body.From || ""
+    try {
 
-    console.log("WhatsApp message received")
-    console.log("From:", sender)
-    console.log("Message:", incomingMessage)
+        const incomingMessage = req.body.Body || ""
+        const sender = req.body.From || ""
 
-    const twiml = new twilio.twiml.MessagingResponse()
+        console.log("WhatsApp message received")
+        console.log("From:", sender)
+        console.log("Message:", incomingMessage)
 
-    let reply
+        const twiml = new twilio.twiml.MessagingResponse()
 
-    const msg = incomingMessage.toLowerCase()
+        let reply
 
-    if (msg.includes("hello") || msg.includes("hi")) {
+        const msg = incomingMessage.toLowerCase()
 
-        reply =
-`Hello 👋
+        if (msg.includes("hello") || msg.includes("hi")) {
+
+            reply = `Hello 👋
 Welcome to ndestore.com Automotive Parts.
 
-You can ask me about:
+Ask me about:
 
 • Brake Pads
 • Air Filters
@@ -32,20 +33,26 @@ You can ask me about:
 • Wiper Blades
 • Car Accessories`
 
-    } else {
+        } else {
 
-        reply =
-`Thank you for contacting ndestore.com.
+            reply = `Thank you for contacting ndestore.com.
 
-Our automotive AI is processing your request.
-Please wait while we find the best products.`
+Our automotive AI is processing your request.`
+
+        }
+
+        twiml.message(reply)
+
+        res.type("text/xml")
+        res.send(twiml.toString())
+
+    } catch (error) {
+
+        console.error("Webhook Error:", error)
+
+        res.sendStatus(200)
 
     }
-
-    twiml.message(reply)
-
-    res.writeHead(200, { "Content-Type": "text/xml" })
-    res.end(twiml.toString())
 
 })
 
