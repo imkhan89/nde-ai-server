@@ -1,59 +1,61 @@
 import express from "express";
 import twilio from "twilio";
+
 import { processAIQuery } from "../services/ai_engine.js";
+import { searchProducts, buildQuickReply } from "../services/quick_reply_engine.js";
+import { storeMessage } from "../services/chat_memory.js";
 
 const router = express.Router();
 
 const MessagingResponse = twilio.twiml.MessagingResponse;
 
 router.post("/webhook/whatsapp", async (req, res) => {
-  try {
-    const incomingMsg = req.body.Body || "";
-    const from = req.body.From || "";
 
-    const aiReply = await processAIQuery(incomingMsg, from);
+try {
 
-    const twiml = new MessagingResponse();
-    twiml.message(aiReply);
+const incomingMsg = req.body.Body || "";
+const from = req.body.From || "";
 
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
-  } catch (error) {
-    console.error("WhatsApp webhook error:", error);
+storeMessage(from,"customer",incomingMsg);
 
-    const twiml = new MessagingResponse();
-    twiml.message(
-      "Thank you for contacting ndestore.com. Our system is temporarily unavailable. Please try again shortly."
-    );
+let reply;
 
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
-  }
-});
+const products = searchProducts(incomingMsg);
 
-router.post("/whatsapp", async (req, res) => {
-  try {
-    const incomingMsg = req.body.Body || "";
-    const from = req.body.From || "";
+if(products.length > 0){
 
-    const aiReply = await processAIQuery(incomingMsg, from);
+reply = buildQuickReply(products);
 
-    const twiml = new MessagingResponse();
-    twiml.message(aiReply);
+}else{
 
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
-  } catch (error) {
-    console.error("WhatsApp route error:", error);
+reply = await processAIQuery(incomingMsg,from);
 
-    const twiml = new MessagingResponse();
-    twiml.message(
-      "Thank you for contacting ndestore.com. Please try again shortly."
-    );
+}
 
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
-  }
+storeMessage(from,"ai",reply);
+
+const twiml = new MessagingResponse();
+
+twiml.message(reply);
+
+res.writeHead(200, { "Content-Type": "text/xml" });
+
+res.end(twiml.toString());
+
+} catch (error) {
+
+console.error("Webhook error:", error);
+
+const twiml = new MessagingResponse();
+
+twiml.message("System error. Please try again.");
+
+res.writeHead(200, { "Content-Type": "text/xml" });
+
+res.end(twiml.toString());
+
+}
+
 });
 
 export default router;
