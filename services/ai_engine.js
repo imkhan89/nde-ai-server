@@ -1,14 +1,18 @@
 import { searchProduct } from "./product_search.js"
 
+const BRAND_NAME = "ndestore.com"
+const WEBSITE = "https://www.ndestore.com"
+
 export async function processUserMessage(message) {
 
   if (!message) {
-    return "Please send a message."
+    return `Welcome to ${BRAND_NAME}.
+Please send your query.`
   }
 
   const text = message.toLowerCase().trim()
 
-  /* greeting detection */
+  /* greeting */
 
   if (
     text === "hi" ||
@@ -18,18 +22,22 @@ export async function processUserMessage(message) {
   ) {
     return `Hello 👋
 
-Welcome to NDE Store.
+Welcome to ${BRAND_NAME}
 
-You can ask about:
+We specialize in:
 
-• Car parts
-• Filters
-• Brake pads
-• Wiper blades
-• Any vehicle parts
+• Automotive spare parts
+• Car accessories
+• Decals & car care products
 
-Example:
-Honda Civic 2018 air filter`
+You can search like:
+
+Corolla 2018 air filter
+Civic brake pads
+City wiper blades
+
+Visit:
+${WEBSITE}`
   }
 
   /* product search */
@@ -37,13 +45,16 @@ Honda Civic 2018 air filter`
   const results = searchProduct(text)
 
   if (!results || results.length === 0) {
-    return `I couldn't find that product.
+    return `Sorry, I couldn't find that product.
 
-Please try something like:
+Try searching like:
 
 • Civic 2018 air filter
 • Corolla brake pads
-• Honda City wiper blades`
+• Honda City wiper blades
+
+You can also browse:
+${WEBSITE}`
   }
 
   const product = results[0]
@@ -57,11 +68,12 @@ Please try something like:
     price = `PKR ${product.variants[0].price}`
   }
 
-  const url = `https://ndestore.com/products/${handle}`
+  const url = `${WEBSITE}/products/${handle}`
 
   return `${title}
 
 ${price}
 
+View product on ${BRAND_NAME}:
 ${url}`
 }
