@@ -1,6 +1,5 @@
 import express from "express";
 import dotenv from "dotenv";
-
 import whatsappWebhook from "./routes/whatsapp_webhook.js";
 import startShopifySync from "./services/shopify_sync.js";
 
