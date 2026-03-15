@@ -15,35 +15,61 @@ export async function syncShopifyProducts() {
 
   try {
 
-    const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
+    let allProducts = [];
+    let nextPageInfo = null;
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-        "Content-Type": "application/json"
+    do {
+
+      let url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
+
+      if (nextPageInfo) {
+        url += `&page_info=${nextPageInfo}`;
       }
-    });
 
-    if (!response.ok) {
-      console.error("Shopify API error:", response.status);
-      return [];
-    }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+          "Content-Type": "application/json"
+        }
+      });
 
-    const data = await response.json();
+      if (!response.ok) {
+        console.error("Shopify API error:", response.status);
+        break;
+      }
 
-    if (data && data.products) {
-      productCache = data.products;
-      console.log(`Shopify Sync: ${productCache.length} products loaded`);
-    }
+      const data = await response.json();
+
+      if (data.products) {
+        allProducts = allProducts.concat(data.products);
+      }
+
+      const linkHeader = response.headers.get("link");
+
+      if (linkHeader && linkHeader.includes('rel="next"')) {
+
+        const match = linkHeader.match(/page_info=([^&>]+)/);
+
+        nextPageInfo = match ? match[1] : null;
+
+      } else {
+        nextPageInfo = null;
+      }
+
+    } while (nextPageInfo);
+
+    productCache = allProducts;
+
+    console.log(`Shopify Sync: ${productCache.length} products loaded`);
 
     return productCache;
 
   } catch (error) {
 
     console.error("Shopify Sync Error:", error.message);
-    return [];
 
+    return [];
   }
 }
 
