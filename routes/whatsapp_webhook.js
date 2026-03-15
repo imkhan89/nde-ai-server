@@ -6,10 +6,10 @@ const router = express.Router();
 router.post("/whatsapp", async (req, res) => {
 
   const message = req.body.Body || "";
-  const from = req.body.From || "";
+  const sender = req.body.From || "";
 
   console.log("WhatsApp message received");
-  console.log("From:", from);
+  console.log("Sender:", sender);
   console.log("Message:", message);
 
   const aiReply = await generateAIReply(message);
@@ -21,6 +21,7 @@ router.post("/whatsapp", async (req, res) => {
 <Message>${aiReply}</Message>
 </Response>
 `);
+
 });
 
 export default router;
