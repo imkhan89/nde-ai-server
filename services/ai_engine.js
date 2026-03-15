@@ -1,96 +1,42 @@
-// services/ai_engine.js
+import { searchProducts } from "../sync/shopify_sync.js"
 
-import { queryNormalizer } from "./query_normalizer.js";
-import { parseVehicle } from "./vehicle_parser.js";
-import { detectProductName } from "./product_name_parser.js";
-import { getFitmentData } from "./fitment_engine.js";
-import { productSearch } from "./product_search.js";
-import { detectIntent } from "./intent_detector.js";
-import {
-    buildGreetingResponse,
-    buildRecommendationResponse,
-    buildPriceResponse,
-    buildAvailabilityResponse,
-    buildTechnicalResponse
-} from "./sales_response_builder.js";
+export async function processUserMessage(message) {
 
-import {
-    getSession,
-    updateVehicle,
-    updateProduct,
-    updateSearchResults,
-    updateLastQuery
-} from "./conversation_memory.js";
+  if (!message) {
+    return "Please send a message."
+  }
 
-export async function processCustomerMessage(db, sessionId, message) {
+  const query = message.toLowerCase()
 
-    try {
+  const results = searchProducts(query)
 
-        if (!message || typeof message !== "string") {
-            return "Please send vehicle details and the required part.";
-        }
+  if (!results || results.length === 0) {
+    return "Sorry, I couldn't find a matching product."
+  }
 
-        const normalizedQuery = queryNormalizer(message);
+  const product = results[0]
 
-        const intent = detectIntent(message);
+  return formatProduct(product)
+}
 
-        const session = getSession(sessionId);
+function formatProduct(product) {
 
-        const detectedVehicle = parseVehicle(normalizedQuery);
+  const title = product.title || "Product"
+  const handle = product.handle || ""
+  const url = `https://ndestore.com/products/${handle}`
 
-        const detectedProduct = detectProductName(normalizedQuery);
+  let price = "Price not available"
 
-        let vehicle = detectedVehicle || session.vehicle;
-        let product = detectedProduct || session.product;
+  if (product.variants && product.variants.length > 0) {
+    price = `PKR ${product.variants[0].price}`
+  }
 
-        if (detectedVehicle) updateVehicle(sessionId, detectedVehicle);
-        if (detectedProduct) updateProduct(sessionId, detectedProduct);
+  return `
+${title}
 
-        if (intent.greeting && !vehicle && !product) {
-            return buildGreetingResponse();
-        }
+${price}
 
-        let fitment = null;
-
-        if (vehicle && vehicle.make && vehicle.model && vehicle.year) {
-            fitment = getFitmentData(vehicle.make, vehicle.model, vehicle.year);
-        }
-
-        let searchQuery = normalizedQuery;
-
-        if (vehicle && product) {
-            searchQuery = `${vehicle.model} ${product}`;
-        } else if (product) {
-            searchQuery = product;
-        }
-
-        const products = await productSearch(db, searchQuery);
-
-        updateSearchResults(sessionId, products);
-        updateLastQuery(sessionId, searchQuery);
-
-        if (intent.price) {
-            return buildPriceResponse(products);
-        }
-
-        if (intent.availability) {
-            return buildAvailabilityResponse(products);
-        }
-
-        let response = "";
-
-        response += buildRecommendationResponse(vehicle, product, products);
-
-        response += buildTechnicalResponse(intent, fitment, product);
-
-        return response;
-
-    } catch (error) {
-
-        console.error("AI engine error:", error);
-
-        return "Sorry, something went wrong. Please send vehicle details and required part.";
-
-    }
-
+View Product:
+${url}
+`
 }
