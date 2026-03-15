@@ -8,32 +8,19 @@ import { syncShopifyProducts } from "../sync/shopify_sync.js"
 const app = express()
 
 app.use(cors())
-
-// IMPORTANT FOR TWILIO
 app.use(express.urlencoded({ extended: true }))
-
-// JSON support
 app.use(express.json())
 
 app.use("/webhook", whatsappWebhook)
 app.use("/dashboard", dashboardApi)
 
-async function startServer() {
+async function initializeSystem() {
 
     console.log("Starting Shopify sync...")
-
     await syncShopifyProducts()
-
-    const PORT = process.env.PORT || 8080
-
-    app.listen(PORT, () => {
-
-        console.log(`ndestore.com Automotive AI running on port ${PORT}`)
-
-    })
 
 }
 
-startServer()
+initializeSystem()
 
 export default app
