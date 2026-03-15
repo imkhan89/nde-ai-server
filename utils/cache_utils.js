@@ -1,55 +1,38 @@
-/*
-NDE Automotive AI
-Cache Utilities
-*/
+const cacheStore = new Map();
 
-const CACHE_STORE = new Map();
+export function setCache(key, value, ttl = 300000) {
+  const expiresAt = Date.now() + ttl;
 
-export function setCache(key, value, ttlMs = 60000) {
-
-  if (!key) return;
-
-  const expiry = Date.now() + ttlMs;
-
-  CACHE_STORE.set(key, {
+  cacheStore.set(key, {
     value,
-    expiry
+    expiresAt
   });
-
 }
 
 export function getCache(key) {
+  const item = cacheStore.get(key);
 
-  if (!CACHE_STORE.has(key)) return null;
+  if (!item) return null;
 
-  const entry = CACHE_STORE.get(key);
-
-  if (Date.now() > entry.expiry) {
-
-    CACHE_STORE.delete(key);
-
+  if (Date.now() > item.expiresAt) {
+    cacheStore.delete(key);
     return null;
-
   }
 
-  return entry.value;
-
+  return item.value;
 }
 
 export function deleteCache(key) {
-
-  CACHE_STORE.delete(key);
-
+  cacheStore.delete(key);
 }
 
 export function clearCache() {
-
-  CACHE_STORE.clear();
-
+  cacheStore.clear();
 }
 
-export function cacheSize() {
-
-  return CACHE_STORE.size;
-
-}
+export default {
+  setCache,
+  getCache,
+  deleteCache,
+  clearCache
+};
