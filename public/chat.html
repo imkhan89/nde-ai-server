@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>NDE AI Chat</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+
+body{
+background:#0f172a;
+}
+
+.chat-container{
+height:100vh;
+display:flex;
+flex-direction:column;
+}
+
+.messages{
+flex:1;
+overflow-y:auto;
+padding:20px;
+}
+
+.message{
+max-width:75%;
+padding:12px 14px;
+border-radius:12px;
+margin-bottom:12px;
+font-size:14px;
+}
+
+.user{
+background:#2563eb;
+color:white;
+margin-left:auto;
+}
+
+.ai{
+background:#1e293b;
+color:white;
+}
+
+.input-area{
+display:flex;
+padding:12px;
+background:#020617;
+}
+
+input{
+flex:1;
+padding:10px;
+border-radius:8px;
+border:none;
+outline:none;
+background:#1e293b;
+color:white;
+}
+
+button{
+margin-left:10px;
+background:#2563eb;
+color:white;
+padding:10px 16px;
+border-radius:8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="chat-container">
+
+<div id="messages" class="messages">
+
+<div class="message ai">
+Hello 👋  
+Ask me about car parts, compatibility, or products.
+</div>
+
+</div>
+
+<div class="input-area">
+
+<input
+id="input"
+placeholder="Type your message..."
+onkeypress="if(event.key==='Enter')sendMessage()"
+/>
+
+<button onclick="sendMessage()">Send</button>
+
+</div>
+
+</div>
+
+<script>
+
+function sendMessage(){
+
+const input=document.getElementById("input")
+const messages=document.getElementById("messages")
+
+const text=input.value.trim()
+
+if(!text) return
+
+const userMsg=document.createElement("div")
+userMsg.className="message user"
+userMsg.innerText=text
+
+messages.appendChild(userMsg)
+
+input.value=""
+
+messages.scrollTop=messages.scrollHeight
+
+}
+
+</script>
+
+</body>
+</html>
