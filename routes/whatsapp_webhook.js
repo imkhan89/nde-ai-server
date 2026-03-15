@@ -1,61 +1,48 @@
-import express from "express";
-import twilio from "twilio";
+import express from "express"
+import twilio from "twilio"
 
-import { processAIQuery } from "../services/ai_engine.js";
-import { searchProducts, buildQuickReply } from "../services/quick_reply_engine.js";
-import { storeMessage } from "../services/chat_memory.js";
+const router = express.Router()
 
-const router = express.Router();
+router.post("/whatsapp", async (req, res) => {
 
-const MessagingResponse = twilio.twiml.MessagingResponse;
+    try {
 
-router.post("/webhook/whatsapp", async (req, res) => {
+        const incomingMsg = req.body.Body || ""
+        const from = req.body.From || ""
 
-try {
+        console.log("WhatsApp Message Received")
+        console.log("From:", from)
+        console.log("Message:", incomingMsg)
 
-const incomingMsg = req.body.Body || "";
-const from = req.body.From || "";
+        const twiml = new twilio.twiml.MessagingResponse()
 
-storeMessage(from,"customer",incomingMsg);
+        let reply = ""
 
-let reply;
+        const msg = incomingMsg.toLowerCase()
 
-const products = searchProducts(incomingMsg);
+        if (msg.includes("hello") || msg.includes("hi")) {
 
-if(products.length > 0){
+            reply = "Hello 👋\nWelcome to ndestore.com Automotive Parts.\nHow can I assist you today?"
 
-reply = buildQuickReply(products);
+        } else {
 
-}else{
+            reply = "Thank you for contacting ndestore.com.\nOur AI is processing your request."
 
-reply = await processAIQuery(incomingMsg,from);
+        }
 
-}
+        twiml.message(reply)
 
-storeMessage(from,"ai",reply);
+        res.type("text/xml")
+        res.send(twiml.toString())
 
-const twiml = new MessagingResponse();
+    } catch (error) {
 
-twiml.message(reply);
+        console.error("Webhook Error:", error)
 
-res.writeHead(200, { "Content-Type": "text/xml" });
+        res.sendStatus(200)
 
-res.end(twiml.toString());
+    }
 
-} catch (error) {
+})
 
-console.error("Webhook error:", error);
-
-const twiml = new MessagingResponse();
-
-twiml.message("System error. Please try again.");
-
-res.writeHead(200, { "Content-Type": "text/xml" });
-
-res.end(twiml.toString());
-
-}
-
-});
-
-export default router;
+export default router
