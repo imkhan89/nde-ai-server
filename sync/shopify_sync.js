@@ -1,11 +1,11 @@
 import fetch from "node-fetch";
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
-
 let productCache = [];
 
 export async function syncShopifyProducts() {
+
+  const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
   if (!SHOPIFY_STORE || !SHOPIFY_ACCESS_TOKEN) {
     console.warn("Shopify credentials missing. Skipping Shopify sync.");
