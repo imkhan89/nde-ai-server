@@ -11,9 +11,8 @@ async function startServer() {
     const server = http.createServer(app);
 
     server.listen(PORT, () => {
-      console.log(`NDE Automotive AI server running on port ${PORT}`);
+      console.log(`ndestore.com Automotive AI running on port ${PORT}`);
     });
-
   } catch (error) {
     console.error("Server startup error:", error);
   }
