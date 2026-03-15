@@ -1,84 +1,152 @@
-import Database from "better-sqlite3";
-import path from "path";
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+let DatabaseDriver = null;
+let db = null;
 
 /*
-Database path
+AUTO-OPTIMIZING DATABASE LOADER
+Attempts to load better-sqlite3.
+If not installed, automatically falls back to sqlite3.
+Prevents container crash.
 */
-const DB_PATH = path.join(process.cwd(), "nde.db");
 
-/*
-Ensure database file exists
-*/
-if (!fs.existsSync(DB_PATH)) {
-  console.log("Creating new SQLite database...");
+async function loadDriver() {
+
+  try {
+
+    const module = await import("better-sqlite3");
+    DatabaseDriver = module.default;
+
+    return "better-sqlite3";
+
+  } catch (err) {
+
+    const module = await import("sqlite3");
+    DatabaseDriver = module.default;
+
+    return "sqlite3";
+
+  }
+
 }
 
-const db = new Database(DB_PATH);
+async function initializeDatabase() {
+
+  const driver = await loadDriver();
+
+  const dataDir = path.join(__dirname, "..", "data");
+
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  const dbPath = path.join(dataDir, "nde_ai.db");
+
+  if (driver === "better-sqlite3") {
+
+    db = new DatabaseDriver(dbPath);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        sku TEXT,
+        brand TEXT,
+        vehicle_make TEXT,
+        vehicle_model TEXT,
+        vehicle_year TEXT,
+        category TEXT,
+        price REAL,
+        data JSON
+      )
+    `);
+
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS learning_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        query TEXT,
+        result TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+  } else {
+
+    db = new DatabaseDriver.Database(dbPath);
+
+    db.serialize(() => {
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS products (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT,
+          sku TEXT,
+          brand TEXT,
+          vehicle_make TEXT,
+          vehicle_model TEXT,
+          vehicle_year TEXT,
+          category TEXT,
+          price REAL,
+          data TEXT
+        )
+      `);
+
+      db.run(`
+        CREATE TABLE IF NOT EXISTS learning_log (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          query TEXT,
+          result TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+    });
+
+  }
+
+  return db;
+
+}
+
+export async function getDatabase() {
+
+  if (!db) {
+    db = await initializeDatabase();
+  }
+
+  return db;
+
+}
 
 /*
-Performance optimizations
+AI SELF LEARNING STORAGE
 */
-db.pragma("journal_mode = WAL");
-db.pragma("synchronous = NORMAL");
-db.pragma("temp_store = MEMORY");
-db.pragma("cache_size = 1000000");
 
-/*
-Products table
-*/
-db.exec(`
-CREATE TABLE IF NOT EXISTS products (
-    id INTEGER PRIMARY KEY,
-    title TEXT,
-    handle TEXT
-);
-`);
+export async function logLearning(query, result) {
 
-/*
-Full Text Search table
-*/
-db.exec(`
-CREATE VIRTUAL TABLE IF NOT EXISTS products_fts
-USING fts5(
-    title,
-    handle,
-    content='products',
-    content_rowid='id'
-);
-`);
+  const database = await getDatabase();
 
-/*
-FTS triggers for automatic sync
-*/
-db.exec(`
+  if (database.exec) {
 
-CREATE TRIGGER IF NOT EXISTS products_ai
-AFTER INSERT ON products
-BEGIN
-  INSERT INTO products_fts(rowid, title, handle)
-  VALUES (new.id, new.title, new.handle);
-END;
+    const stmt = database.prepare(`
+      INSERT INTO learning_log (query, result)
+      VALUES (?, ?)
+    `);
 
-CREATE TRIGGER IF NOT EXISTS products_ad
-AFTER DELETE ON products
-BEGIN
-  INSERT INTO products_fts(products_fts, rowid, title, handle)
-  VALUES('delete', old.id, old.title, old.handle);
-END;
+    stmt.run(query, JSON.stringify(result));
 
-CREATE TRIGGER IF NOT EXISTS products_au
-AFTER UPDATE ON products
-BEGIN
-  INSERT INTO products_fts(products_fts, rowid, title, handle)
-  VALUES('delete', old.id, old.title, old.handle);
+  } else {
 
-  INSERT INTO products_fts(rowid, title, handle)
-  VALUES (new.id, new.title, new.handle);
-END;
+    database.run(
+      `INSERT INTO learning_log (query, result) VALUES (?, ?)`,
+      [query, JSON.stringify(result)]
+    );
 
-`);
+  }
 
-console.log("SQLite database initialized.");
-
-export default db;
+}
