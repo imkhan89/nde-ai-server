@@ -6,6 +6,10 @@ const client = new OpenAI({
 
 export default async function generateAIReply(message) {
 
+  if (!process.env.OPENAI_API_KEY) {
+    return "Hello 👋 How can I help you with automotive parts today?";
+  }
+
   try {
 
     const completion = await client.chat.completions.create({
@@ -13,7 +17,7 @@ export default async function generateAIReply(message) {
       messages: [
         {
           role: "system",
-          content: "You are NDE Automotive AI helping customers find automotive parts and accessories."
+          content: "You are NDE Automotive AI helping customers find automotive parts."
         },
         {
           role: "user",
@@ -26,7 +30,7 @@ export default async function generateAIReply(message) {
 
   } catch (error) {
 
-    console.error("AI error:", error);
+    console.error("AI Error:", error.message);
 
     return "Hello 👋 How can I help you with automotive parts today?";
   }
