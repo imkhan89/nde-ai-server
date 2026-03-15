@@ -1,57 +1,61 @@
-import fetch from "node-fetch";
+import fetch from "node-fetch"
 
-const API_VERSION = "2024-01";
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-const SHOPIFY_TOKEN = process.env.SHOPIFY_TOKEN;
+let PRODUCTS_CACHE = []
 
-function buildUrl(pageInfo = null) {
-  let url = `https://${SHOPIFY_STORE}/admin/api/${API_VERSION}/products.json?limit=250`;
+export async function syncShopifyProducts() {
 
-  if (pageInfo) {
-    url += `&page_info=${pageInfo}`;
-  }
+  try {
 
-  return url;
-}
+    const SHOP = process.env.SHOPIFY_STORE
+    const TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
 
-function extractNextPage(linkHeader) {
-  if (!linkHeader) return null;
-
-  const parts = linkHeader.split(",");
-
-  for (const part of parts) {
-    if (part.includes('rel="next"')) {
-      const match = part.match(/page_info=([^&>]+)/);
-      if (match) return match[1];
+    if (!SHOP || !TOKEN) {
+      console.log("Shopify credentials missing")
+      return
     }
-  }
 
-  return null;
-}
+    const url = `https://${SHOP}/admin/api/2024-01/products.json?limit=250`
 
-export async function fetchShopifyPage(pageInfo = null) {
-  const url = buildUrl(pageInfo);
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": TOKEN
+      }
+    })
 
-  const response = await fetch(url, {
-    headers: {
-      "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-      "Content-Type": "application/json"
+    const data = await response.json()
+
+    if (!data.products) {
+      console.log("No products returned from Shopify")
+      return
     }
-  });
 
-  if (!response.ok) {
-    throw new Error(`Shopify API Error: ${response.status}`);
+    PRODUCTS_CACHE = data.products
+
+    console.log(`Shopify Sync Complete: ${PRODUCTS_CACHE.length} products loaded`)
+
+  } catch (error) {
+
+    console.error("Shopify Sync Error:", error)
+
   }
 
-  const data = await response.json();
-  const linkHeader = response.headers.get("link");
-
-  return {
-    products: data.products || [],
-    nextPage: extractNextPage(linkHeader)
-  };
 }
 
-export default {
-  fetchShopifyPage
-};
+export function getProducts() {
+  return PRODUCTS_CACHE
+}
+
+export function searchProducts(query) {
+
+  if (!query) return []
+
+  const q = query.toLowerCase()
+
+  return PRODUCTS_CACHE.filter(p =>
+    p.title.toLowerCase().includes(q) ||
+    (p.body_html && p.body_html.toLowerCase().includes(q))
+  )
+
+}
