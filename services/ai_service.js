@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-const client = new OpenAI({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -8,12 +8,12 @@ export default async function generateAIReply(message) {
 
   try {
 
-    const completion = await client.chat.completions.create({
+    const response = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
         {
           role: "system",
-          content: "You are NDE Automotive AI assistant helping customers find auto parts."
+          content: "You are NDE Automotive AI assistant helping customers find auto parts and accessories."
         },
         {
           role: "user",
@@ -22,12 +22,13 @@ export default async function generateAIReply(message) {
       ]
     });
 
-    return completion.choices[0].message.content;
+    return response.choices[0].message.content;
 
-  } catch (err) {
+  } catch (error) {
 
-    console.error("AI error:", err);
+    console.error("AI Error:", error);
 
-    return "Hello 👋\n\nHow can I help you with automotive parts today?";
+    return "Hello 👋\nHow can I help you with automotive parts today?";
   }
+
 }
