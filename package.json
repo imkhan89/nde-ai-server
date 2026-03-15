@@ -1,8 +1,9 @@
 {
   "name": "nde-ai-server",
   "version": "1.0.0",
-  "type": "module",
+  "description": "NDE Automotive AI Server",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
