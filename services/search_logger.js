@@ -1,90 +1,33 @@
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import db from "../database/database.js";
 
-/*
-NDE Automotive AI
-Search Logger
+export async function logSearch({ query, normalized_query }) {
+  if (!query) return;
 
-Logs search queries for AI learning and analytics.
-Automatically creates log directory and rotates logs.
-*/
+  const stmt = db.prepare(`
+    INSERT INTO search_logs
+    (query, normalized_query, created_at)
+    VALUES (?, ?, ?)
+  `);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const LOG_DIR = path.join(__dirname, "..", "logs");
-const LOG_FILE = path.join(LOG_DIR, "search.log");
-
-function ensureLogDirectory() {
-
-  if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
-  }
-
+  stmt.run(
+    query,
+    normalized_query || "",
+    new Date().toISOString()
+  );
 }
 
-function formatLog(entry) {
+export async function getRecentSearches(limit = 50) {
+  const stmt = db.prepare(`
+    SELECT query, normalized_query, created_at
+    FROM search_logs
+    ORDER BY created_at DESC
+    LIMIT ?
+  `);
 
-  return JSON.stringify({
-    time: new Date().toISOString(),
-    ...entry
-  }) + "\n";
-
+  return stmt.all(limit);
 }
 
-export function logSearch(query, parsed, resultCount) {
-
-  try {
-
-    ensureLogDirectory();
-
-    const entry = formatLog({
-      query,
-      vehicle: parsed?.vehicle || null,
-      part: parsed?.part || null,
-      brand: parsed?.brand || null,
-      results: resultCount || 0
-    });
-
-    fs.appendFileSync(LOG_FILE, entry);
-
-  } catch (err) {
-
-    console.error("Search logging failed:", err);
-
-  }
-
-}
-
-export function readSearchLogs(limit = 100) {
-
-  try {
-
-    if (!fs.existsSync(LOG_FILE)) {
-      return [];
-    }
-
-    const data = fs.readFileSync(LOG_FILE, "utf-8");
-
-    const lines = data.trim().split("\n");
-
-    return lines.slice(-limit).map(l => {
-
-      try {
-        return JSON.parse(l);
-      } catch {
-        return null;
-      }
-
-    }).filter(Boolean);
-
-  } catch (err) {
-
-    console.error("Log read error:", err);
-
-    return [];
-
-  }
-
-}
+export default {
+  logSearch,
+  getRecentSearches
+};
