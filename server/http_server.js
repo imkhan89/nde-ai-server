@@ -1,32 +1,89 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import http from "http";
 
-import { registerAIRoutes } from "./register_ai_routes.js";
-import { registerSyncRoutes } from "./register_sync_routes.js";
-import { registerSystemRoutes } from "./register_system_routes.js";
+export default function createHttpServer() {
 
-export function createHTTPServer() {
   const app = express();
 
-  app.use(express.json());
-  app.use(cors());
+  /* -----------------------------
+     Security
+  ----------------------------- */
   app.use(helmet());
 
+  /* -----------------------------
+     CORS
+  ----------------------------- */
+  app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"]
+  }));
+
+  /* -----------------------------
+     Body Parser
+  ----------------------------- */
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true }));
+
+  /* -----------------------------
+     Health Check
+  ----------------------------- */
   app.get("/", (req, res) => {
     res.json({
-      service: "NDE Automotive AI",
-      status: "running"
+      status: "running",
+      service: "NDE Automotive AI Server",
+      version: "1.0"
     });
   });
 
-  registerAIRoutes(app);
-  registerSyncRoutes(app);
-  registerSystemRoutes(app);
+  app.get("/health", (req, res) => {
+    res.json({
+      status: "ok",
+      uptime: process.uptime()
+    });
+  });
 
-  return app;
+  /* -----------------------------
+     Chat Endpoint
+  ----------------------------- */
+  app.post("/chat", async (req, res) => {
+
+    try {
+
+      const { message } = req.body;
+
+      if (!message) {
+        return res.status(400).json({
+          error: "Message required"
+        });
+      }
+
+      // placeholder AI response
+      const reply = `AI received: ${message}`;
+
+      res.json({
+        success: true,
+        reply
+      });
+
+    } catch (error) {
+
+      console.error("Chat Error:", error);
+
+      res.status(500).json({
+        error: "Internal server error"
+      });
+
+    }
+
+  });
+
+  /* -----------------------------
+     Create HTTP Server
+  ----------------------------- */
+  const server = http.createServer(app);
+
+  return server;
 }
-
-export default {
-  createHTTPServer
-};
