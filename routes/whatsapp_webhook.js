@@ -2,26 +2,29 @@ import express from "express";
 
 const router = express.Router();
 
+/* Twilio webhook endpoint */
 router.post("/whatsapp", (req, res) => {
 
-    const incomingMessage = req.body.Body;
-    const from = req.body.From;
+  const incomingMessage = req.body.Body || "";
+  const sender = req.body.From || "";
 
-    console.log("WhatsApp message received");
-    console.log("From:", from);
-    console.log("Message:", incomingMessage);
+  console.log("WhatsApp message received");
+  console.log("Sender:", sender);
+  console.log("Message:", incomingMessage);
 
-    const reply = `Hello 👋
+  const replyMessage =
+`Hello 👋
 
 You said: ${incomingMessage}
 
-NDE Automotive AI is now working correctly.`;
+NDE Automotive AI is now connected successfully.`;
 
-    res.set("Content-Type", "text/xml");
 
-    res.send(`
+  res.set("Content-Type", "text/xml");
+
+  res.send(`
 <Response>
-<Message>${reply}</Message>
+<Message>${replyMessage}</Message>
 </Response>
 `);
 });
