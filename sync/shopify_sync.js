@@ -16,22 +16,22 @@ export async function syncShopifyProducts() {
 
         const query = `
         {
-            products(first: 250) {
-                edges {
-                    node {
-                        id
-                        title
-                        handle
-                        variants(first: 1) {
-                            edges {
-                                node {
-                                    price
-                                }
-                            }
-                        }
+          products(first: 50) {
+            edges {
+              node {
+                id
+                title
+                handle
+                variants(first:1){
+                  edges{
+                    node{
+                      price
                     }
+                  }
                 }
+              }
             }
+          }
         }
         `
 
@@ -44,14 +44,25 @@ export async function syncShopifyProducts() {
             body: JSON.stringify({ query })
         })
 
-        const data = await response.json()
+        const json = await response.json()
 
-        const products = data.data.products.edges.map(p => ({
-            id: p.node.id,
-            title: p.node.title,
-            handle: p.node.handle,
-            price: p.node.variants.edges[0]?.node?.price || null
-        }))
+        if (!json.data) {
+            console.log("Shopify API response:", JSON.stringify(json, null, 2))
+            return []
+        }
+
+        const products = json.data.products.edges.map(edge => {
+
+            const node = edge.node
+
+            return {
+                id: node.id,
+                title: node.title,
+                handle: node.handle,
+                price: node.variants.edges[0]?.node?.price || null
+            }
+
+        })
 
         productCache = products
 
