@@ -4,8 +4,9 @@ let productCache = [];
 
 export async function syncShopifyProducts() {
 
-  const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
-  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+  const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN;
+  const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+  const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || "2023-10";
 
   if (!SHOPIFY_STORE || !SHOPIFY_ACCESS_TOKEN) {
     console.warn("Shopify credentials missing. Skipping Shopify sync.");
@@ -14,7 +15,7 @@ export async function syncShopifyProducts() {
 
   try {
 
-    const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`;
+    const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
 
     const response = await fetch(url, {
       method: "GET",
