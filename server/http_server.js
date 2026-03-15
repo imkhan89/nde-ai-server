@@ -8,6 +8,8 @@ import { syncShopifyProducts } from "../sync/shopify_sync.js"
 const app = express()
 
 app.use(cors())
+
+// IMPORTANT: Twilio sends urlencoded data
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
