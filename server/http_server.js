@@ -4,7 +4,6 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 
 import whatsappWebhook from "../routes/whatsapp_webhook.js";
-import healthRoute from "../routes/health.js";
 
 dotenv.config();
 
@@ -23,7 +22,14 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/", healthRoute);
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    service: "ndestore.com Automotive AI",
+    uptime: process.uptime(),
+    timestamp: Date.now()
+  });
+});
 
 app.use("/", whatsappWebhook);
 
