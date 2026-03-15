@@ -3,15 +3,8 @@ import { setCachedProducts } from "../services/shopify_cache.js"
 
 let productCache = []
 
-const SHOPIFY_STORE =
-    process.env.SHOPIFY_STORE ||
-    process.env.SHOPIFY_SHOP ||
-    "347657-7d.myshopify.com"
-
-const SHOPIFY_TOKEN =
-    process.env.SHOPIFY_ADMIN_TOKEN ||
-    process.env.SHOPIFY_TOKEN ||
-    process.env.SHOPIFY_ACCESS_TOKEN
+const SHOPIFY_STORE = "347657-7d.myshopify.com"
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
 
 export async function syncShopifyProducts() {
 
@@ -20,7 +13,7 @@ export async function syncShopifyProducts() {
         console.log("Starting Shopify product sync...")
 
         if (!SHOPIFY_TOKEN) {
-            console.error("Shopify token missing")
+            console.error("SHOPIFY_ADMIN_TOKEN missing in environment variables")
             return []
         }
 
