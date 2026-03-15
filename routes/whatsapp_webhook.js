@@ -1,41 +1,25 @@
-import express from "express"
-import twilio from "twilio"
+import express from "express";
 
-const router = express.Router()
+const router = express.Router();
 
-router.post("/whatsapp", async (req, res) => {
+router.post("/webhook/whatsapp", (req, res) => {
 
-    const twiml = new twilio.twiml.MessagingResponse()
+    const incomingMsg = req.body.Body;
+    const from = req.body.From;
 
-    try {
+    console.log("WhatsApp message received");
+    console.log("From:", from);
+    console.log("Message:", incomingMsg);
 
-        const message = req.body.Body || ""
-        const sender = req.body.From || ""
+    const reply = `Hello 👋\n\nYou said: ${incomingMsg}\n\nNDE Automotive AI is working correctly.`;
 
-        console.log("WhatsApp message received")
-        console.log("From:", sender)
-        console.log("Message:", message)
+    res.set("Content-Type", "text/xml");
 
-        const reply = `Hello 👋
+    res.send(`
+        <Response>
+            <Message>${reply}</Message>
+        </Response>
+    `);
+});
 
-WhatsApp AI is working.
-
-You said:
-${message}`
-
-        twiml.message(reply)
-
-    } catch (error) {
-
-        console.error("Webhook error:", error)
-
-        twiml.message("System error.")
-
-    }
-
-    res.set("Content-Type", "text/xml")
-    res.send(twiml.toString())
-
-})
-
-export default router
+export default router;
