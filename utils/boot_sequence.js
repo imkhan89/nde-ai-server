@@ -1,30 +1,23 @@
-/*
-NDE Automotive AI
-Boot Sequence
-*/
+import { validateEnv } from "./env_validator.js";
+import { info } from "./logger.js";
 
-import { printBanner } from "./banner.js";
-import { runStartupChecks } from "./startup_checks.js";
-import { runtimeState } from "./runtime_state.js";
-import { shutdownManager } from "./shutdown_manager.js";
+export async function runBootSequence() {
+  try {
+    info("Starting boot sequence...");
 
-export function runBootSequence() {
+    validateEnv();
 
-  printBanner();
+    info("Environment validation passed");
 
-  const checks = runStartupChecks();
+    info("Boot sequence completed");
 
-  runtimeState.set("boot_checks", checks);
-
-  shutdownManager.initialize();
-
-  runtimeState.setFlag("boot_completed", true);
-
-  console.log("Boot sequence completed");
-
-  return {
-    success: true,
-    checks
-  };
-
+    return true;
+  } catch (error) {
+    console.error("Boot sequence failed:", error);
+    process.exit(1);
+  }
 }
+
+export default {
+  runBootSequence
+};
