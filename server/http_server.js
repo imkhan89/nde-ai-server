@@ -1,65 +1,43 @@
-import express from "express";
-import cors from "cors";
-import helmet from "helmet";
-import dotenv from "dotenv";
+import 'dotenv/config'
 
-import whatsappWebhook from "../routes/whatsapp_webhook.js";
-import dashboardApi from "../routes/admin_dashboard_api.js";
+import express from "express"
+import cors from "cors"
 
-dotenv.config();
+import whatsappWebhook from "../routes/whatsapp_webhook.js"
+import dashboardApi from "../routes/admin_dashboard_api.js"
 
-const app = express();
+import { syncShopifyProducts } from "../sync/shopify_sync.js"
 
-app.use(helmet());
-app.use(cors());
+const app = express()
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors())
+app.use(express.json())
 
 /*
-========================
-SYSTEM STATUS ROUTES
-========================
+Routes
 */
 
-app.get("/", (req, res) => {
-  res.json({
-    name: "ndestore.com Automotive AI",
-    status: "running"
-  });
-});
-
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "ndestore.com Automotive AI",
-    uptime: process.uptime(),
-    timestamp: Date.now()
-  });
-});
+app.use("/webhook", whatsappWebhook)
+app.use("/dashboard", dashboardApi)
 
 /*
-========================
-WHATSAPP WEBHOOK
-========================
+Start Shopify Sync
 */
 
-app.use("/", whatsappWebhook);
+async function startServer() {
 
-/*
-========================
-DASHBOARD API
-========================
-*/
+    console.log("Starting Shopify sync...")
 
-app.use("/", dashboardApi);
+    await syncShopifyProducts()
 
-/*
-========================
-SERVE DASHBOARD UI
-========================
-*/
+    const PORT = process.env.PORT || 8080
 
-app.use("/dashboard", express.static("public/dashboard"));
+    app.listen(PORT, () => {
 
-export default app;
+        console.log(`ndestore.com Automotive AI running on port ${PORT}`)
+
+    })
+
+}
+
+startServer()
