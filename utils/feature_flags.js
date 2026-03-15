@@ -1,43 +1,35 @@
-/*
-NDE Automotive AI
-Feature Flags
-*/
+const flags = new Map();
 
-class FeatureFlags {
-
-  constructor() {
-
-    this.flags = new Map();
-
-  }
-
-  enable(name) {
-
-    this.flags.set(name, true);
-
-  }
-
-  disable(name) {
-
-    this.flags.set(name, false);
-
-  }
-
-  isEnabled(name) {
-
-    return this.flags.get(name) === true;
-
-  }
-
-  list() {
-
-    return Array.from(this.flags.entries()).map(([k, v]) => ({
-      name: k,
-      enabled: v
-    }));
-
-  }
-
+export function enableFeature(name) {
+  flags.set(name, true);
 }
 
-export const featureFlags = new FeatureFlags();
+export function disableFeature(name) {
+  flags.set(name, false);
+}
+
+export function isFeatureEnabled(name) {
+  return flags.get(name) === true;
+}
+
+export function setFeature(name, value) {
+  flags.set(name, Boolean(value));
+}
+
+export function listFeatures() {
+  const result = {};
+
+  for (const [key, value] of flags.entries()) {
+    result[key] = value;
+  }
+
+  return result;
+}
+
+export default {
+  enableFeature,
+  disableFeature,
+  isFeatureEnabled,
+  setFeature,
+  listFeatures
+};
