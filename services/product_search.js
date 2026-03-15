@@ -1,31 +1,49 @@
-import { getProducts } from "../sync/shopify_sync.js"
-import { normalizeQuery } from "./query_normalizer.js"
+import { getCachedProducts } from "../sync/shopify_sync.js";
 
-export function searchProduct(query) {
+export function searchProducts(query) {
+  const products = getCachedProducts();
 
-  if (!query) return []
+  if (!products || products.length === 0) {
+    return [];
+  }
 
-  const q = normalizeQuery(query)
+  const q = query.toLowerCase();
 
-  const products = getProducts()
-
-  if (!products || products.length === 0) return []
-
-  const results = products.filter(product => {
-
-    const title = (product.title || "").toLowerCase()
-    const body = (product.body_html || "").toLowerCase()
-    const vendor = (product.vendor || "").toLowerCase()
-    const type = (product.product_type || "").toLowerCase()
+  const results = products.filter((product) => {
+    const title = product.title?.toLowerCase() || "";
+    const body = product.body_html?.toLowerCase() || "";
+    const tags = product.tags?.toLowerCase() || "";
 
     return (
       title.includes(q) ||
       body.includes(q) ||
-      vendor.includes(q) ||
-      type.includes(q)
-    )
+      tags.includes(q)
+    );
+  });
 
-  })
+  return results.slice(0, 5);
+}
 
-  return results.slice(0,5)
+export function formatProductResults(products) {
+  if (!products || products.length === 0) {
+    return "I couldn't find a matching product on ndestore.com. Please provide vehicle model, year, and part name.";
+  }
+
+  let message = "Here are some products available on ndestore.com:\n\n";
+
+  for (const product of products) {
+    const title = product.title;
+    const handle = product.handle;
+
+    const price =
+      product.variants && product.variants.length > 0
+        ? product.variants[0].price
+        : "N/A";
+
+    const link = `https://www.ndestore.com/products/${handle}`;
+
+    message += `${title}\nPKR ${price}\n${link}\n\n`;
+  }
+
+  return message.trim();
 }
