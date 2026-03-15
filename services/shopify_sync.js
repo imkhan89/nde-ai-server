@@ -4,15 +4,15 @@ let products = [];
 
 export default async function startShopifySync() {
 
+  const store = process.env.SHOPIFY_STORE;
+  const token = process.env.SHOPIFY_TOKEN;
+
+  if (!store || !token) {
+    console.error("Shopify environment variables missing");
+    return;
+  }
+
   try {
-
-    const store = process.env.SHOPIFY_STORE;
-    const token = process.env.SHOPIFY_TOKEN;
-
-    if (!store || !token) {
-      console.error("Shopify environment variables missing");
-      return;
-    }
 
     console.log("Starting Shopify sync...");
 
@@ -20,8 +20,7 @@ export default async function startShopifySync() {
 
     const response = await axios.get(url, {
       headers: {
-        "X-Shopify-Access-Token": token,
-        "Content-Type": "application/json"
+        "X-Shopify-Access-Token": token
       }
     });
 
