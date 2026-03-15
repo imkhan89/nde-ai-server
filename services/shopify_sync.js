@@ -26,4 +26,5 @@ export default async function startShopifySync() {
     console.error("Shopify Sync Error:", error.message);
 
   }
+
 }
