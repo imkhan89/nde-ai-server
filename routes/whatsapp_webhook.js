@@ -9,7 +9,7 @@ router.post("/whatsapp", async (req, res) => {
   const sender = req.body.From || "";
 
   console.log("WhatsApp message received");
-  console.log("From:", sender);
+  console.log("Sender:", sender);
   console.log("Message:", message);
 
   const reply = await generateAIReply(message);
