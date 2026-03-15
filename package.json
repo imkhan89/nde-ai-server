@@ -1,19 +1,20 @@
 {
-  "name": "nde-ai-server",
+  "name": "nde-automotive-ai",
   "version": "1.0.0",
-  "description": "NDE Automotive AI Server",
+  "description": "ndestore.com WhatsApp Automotive AI",
   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
-    "axios": "^1.7.7",
+    "axios": "^1.6.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "helmet": "^7.1.0",
-    "node-fetch": "^3.3.2",
-    "ws": "^8.18.0"
+    "express": "^4.18.2",
+    "twilio": "^4.23.0"
   }
 }
