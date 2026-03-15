@@ -16,9 +16,14 @@ export async function syncShopifyProducts() {
   try {
 
     let allProducts = [];
-    let url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
+    let page = 1;
+    let hasMore = true;
 
-    while (url) {
+    while (hasMore) {
+
+      const url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250&page=${page}`;
+
+      console.log(`Fetching Shopify page ${page}...`);
 
       const response = await fetch(url, {
         method: "GET",
@@ -35,21 +40,16 @@ export async function syncShopifyProducts() {
 
       const data = await response.json();
 
-      if (data.products) {
-        allProducts = allProducts.concat(data.products);
+      if (!data.products || data.products.length === 0) {
+        hasMore = false;
+        break;
       }
 
-      const linkHeader = response.headers.get("link");
+      allProducts = allProducts.concat(data.products);
 
-      if (linkHeader && linkHeader.includes('rel="next"')) {
+      console.log(`Loaded ${allProducts.length} products so far`);
 
-        const match = linkHeader.match(/<([^>]+)>; rel="next"/);
-
-        url = match ? match[1] : null;
-
-      } else {
-        url = null;
-      }
+      page++;
 
     }
 
@@ -61,7 +61,7 @@ export async function syncShopifyProducts() {
 
   } catch (error) {
 
-    console.error("Shopify Sync Error:", error.message);
+    console.error("Shopify Sync Error:", error);
 
     return [];
 
