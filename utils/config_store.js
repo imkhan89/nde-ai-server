@@ -1,60 +1,32 @@
-/*
-NDE Automotive AI
-Config Store
-*/
+const config = new Map();
 
-class ConfigStore {
-
-  constructor() {
-
-    this.store = new Map();
-
-  }
-
-  set(key, value) {
-
-    if (!key) return;
-
-    this.store.set(key, value);
-
-  }
-
-  get(key, defaultValue = null) {
-
-    if (!this.store.has(key)) {
-
-      return defaultValue;
-
-    }
-
-    return this.store.get(key);
-
-  }
-
-  has(key) {
-
-    return this.store.has(key);
-
-  }
-
-  delete(key) {
-
-    this.store.delete(key);
-
-  }
-
-  clear() {
-
-    this.store.clear();
-
-  }
-
-  entries() {
-
-    return Array.from(this.store.entries());
-
-  }
-
+export function setConfig(key, value) {
+  config.set(key, value);
 }
 
-export const configStore = new ConfigStore();
+export function getConfig(key, defaultValue = null) {
+  if (config.has(key)) {
+    return config.get(key);
+  }
+  return defaultValue;
+}
+
+export function hasConfig(key) {
+  return config.has(key);
+}
+
+export function removeConfig(key) {
+  config.delete(key);
+}
+
+export function clearConfig() {
+  config.clear();
+}
+
+export default {
+  setConfig,
+  getConfig,
+  hasConfig,
+  removeConfig,
+  clearConfig
+};
