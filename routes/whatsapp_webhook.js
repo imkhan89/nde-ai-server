@@ -9,16 +9,16 @@ router.post("/whatsapp", async (req, res) => {
   const sender = req.body.From || "";
 
   console.log("WhatsApp message received");
-  console.log("Sender:", sender);
+  console.log("From:", sender);
   console.log("Message:", message);
 
-  const aiReply = await generateAIReply(message);
+  const reply = await generateAIReply(message);
 
   res.set("Content-Type", "text/xml");
 
   res.send(`
 <Response>
-<Message>${aiReply}</Message>
+<Message>${reply}</Message>
 </Response>
 `);
 
