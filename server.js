@@ -1,33 +1,22 @@
-import dotenv from "dotenv"
-import createHttpServer from "./server/http_server.js"
-import { syncShopifyProducts } from "./sync/shopify_sync.js"
+import http from "http";
+import app from "./server/http_server.js";
+import { syncShopifyProducts } from "./sync/shopify_sync.js";
 
-dotenv.config()
-
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000;
 
 async function startServer() {
-
   try {
+    await syncShopifyProducts();
 
-    const server = createHttpServer()
+    const server = http.createServer(app);
 
     server.listen(PORT, () => {
-      console.log(`NDE AI Server running on port ${PORT}`)
-    })
-
-    await syncShopifyProducts()
-
-    setInterval(async () => {
-      await syncShopifyProducts()
-    }, 1000 * 60 * 30)
+      console.log(`NDE Automotive AI server running on port ${PORT}`);
+    });
 
   } catch (error) {
-
-    console.error("Server start error:", error)
-
+    console.error("Server startup error:", error);
   }
-
 }
 
-startServer()
+startServer();
