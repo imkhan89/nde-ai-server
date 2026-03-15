@@ -1,17 +1,41 @@
-let MEMORY = {}
+let chats = {};
 
-export function saveMessage(user, message) {
+export function storeMessage(phone, sender, message){
 
-  if (!MEMORY[user]) {
-    MEMORY[user] = []
-  }
+if(!chats[phone]){
+chats[phone] = [];
+}
 
-  MEMORY[user].push(message)
+chats[phone].push({
+sender,
+message,
+time:Date.now()
+});
 
 }
 
-export function getConversation(user) {
+export function getAllChats(){
+return chats;
+}
 
-  return MEMORY[user] || []
+export function getChat(phone){
+return chats[phone] || [];
+}
+
+export function getChatSummary(){
+
+const summary = [];
+
+for(const phone in chats){
+
+summary.push({
+phone,
+messages:chats[phone].length,
+lastMessage:chats[phone][chats[phone].length-1]
+});
+
+}
+
+return summary;
 
 }
