@@ -16,15 +16,9 @@ export async function syncShopifyProducts() {
   try {
 
     let allProducts = [];
-    let nextPageInfo = null;
+    let url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
 
-    do {
-
-      let url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
-
-      if (nextPageInfo) {
-        url += `&page_info=${nextPageInfo}`;
-      }
+    while (url) {
 
       const response = await fetch(url, {
         method: "GET",
@@ -49,15 +43,15 @@ export async function syncShopifyProducts() {
 
       if (linkHeader && linkHeader.includes('rel="next"')) {
 
-        const match = linkHeader.match(/page_info=([^&>]+)/);
+        const match = linkHeader.match(/<([^>]+)>; rel="next"/);
 
-        nextPageInfo = match ? match[1] : null;
+        url = match ? match[1] : null;
 
       } else {
-        nextPageInfo = null;
+        url = null;
       }
 
-    } while (nextPageInfo);
+    }
 
     productCache = allProducts;
 
@@ -70,6 +64,7 @@ export async function syncShopifyProducts() {
     console.error("Shopify Sync Error:", error.message);
 
     return [];
+
   }
 }
 
