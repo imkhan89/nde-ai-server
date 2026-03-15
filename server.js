@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+
 import whatsappWebhook from "./routes/whatsapp_webhook.js";
 import startShopifySync from "./services/shopify_sync.js";
 
@@ -11,14 +12,16 @@ const PORT = process.env.PORT || 8080;
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-startShopifySync();
-
 app.use("/webhook", whatsappWebhook);
 
 app.get("/", (req, res) => {
   res.send("NDE Automotive AI Server Running");
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+
   console.log(`ndestore.com Automotive AI running on port ${PORT}`);
+
+  await startShopifySync();
+
 });
