@@ -14,13 +14,21 @@ app.use(express.json())
 app.use("/webhook", whatsappWebhook)
 app.use("/dashboard", dashboardApi)
 
-async function initializeSystem() {
+async function startServices() {
 
-    console.log("Starting Shopify sync...")
-    await syncShopifyProducts()
+    try {
+
+        console.log("Starting Shopify sync...")
+        await syncShopifyProducts()
+
+    } catch (err) {
+
+        console.log("Shopify startup sync failed:", err.message)
+
+    }
 
 }
 
-initializeSystem()
+startServices()
 
 export default app
