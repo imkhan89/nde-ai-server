@@ -1,47 +1,42 @@
-const RATES = {
-  USD: 280,
-  GBP: 355,
-  EUR: 300,
-  AED: 76,
-  SAR: 74,
-  AUD: 185,
-  CAD: 205,
-  PKR: 1
-}
+export function convertCurrencyPKR(pricePKR, country) {
+  const rates = {
+    USD: 278,
+    GBP: 350,
+    AED: 76,
+    AUD: 182,
+    INR: 3.3
+  };
 
-export function convertFromPKR(amountPKR, currency) {
+  const price = Number(pricePKR);
 
-  if (!amountPKR) return null
+  const usd = (price / rates.USD).toFixed(2);
 
-  const rate = RATES[currency]
+  let local = "";
 
-  if (!rate) return null
+  switch (country) {
+    case "United Kingdom":
+      local = `GBP ${(price / rates.GBP).toFixed(2)}`;
+      break;
 
-  const converted = amountPKR / rate
+    case "UAE":
+      local = `AED ${(price / rates.AED).toFixed(2)}`;
+      break;
 
-  return converted.toFixed(2)
+    case "Australia":
+      local = `AUD ${(price / rates.AUD).toFixed(2)}`;
+      break;
 
-}
+    case "India":
+      local = `INR ${(price / rates.INR).toFixed(2)}`;
+      break;
 
-export function formatPriceSet(amountPKR, customerCurrency) {
+    default:
+      local = `USD ${usd}`;
+  }
 
-  const pkr = Number(amountPKR)
-
-  if (!pkr) return ""
-
-  const usd = convertFromPKR(pkr, "USD")
-
-  const local = convertFromPKR(pkr, customerCurrency)
-
-  let localLabel = customerCurrency
-
-  if (customerCurrency === "GBP") localLabel = "£"
-  if (customerCurrency === "USD") localLabel = "$"
-  if (customerCurrency === "EUR") localLabel = "€"
-  if (customerCurrency === "AED") localLabel = "AED"
-  if (customerCurrency === "SAR") localLabel = "SAR"
-
-  return `PKR ${pkr}
-USD $${usd}
-${localLabel} ${local}`
+  return {
+    pkr: `PKR ${price}`,
+    usd: `USD ${usd}`,
+    local
+  };
 }
