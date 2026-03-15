@@ -3,14 +3,8 @@ import { setCachedProducts } from "../services/shopify_cache.js"
 
 let productCache = []
 
-/*
-Temporary hardcoded configuration
-Replace token later with environment variable
-*/
-
 const SHOPIFY_STORE = "347657-7d.myshopify.com"
-
-const SHOPIFY_TOKEN = "PASTE_YOUR_SHOPIFY_ADMIN_API_TOKEN_HERE"
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN
 
 export async function syncShopifyProducts() {
 
@@ -18,59 +12,59 @@ export async function syncShopifyProducts() {
 
         console.log("Starting Shopify product sync...")
 
-        let allProducts = []
-        let hasNextPage = true
-        let cursor = null
+        const url = `https://${SHOPIFY_STORE}/admin/api/2024-01/graphql.json`
 
-        while (hasNextPage) {
-
-            let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`
-
-            if (cursor) {
-                url += `&page_info=${cursor}`
-            }
-
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "X-Shopify-Access-Token": SHOPIFY_TOKEN,
-                    "Content-Type": "application/json"
+        const query = `
+        {
+            products(first: 250) {
+                edges {
+                    node {
+                        id
+                        title
+                        handle
+                        variants(first: 1) {
+                            edges {
+                                node {
+                                    price
+                                }
+                            }
+                        }
+                    }
                 }
-            })
-
-            const data = await response.json()
-
-            if (data.products) {
-                allProducts = allProducts.concat(data.products)
             }
-
-            const linkHeader = response.headers.get("link")
-
-            if (linkHeader && linkHeader.includes('rel="next"')) {
-
-                const match = linkHeader.match(/page_info=([^&>]+)/)
-
-                if (match) {
-                    cursor = match[1]
-                }
-
-            } else {
-                hasNextPage = false
-            }
-
         }
+        `
 
-        productCache = allProducts
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": SHOPIFY_TOKEN
+            },
+            body: JSON.stringify({ query })
+        })
 
-        setCachedProducts(allProducts)
+        const data = await response.json()
 
-        console.log(`Shopify Sync Complete: ${productCache.length} products loaded`)
+        const products = data.data.products.edges.map(p => ({
+            id: p.node.id,
+            title: p.node.title,
+            handle: p.node.handle,
+            price: p.node.variants.edges[0]?.node?.price || null
+        }))
 
-        return productCache
+        productCache = products
+
+        setCachedProducts(products)
+
+        console.log(`Shopify Sync Complete: ${products.length} products loaded`)
+
+        return products
 
     } catch (error) {
 
         console.error("Shopify Sync Error:", error)
+
         return []
 
     }
