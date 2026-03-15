@@ -1,69 +1,28 @@
-/*
-NDE Automotive AI
-Central Logger
-*/
+const REQUIRED_ENV = [
+  "SHOPIFY_STORE",
+  "SHOPIFY_TOKEN"
+];
 
-import fs from "fs";
-import path from "path";
+export function validateEnv() {
+  const missing = [];
 
-const LOG_DIR = path.join(process.cwd(), "logs");
-
-function ensureLogDir() {
-
-  if (!fs.existsSync(LOG_DIR)) {
-    fs.mkdirSync(LOG_DIR, { recursive: true });
+  for (const key of REQUIRED_ENV) {
+    if (!process.env[key] || process.env[key].trim() === "") {
+      missing.push(key);
+    }
   }
 
-}
-
-function writeLog(level, message, meta = {}) {
-
-  try {
-
-    ensureLogDir();
-
-    const entry = {
-      time: new Date().toISOString(),
-      level,
-      message,
-      ...meta
-    };
-
-    const line = JSON.stringify(entry) + "\n";
-
-    fs.appendFileSync(
-      path.join(LOG_DIR, "app.log"),
-      line
-    );
-
-  } catch (err) {
-
-    console.error("Logger failure:", err);
-
+  if (missing.length > 0) {
+    console.error("Missing required environment variables:");
+    for (const key of missing) {
+      console.error(` - ${key}`);
+    }
+    process.exit(1);
   }
 
+  return true;
 }
 
-export function logInfo(message, meta = {}) {
-
-  console.log("[INFO]", message);
-
-  writeLog("info", message, meta);
-
-}
-
-export function logWarn(message, meta = {}) {
-
-  console.warn("[WARN]", message);
-
-  writeLog("warn", message, meta);
-
-}
-
-export function logError(message, meta = {}) {
-
-  console.error("[ERROR]", message);
-
-  writeLog("error", message, meta);
-
-}
+export default {
+  validateEnv
+};
