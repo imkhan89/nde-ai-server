@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import "dotenv/config"
 import app from "./server/http_server.js"
 
 const PORT = process.env.PORT || 8080
