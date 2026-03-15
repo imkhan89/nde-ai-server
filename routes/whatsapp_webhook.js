@@ -80,7 +80,7 @@ https://ndestore.com/products/${p.handle}
 
     }
 
-    res.type("text/xml")
+    res.set("Content-Type", "text/xml")
     res.send(twiml.toString())
 
 })
