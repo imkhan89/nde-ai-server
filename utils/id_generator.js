@@ -1,31 +1,15 @@
-/*
-NDE Automotive AI
-ID Generator
-*/
+export function generateId(prefix = "") {
+  const random = Math.random().toString(36).substring(2, 10);
+  const time = Date.now().toString(36);
 
-import crypto from "crypto";
-
-export function generateId(length = 16) {
-
-  return crypto
-    .randomBytes(length)
-    .toString("hex")
-    .slice(0, length);
-
+  return `${prefix}${time}${random}`;
 }
 
-export function generateUUID() {
-
-  return crypto.randomUUID();
-
+export function generateShortId() {
+  return Math.random().toString(36).substring(2, 8);
 }
 
-export function shortId() {
-
-  return crypto
-    .randomBytes(6)
-    .toString("base64")
-    .replace(/[+/=]/g, "")
-    .slice(0, 8);
-
-}
+export default {
+  generateId,
+  generateShortId
+};
