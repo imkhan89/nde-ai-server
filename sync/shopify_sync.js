@@ -3,98 +3,76 @@ import { setCachedProducts } from "../services/shopify_cache.js";
 
 let productCache = [];
 
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_TOKEN;
+
 export async function syncShopifyProducts() {
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN;
-const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
-const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || "2024-10";
+    try {
 
-if (!SHOPIFY_STORE || !SHOPIFY_ACCESS_TOKEN) {
+        console.log("Starting Shopify product sync...");
 
-console.warn("Shopify credentials missing. Skipping Shopify sync.");
+        let allProducts = [];
+        let hasNextPage = true;
+        let cursor = null;
 
-return [];
+        while (hasNextPage) {
 
-}
+            let url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=250`;
 
-try {
+            if (cursor) {
+                url += `&page_info=${cursor}`;
+            }
 
-let allProducts = [];
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+                    "Content-Type": "application/json"
+                }
+            });
 
-let url = `https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_API_VERSION}/products.json?limit=250`;
+            const data = await response.json();
 
-console.log("Starting Shopify sync...");
+            if (data.products) {
+                allProducts = allProducts.concat(data.products);
+            }
 
-while (url) {
+            const linkHeader = response.headers.get("link");
 
-console.log(`Fetching: ${url}`);
+            if (linkHeader && linkHeader.includes('rel="next"')) {
 
-const response = await fetch(url,{
-method:"GET",
-headers:{
-"X-Shopify-Access-Token":SHOPIFY_ACCESS_TOKEN,
-"Content-Type":"application/json"
-}
-});
+                const match = linkHeader.match(/page_info=([^&>]+)/);
 
-if(!response.ok){
+                if (match) {
+                    cursor = match[1];
+                }
 
-console.error("Shopify API error:",response.status);
+            } else {
+                hasNextPage = false;
+            }
 
-break;
+        }
 
-}
+        productCache = allProducts;
 
-const data = await response.json();
+        setCachedProducts(allProducts);
 
-if(data.products){
+        console.log(`Shopify Sync Complete: ${productCache.length} products loaded`);
 
-allProducts = allProducts.concat(data.products);
+        return productCache;
 
-}
+    } catch (error) {
 
-console.log(`Loaded ${allProducts.length} products`);
+        console.error("Shopify Sync Error:", error);
 
-const linkHeader = response.headers.get("link");
+        return [];
 
-if(linkHeader && linkHeader.includes('rel="next"')){
-
-const match = linkHeader.match(/<([^>]+)>; rel="next"/);
-
-url = match ? match[1] : null;
-
-}else{
-
-url = null;
-
-}
+    }
 
 }
 
-productCache = allProducts;
 
-/*
-Store products in shared cache
-*/
-
-setCachedProducts(allProducts);
-
-console.log(`Shopify Sync Complete: ${productCache.length} products loaded`);
-
-return productCache;
-
-}catch(error){
-
-console.error("Shopify Sync Error:",error);
-
-return [];
-
-}
-
-}
-
-export function getLocalProducts(){
-
-return productCache;
-
+export function getCachedProducts() {
+    return productCache;
 }
