@@ -8,8 +8,11 @@ export default async function startShopifySync() {
   const token = process.env.SHOPIFY_TOKEN;
 
   if (!store || !token) {
-    console.error("Shopify environment variables missing");
+
+    console.log("Shopify sync skipped (credentials not configured)");
+
     return;
+
   }
 
   try {
@@ -34,4 +37,8 @@ export default async function startShopifySync() {
 
   }
 
+}
+
+export function getProducts() {
+  return products;
 }
