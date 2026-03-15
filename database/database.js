@@ -1,152 +1,86 @@
-import fs from "fs";
+import Database from "better-sqlite3";
 import path from "path";
-import { fileURLToPath } from "url";
+import fs from "fs";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const DB_DIR = path.resolve("./data");
+const DB_PATH = path.join(DB_DIR, "nde_ai.db");
 
-let DatabaseDriver = null;
-let db = null;
-
-/*
-AUTO-OPTIMIZING DATABASE LOADER
-Attempts to load better-sqlite3.
-If not installed, automatically falls back to sqlite3.
-Prevents container crash.
-*/
-
-async function loadDriver() {
-
-  try {
-
-    const module = await import("better-sqlite3");
-    DatabaseDriver = module.default;
-
-    return "better-sqlite3";
-
-  } catch (err) {
-
-    const module = await import("sqlite3");
-    DatabaseDriver = module.default;
-
-    return "sqlite3";
-
-  }
-
+// ensure data directory exists
+if (!fs.existsSync(DB_DIR)) {
+  fs.mkdirSync(DB_DIR, { recursive: true });
 }
 
-async function initializeDatabase() {
+// initialize database
+const db = new Database(DB_PATH);
 
-  const driver = await loadDriver();
+// performance pragmas
+db.pragma("journal_mode = WAL");
+db.pragma("synchronous = NORMAL");
+db.pragma("cache_size = 10000");
 
-  const dataDir = path.join(__dirname, "..", "data");
+// products table
+db.prepare(`
+CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    title TEXT,
+    handle TEXT,
+    vendor TEXT,
+    product_type TEXT,
+    price REAL,
+    sku TEXT,
+    tags TEXT,
+    created_at TEXT,
+    updated_at TEXT
+)
+`).run();
 
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
+// vehicles table
+db.prepare(`
+CREATE TABLE IF NOT EXISTS vehicles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    make TEXT,
+    model TEXT,
+    year INTEGER
+)
+`).run();
 
-  const dbPath = path.join(dataDir, "nde_ai.db");
+// parts table
+db.prepare(`
+CREATE TABLE IF NOT EXISTS parts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    part_name TEXT,
+    synonyms TEXT
+)
+`).run();
 
-  if (driver === "better-sqlite3") {
+// brands table
+db.prepare(`
+CREATE TABLE IF NOT EXISTS brands (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    brand_name TEXT
+)
+`).run();
 
-    db = new DatabaseDriver(dbPath);
+// search logs
+db.prepare(`
+CREATE TABLE IF NOT EXISTS search_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    query TEXT,
+    normalized_query TEXT,
+    created_at TEXT
+)
+`).run();
 
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        sku TEXT,
-        brand TEXT,
-        vehicle_make TEXT,
-        vehicle_model TEXT,
-        vehicle_year TEXT,
-        category TEXT,
-        price REAL,
-        data JSON
-      )
-    `);
+// compatibility graph
+db.prepare(`
+CREATE TABLE IF NOT EXISTS compatibility (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    vehicle_make TEXT,
+    vehicle_model TEXT,
+    vehicle_year INTEGER,
+    part_name TEXT,
+    brand_name TEXT
+)
+`).run();
 
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS learning_log (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        query TEXT,
-        result TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-  } else {
-
-    db = new DatabaseDriver.Database(dbPath);
-
-    db.serialize(() => {
-
-      db.run(`
-        CREATE TABLE IF NOT EXISTS products (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          title TEXT,
-          sku TEXT,
-          brand TEXT,
-          vehicle_make TEXT,
-          vehicle_model TEXT,
-          vehicle_year TEXT,
-          category TEXT,
-          price REAL,
-          data TEXT
-        )
-      `);
-
-      db.run(`
-        CREATE TABLE IF NOT EXISTS learning_log (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          query TEXT,
-          result TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-    });
-
-  }
-
-  return db;
-
-}
-
-export async function getDatabase() {
-
-  if (!db) {
-    db = await initializeDatabase();
-  }
-
-  return db;
-
-}
-
-/*
-AI SELF LEARNING STORAGE
-*/
-
-export async function logLearning(query, result) {
-
-  const database = await getDatabase();
-
-  if (database.exec) {
-
-    const stmt = database.prepare(`
-      INSERT INTO learning_log (query, result)
-      VALUES (?, ?)
-    `);
-
-    stmt.run(query, JSON.stringify(result));
-
-  } else {
-
-    database.run(
-      `INSERT INTO learning_log (query, result) VALUES (?, ?)`,
-      [query, JSON.stringify(result)]
-    );
-
-  }
-
-}
+export default db;
