@@ -2,6 +2,7 @@ import express from "express";
 
 const router = express.Router();
 
+// Webhook verification (Meta sends GET request)
 router.get("/whatsapp", (req, res) => {
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
@@ -15,6 +16,12 @@ router.get("/whatsapp", (req, res) => {
   } else {
     return res.sendStatus(403);
   }
+});
+
+// Receive incoming WhatsApp messages
+router.post("/whatsapp", (req, res) => {
+  console.log("Incoming webhook:", JSON.stringify(req.body, null, 2));
+  res.sendStatus(200);
 });
 
 export default router;
