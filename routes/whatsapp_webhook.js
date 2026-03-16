@@ -1,9 +1,9 @@
 import express from "express";
-import twilio from "twilio";
+import { twiml } from "twilio";
 
 const router = express.Router();
 
-router.post("/", async (req, res) => {
+router.post("/", (req, res) => {
 
   const incomingMessage = req.body.Body || "";
   const sender = req.body.From || "";
@@ -11,15 +11,15 @@ router.post("/", async (req, res) => {
   console.log("Incoming WhatsApp message:", incomingMessage);
   console.log("From:", sender);
 
-  const MessagingResponse = twilio.twiml.MessagingResponse;
-  const twiml = new MessagingResponse();
+  const MessagingResponse = twiml.MessagingResponse;
+  const response = new MessagingResponse();
 
-  twiml.message(
+  response.message(
     "Hello! NDE Automotive AI assistant is online. How can I help you today?"
   );
 
-  res.writeHead(200, { "Content-Type": "text/xml" });
-  res.end(twiml.toString());
+  res.type("text/xml");
+  res.send(response.toString());
 
 });
 
