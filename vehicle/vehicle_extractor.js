@@ -1,28 +1,40 @@
-import { detectVehicle } from "./vehicle_intelligence.js";
+export function detectVehicle(query) {
 
-function normalizeText(text = "") {
-  return text.toLowerCase().trim();
+    if (!query) {
+        return null;
+    }
+
+    const text = query.toLowerCase();
+
+    const vehicles = [
+        "civic",
+        "corolla",
+        "city",
+        "yaris",
+        "cultus",
+        "alto",
+        "swift",
+        "sportage",
+        "tucson",
+        "elantra",
+        "sonata",
+        "fortuner",
+        "revo",
+        "hilux"
+    ];
+
+    for (const vehicle of vehicles) {
+
+        if (text.includes(vehicle)) {
+
+            return {
+                model: vehicle
+            };
+
+        }
+
+    }
+
+    return null;
+
 }
-
-export function extractVehicle(query = "") {
-  const cleanQuery = normalizeText(query);
-
-  const vehicle = detectVehicle(cleanQuery);
-
-  return {
-    make: vehicle.make,
-    model: vehicle.model,
-    year: vehicle.year
-  };
-}
-
-export function hasVehicle(query = "") {
-  const vehicle = extractVehicle(query);
-
-  return Boolean(vehicle.make || vehicle.model || vehicle.year);
-}
-
-export default {
-  extractVehicle,
-  hasVehicle
-};
