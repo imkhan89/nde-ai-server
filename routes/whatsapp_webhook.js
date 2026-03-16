@@ -12,19 +12,17 @@ router.post("/", async (req, res) => {
 
   try {
 
-    const incomingMessage = req.body.Body;
-    const sender = req.body.From;
+    const incomingMessage = req.body.Body || "";
+    const sender = req.body.From || "";
 
     console.log("Incoming WhatsApp message:", incomingMessage);
     console.log("From:", sender);
 
     /*
-    -----------------------------
-    Ask OpenAI for response
-    -----------------------------
+    AI Response
     */
 
-    const aiResponse = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
@@ -38,29 +36,31 @@ router.post("/", async (req, res) => {
       ]
     });
 
-    const replyText = aiResponse.choices[0].message.content;
+    const aiReply = completion.choices[0].message.content;
 
     /*
-    -----------------------------
-    Create Twilio response
-    -----------------------------
+    Twilio response
     */
 
-    const twiml = new twilio.twiml.MessagingResponse();
-    twiml.message(replyText);
+    const MessagingResponse = twilio.twiml.MessagingResponse;
+    const twiml = new MessagingResponse();
 
-    res.type("text/xml");
-    res.send(twiml.toString());
+    twiml.message(aiReply);
+
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
 
   } catch (error) {
 
     console.error("Webhook error:", error);
 
-    const twiml = new twilio.twiml.MessagingResponse();
-    twiml.message("Sorry, something went wrong.");
+    const MessagingResponse = twilio.twiml.MessagingResponse;
+    const twiml = new MessagingResponse();
 
-    res.type("text/xml");
-    res.send(twiml.toString());
+    twiml.message("Sorry, the AI assistant is temporarily unavailable.");
+
+    res.writeHead(200, { "Content-Type": "text/xml" });
+    res.end(twiml.toString());
 
   }
 
