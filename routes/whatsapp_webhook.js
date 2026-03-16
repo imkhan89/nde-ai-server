@@ -1,26 +1,68 @@
 import express from "express";
-import generateAIReply from "../services/ai_service.js";
+import twilio from "twilio";
+import OpenAI from "openai";
 
 const router = express.Router();
 
-router.post("/whatsapp", async (req, res) => {
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-  const message = req.body.Body || "";
-  const sender = req.body.From || "";
+router.post("/", async (req, res) => {
 
-  console.log("WhatsApp message received");
-  console.log("Sender:", sender);
-  console.log("Message:", message);
+  try {
 
-  const reply = await generateAIReply(message);
+    const incomingMessage = req.body.Body;
+    const sender = req.body.From;
 
-  res.set("Content-Type", "text/xml");
+    console.log("Incoming WhatsApp message:", incomingMessage);
+    console.log("From:", sender);
 
-  res.send(`
-<Response>
-<Message>${reply}</Message>
-</Response>
-`);
+    /*
+    -----------------------------
+    Ask OpenAI for response
+    -----------------------------
+    */
+
+    const aiResponse = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are an automotive assistant for ndestore.com helping customers find car parts."
+        },
+        {
+          role: "user",
+          content: incomingMessage
+        }
+      ]
+    });
+
+    const replyText = aiResponse.choices[0].message.content;
+
+    /*
+    -----------------------------
+    Create Twilio response
+    -----------------------------
+    */
+
+    const twiml = new twilio.twiml.MessagingResponse();
+    twiml.message(replyText);
+
+    res.type("text/xml");
+    res.send(twiml.toString());
+
+  } catch (error) {
+
+    console.error("Webhook error:", error);
+
+    const twiml = new twilio.twiml.MessagingResponse();
+    twiml.message("Sorry, something went wrong.");
+
+    res.type("text/xml");
+    res.send(twiml.toString());
+
+  }
 
 });
 
