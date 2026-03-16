@@ -1,58 +1,64 @@
-import { normalizeQuery } from "../query/query_normalizer.js";
-import { parseQuery } from "../query/query_parser.js";
-import { expandQuery } from "../query/smart_query_expander.js";
-
 import { detectVehicle } from "../vehicle/vehicle_extractor.js";
-import { detectParts } from "../parts/parts_intelligence.js";
-import { detectBrand } from "../brand/brand_intelligence.js";
 
-import { matchProducts } from "./product_matcher.js";
-import { formatResults } from "./result_formatter.js";
-import { logSearch } from "./search_logger.js";
+export async function searchProducts(query) {
 
-export async function runSearchPipeline(userQuery) {
-  if (!userQuery || typeof userQuery !== "string") {
-    return [];
-  }
+    if (!query) {
+        return [];
+    }
 
-  // Step 1 Normalize
-  const normalized = normalizeQuery(userQuery);
+    const vehicle = detectVehicle(query);
 
-  // Step 2 Parse
-  const parsed = parseQuery(normalized);
+    const text = query.toLowerCase();
 
-  // Step 3 Expand
-  const expanded = expandQuery(parsed);
+    const catalog = [
+        {
+            title: "Honda Civic Air Filter",
+            price: 3950,
+            handle: "honda-civic-air-filter",
+            vehicles: ["civic"]
+        },
+        {
+            title: "Toyota Corolla Air Filter",
+            price: 3650,
+            handle: "toyota-corolla-air-filter",
+            vehicles: ["corolla"]
+        },
+        {
+            title: "Honda City Air Filter",
+            price: 3450,
+            handle: "honda-city-air-filter",
+            vehicles: ["city"]
+        },
+        {
+            title: "Toyota Corolla Spark Plug Set",
+            price: 7200,
+            handle: "toyota-corolla-spark-plug-set",
+            vehicles: ["corolla"]
+        },
+        {
+            title: "Honda Civic Wiper Blade Set",
+            price: 2800,
+            handle: "honda-civic-wiper-blades",
+            vehicles: ["civic"]
+        }
+    ];
 
-  // Step 4 Detect Vehicle
-  const vehicle = detectVehicle(expanded);
+    if (vehicle) {
 
-  // Step 5 Detect Parts
-  const parts = detectParts(expanded);
+        const filtered = catalog.filter(product =>
+            product.vehicles.includes(vehicle.model)
+        );
 
-  // Step 6 Detect Brand
-  const brand = detectBrand(expanded);
+        if (filtered.length > 0) {
+            return filtered;
+        }
 
-  // Step 7 Product Matching
-  const matchedProducts = await matchProducts({
-    query: expanded,
-    vehicle,
-    parts,
-    brand
-  });
+    }
 
-  // Step 8 Format Results
-  const results = formatResults(matchedProducts);
+    const keywordMatch = catalog.filter(product =>
+        product.title.toLowerCase().includes(text)
+    );
 
-  // Step 9 Log Search
-  await logSearch({
-    query: userQuery,
-    normalized_query: normalized
-  });
+    return keywordMatch;
 
-  return results;
 }
-
-export default {
-  runSearchPipeline
-};
