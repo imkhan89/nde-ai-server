@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import { searchProducts } from "../services/search_pipeline.js";
 
 const router = express.Router();
 
@@ -43,10 +44,41 @@ router.post("/whatsapp", async (req, res) => {
 
         console.log("Incoming message:", text);
 
-        // ===== AI RESPONSE =====
-        const aiReply = `You said: ${text}`;
 
-        // ===== SEND REPLY TO WHATSAPP =====
+        let aiReply = "";
+
+        const results = await searchProducts(text);
+
+        if (!results || results.length === 0) {
+
+            aiReply =
+`Sorry, I couldn't find that product.
+
+Please send:
+• Car model
+• Engine size
+• Part name
+
+Example:
+Civic 2018 air filter`;
+
+        } else {
+
+            const product = results[0];
+
+            aiReply =
+`Product Found
+
+${product.title}
+
+Price: Rs ${product.price}
+
+View Product:
+https://ndestore.com/products/${product.handle}`;
+
+        }
+
+
         await axios.post(
             `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
             {
@@ -61,6 +93,7 @@ router.post("/whatsapp", async (req, res) => {
                 }
             }
         );
+
 
         console.log("Reply sent");
 
