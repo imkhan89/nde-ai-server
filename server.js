@@ -9,37 +9,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-/*
------------------------------------------
-Middleware
------------------------------------------
-*/
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-/*
------------------------------------------
-Health Check Route
-Important for Railway + Shopify
------------------------------------------
-*/
+/* Root route */
 app.get("/", (req, res) => {
-  res.status(200).send("NDE Automotive AI Server Running");
+  res.send("NDE Automotive AI Server Running");
 });
 
-/*
------------------------------------------
-WhatsApp Webhook Route (Twilio)
------------------------------------------
-*/
-app.post("/webhook", whatsappWebhook);
+/* Shopify app route */
+app.get("/app", (req, res) => {
+  res.send("NDE Automotive AI Shopify App Loaded");
+});
 
-/*
------------------------------------------
-Optional Debug Route
-Helps verify Railway deployment
------------------------------------------
-*/
+/* Health check */
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -48,18 +31,10 @@ app.get("/health", (req, res) => {
   });
 });
 
-/*
------------------------------------------
-Start Server
------------------------------------------
-*/
+/* WhatsApp webhook */
+app.post("/webhook", whatsappWebhook);
+
 app.listen(PORT, async () => {
   console.log(`NDE Automotive AI running on port ${PORT}`);
-
-  try {
-    await startShopifySync();
-    console.log("Shopify sync started successfully");
-  } catch (error) {
-    console.error("Shopify sync failed:", error);
-  }
+  await startShopifySync();
 });
