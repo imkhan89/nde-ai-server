@@ -5,17 +5,17 @@ import whatsappWebhook from "./routes/whatsapp_webhook.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(express.json());
 
-// Root health check
+// Health check
 app.get("/", (req, res) => {
   res.send("NDE WhatsApp AI server running");
 });
 
-// WhatsApp webhook endpoint
+// WhatsApp webhook
 app.use("/webhook", whatsappWebhook);
+
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
