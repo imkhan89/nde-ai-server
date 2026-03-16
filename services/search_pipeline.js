@@ -1,4 +1,9 @@
+import axios from "axios";
 import { detectVehicle } from "../vehicle/vehicle_extractor.js";
+
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN;
+const SHOPIFY_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+const SHOPIFY_VERSION = process.env.SHOPIFY_API_VERSION || "2024-04";
 
 export async function searchProducts(query) {
 
@@ -7,58 +12,67 @@ export async function searchProducts(query) {
     }
 
     const vehicle = detectVehicle(query);
+    const q = query.toLowerCase();
 
-    const text = query.toLowerCase();
+    try {
 
-    const catalog = [
-        {
-            title: "Honda Civic Air Filter",
-            price: 3950,
-            handle: "honda-civic-air-filter",
-            vehicles: ["civic"]
-        },
-        {
-            title: "Toyota Corolla Air Filter",
-            price: 3650,
-            handle: "toyota-corolla-air-filter",
-            vehicles: ["corolla"]
-        },
-        {
-            title: "Honda City Air Filter",
-            price: 3450,
-            handle: "honda-city-air-filter",
-            vehicles: ["city"]
-        },
-        {
-            title: "Toyota Corolla Spark Plug Set",
-            price: 7200,
-            handle: "toyota-corolla-spark-plug-set",
-            vehicles: ["corolla"]
-        },
-        {
-            title: "Honda Civic Wiper Blade Set",
-            price: 2800,
-            handle: "honda-civic-wiper-blades",
-            vehicles: ["civic"]
+        const url =
+`https://${SHOPIFY_STORE}/admin/api/${SHOPIFY_VERSION}/products.json?limit=50`;
+
+        const response = await axios.get(url,{
+            headers:{
+                "X-Shopify-Access-Token": SHOPIFY_TOKEN,
+                "Content-Type":"application/json"
+            }
+        });
+
+        const products = response.data.products || [];
+
+        let results = [];
+
+        for (const p of products) {
+
+            const title = p.title.toLowerCase();
+
+            if (title.includes(q)) {
+
+                results.push({
+                    title: p.title,
+                    price: p.variants?.[0]?.price || "",
+                    handle: p.handle
+                });
+
+            }
+
         }
-    ];
 
-    if (vehicle) {
-
-        const filtered = catalog.filter(product =>
-            product.vehicles.includes(vehicle.model)
-        );
-
-        if (filtered.length > 0) {
-            return filtered;
+        if (results.length > 0) {
+            return results.slice(0,3);
         }
+
+        if (vehicle) {
+
+            const filtered = products.filter(p =>
+                p.title.toLowerCase().includes(vehicle.model)
+            );
+
+            results = filtered.map(p => ({
+                title: p.title,
+                price: p.variants?.[0]?.price || "",
+                handle: p.handle
+            }));
+
+            return results.slice(0,3);
+
+        }
+
+        return [];
+
+    } catch (error) {
+
+        console.error("Shopify search error:", error.message);
+        return [];
 
     }
-
-    const keywordMatch = catalog.filter(product =>
-        product.title.toLowerCase().includes(text)
-    );
-
-    return keywordMatch;
 
 }
