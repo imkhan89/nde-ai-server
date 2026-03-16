@@ -1,5 +1,5 @@
 import express from "express";
-import { twiml } from "twilio";
+import twilio from "twilio";
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.post("/", (req, res) => {
   console.log("Incoming WhatsApp message:", incomingMessage);
   console.log("From:", sender);
 
-  const MessagingResponse = twiml.MessagingResponse;
+  const MessagingResponse = twilio.twiml.MessagingResponse;
   const response = new MessagingResponse();
 
   response.message(
@@ -20,7 +20,6 @@ router.post("/", (req, res) => {
 
   res.type("text/xml");
   res.send(response.toString());
-
 });
 
 export default router;
