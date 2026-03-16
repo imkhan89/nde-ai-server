@@ -1,68 +1,26 @@
 import express from "express";
-import twilio from "twilio";
-import OpenAI from "openai";
 
 const router = express.Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 router.post("/", async (req, res) => {
 
-  try {
+  const message = req.body.Body || "";
+  const sender = req.body.From || "";
 
-    const incomingMessage = req.body.Body || "";
-    const sender = req.body.From || "";
+  console.log("Incoming WhatsApp message:", message);
+  console.log("From:", sender);
 
-    console.log("Incoming WhatsApp message:", incomingMessage);
-    console.log("From:", sender);
+  const reply = "Hello! NDE Automotive AI assistant is online. How can I help you today?";
 
-    /*
-    AI Response
-    */
+  const twiml = `
+<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+<Message>${reply}</Message>
+</Response>
+`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are an automotive assistant for ndestore.com helping customers find car parts."
-        },
-        {
-          role: "user",
-          content: incomingMessage
-        }
-      ]
-    });
-
-    const aiReply = completion.choices[0].message.content;
-
-    /*
-    Twilio response
-    */
-
-    const MessagingResponse = twilio.twiml.MessagingResponse;
-    const twiml = new MessagingResponse();
-
-    twiml.message(aiReply);
-
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
-
-  } catch (error) {
-
-    console.error("Webhook error:", error);
-
-    const MessagingResponse = twilio.twiml.MessagingResponse;
-    const twiml = new MessagingResponse();
-
-    twiml.message("Sorry, the AI assistant is temporarily unavailable.");
-
-    res.writeHead(200, { "Content-Type": "text/xml" });
-    res.end(twiml.toString());
-
-  }
+  res.set("Content-Type", "text/xml");
+  res.status(200).send(twiml);
 
 });
 
