@@ -1,23 +1,24 @@
 import express from "express";
-import whatsappRouter from "./routes/whatsapp_webhook.js";
+import dotenv from "dotenv";
+import whatsappWebhook from "./routes/whatsapp_webhook.js";
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
-/* Twilio sends application/x-www-form-urlencoded */
-app.use(express.urlencoded({ extended: true }));
+// Parse JSON body
 app.use(express.json());
 
-app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    service: "ndestore Automotive AI",
-    time: new Date().toISOString()
-  });
+// Root route (for health check)
+app.get("/", (req, res) => {
+  res.send("NDE WhatsApp AI server running");
 });
 
-app.use("/webhook", whatsappRouter);
+// WhatsApp webhook route
+app.use("/webhook", whatsappWebhook);
 
+// Start server
 app.listen(PORT, () => {
-  console.log(`NDE Automotive AI running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
