@@ -7,18 +7,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Parse JSON body
 app.use(express.json());
 
-// Root route (for health check)
+// Root health check
 app.get("/", (req, res) => {
   res.send("NDE WhatsApp AI server running");
 });
 
-// WhatsApp webhook route
+// WhatsApp webhook endpoint
 app.use("/webhook", whatsappWebhook);
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
