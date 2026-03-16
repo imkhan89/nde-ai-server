@@ -9,20 +9,37 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+/*
+---------------------------------------
+Middleware
+---------------------------------------
+*/
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-/* Root route */
+/*
+---------------------------------------
+Root Route (Shopify loads this)
+---------------------------------------
+*/
 app.get("/", (req, res) => {
   res.send("NDE Automotive AI Server Running");
 });
 
-/* Shopify app route */
+/*
+---------------------------------------
+Shopify App Route
+---------------------------------------
+*/
 app.get("/app", (req, res) => {
   res.send("NDE Automotive AI Shopify App Loaded");
 });
 
-/* Health check */
+/*
+---------------------------------------
+Health Check Route
+---------------------------------------
+*/
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -31,10 +48,50 @@ app.get("/health", (req, res) => {
   });
 });
 
-/* WhatsApp webhook */
-app.post("/webhook", whatsappWebhook);
+/*
+---------------------------------------
+WhatsApp Webhook (Twilio)
+---------------------------------------
+*/
+app.use("/webhook", whatsappWebhook);
 
+/*
+---------------------------------------
+Start Server
+---------------------------------------
+*/
 app.listen(PORT, async () => {
+
   console.log(`NDE Automotive AI running on port ${PORT}`);
-  await startShopifySync();
+
+  /*
+  ---------------------------------------
+  Shopify Sync Startup
+  ---------------------------------------
+  */
+
+  try {
+
+    if (
+      process.env.SHOPIFY_API_KEY &&
+      process.env.SHOPIFY_API_SECRET &&
+      process.env.SHOPIFY_STORE_DOMAIN &&
+      process.env.SHOPIFY_ADMIN_API_TOKEN
+    ) {
+
+      console.log("Starting Shopify product sync...");
+      await startShopifySync();
+
+    } else {
+
+      console.log("Shopify sync skipped (credentials not configured)");
+
+    }
+
+  } catch (error) {
+
+    console.error("Shopify sync failed:", error);
+
+  }
+
 });
