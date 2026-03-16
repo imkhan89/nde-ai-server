@@ -4,23 +4,22 @@ const router = express.Router();
 
 router.post("/", (req, res) => {
 
-  const incomingMessage = req.body.Body || "";
-  const sender = req.body.From || "";
+  const message = req.body.Body;
+  const from = req.body.From;
 
-  console.log("Incoming WhatsApp message:", incomingMessage);
-  console.log("From:", sender);
+  console.log("Incoming WhatsApp message:", message);
+  console.log("From:", from);
 
-  const reply = `
+  const twiml = `
 <Response>
 <Message>
-Hello! NDE Automotive AI assistant is online. How can I help you today?
+Hello! NDE Automotive AI assistant is online.
 </Message>
 </Response>
 `;
 
   res.set("Content-Type", "text/xml");
-  res.send(reply);
-
+  res.send(twiml);
 });
 
 export default router;
