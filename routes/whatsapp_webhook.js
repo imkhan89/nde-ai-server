@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import { searchProducts } from "../routes/search_routes.js";
 
 const router = express.Router();
 
@@ -12,7 +13,6 @@ router.get("/", (req, res) => {
   const challenge = req.query["hub.challenge"];
 
   if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    console.log("Webhook verified ✅");
     return res.status(200).send(challenge);
   } else {
     return res.sendStatus(403);
@@ -38,12 +38,47 @@ router.post("/", async (req, res) => {
     } else if (message.type === "button") {
       text = message.button.text;
     } else {
-      text = "unsupported";
+      text = "";
     }
 
-    console.log("Incoming:", { from, text });
+    const cleanText = text.toLowerCase().trim();
 
-    const reply = `You said: ${text}`;
+    console.log("Incoming:", { from, cleanText });
+
+    // ✅ SEARCH PRODUCTS
+    let results = [];
+    if (cleanText) {
+      results = await searchProducts(cleanText);
+    }
+
+    // ✅ LIMIT RESULTS (MAX 5)
+    results = results?.slice(0, 5) || [];
+
+    let reply = "";
+
+    // ✅ NO RESULTS HANDLING
+    if (!results.length) {
+      reply =
+`We couldn’t find exact match.
+
+Please share:
+• Car model
+• Year
+• Part name
+
+Example:
+Mira 2018 brake pad`;
+    } else {
+      reply = "Here are best matching products:\n\n";
+
+      results.forEach((item, index) => {
+        reply += `${index + 1}. ${item.title}\n`;
+        reply += `Rs ${item.price}\n`;
+        reply += `${item.url}\n\n`;
+      });
+
+      reply += "Reply with product number to order.";
+    }
 
     await sendWhatsAppMessage(from, reply);
 
@@ -54,7 +89,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// ✅ Send WhatsApp Message (Retry Logic)
+// ✅ Send WhatsApp Message
 async function sendWhatsAppMessage(to, message) {
   const url = `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`;
 
