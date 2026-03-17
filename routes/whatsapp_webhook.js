@@ -5,7 +5,6 @@ import { searchProducts } from "../services/search_pipeline.js";
 const router = express.Router();
 
 router.get("/whatsapp", (req, res) => {
-
     const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
     const mode = req.query["hub.mode"];
@@ -13,13 +12,11 @@ router.get("/whatsapp", (req, res) => {
     const challenge = req.query["hub.challenge"];
 
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
-        console.log("Webhook verified successfully");
         return res.status(200).send(challenge);
     }
 
     return res.sendStatus(403);
 });
-
 
 
 router.post("/whatsapp", async (req, res) => {
@@ -32,8 +29,7 @@ router.post("/whatsapp", async (req, res) => {
             return res.sendStatus(404);
         }
 
-        const message =
-            body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+        const message = body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
         if (!message) {
             return res.sendStatus(200);
@@ -42,42 +38,38 @@ router.post("/whatsapp", async (req, res) => {
         const from = message.from;
         const text = message.text?.body || "";
 
-        console.log("Incoming message:", text);
-
-
-        let aiReply = "";
+        console.log("Incoming:", text);
 
         const results = await searchProducts(text);
+
+        let aiReply = "";
 
         if (!results || results.length === 0) {
 
             aiReply =
-`Sorry, I couldn't find that product.
+`Sorry, no exact match found.
 
 Please send:
 • Car model
-• Engine size
 • Part name
 
 Example:
-Civic 2018 air filter`;
+Civic air filter`;
 
         } else {
 
-            const product = results[0];
+            aiReply = `Top Matches:\n\n`;
 
-            aiReply =
-`Product Found
+            results.forEach((p, index) => {
+                aiReply +=
+`${index + 1}. ${p.title}
+Rs ${p.price}
+https://ndestore.com/products/${p.handle}
 
-${product.title}
-
-Price: Rs ${product.price}
-
-View Product:
-https://ndestore.com/products/${product.handle}`;
+`;
+            });
 
         }
-
 
         await axios.post(
             `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
@@ -94,14 +86,11 @@ https://ndestore.com/products/${product.handle}`;
             }
         );
 
-
-        console.log("Reply sent");
-
         res.sendStatus(200);
 
     } catch (error) {
 
-        console.error("Webhook error:", error.message);
+        console.error("Webhook error:", error.response?.data || error.message);
 
         res.sendStatus(500);
     }
