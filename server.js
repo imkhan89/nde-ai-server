@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import whatsappWebhook from "./routes/whatsapp.js";
+import whatsappWebhook from "./routes/whatsapp_webhook.js";
 import rateLimit from "express-rate-limit";
 
 dotenv.config();
@@ -18,7 +18,7 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// ✅ Webhook Route (FINAL CORRECT PATH)
+// ✅ CORRECT WEBHOOK PATH + CORRECT FILE IMPORT
 app.use("/webhook/whatsapp", whatsappWebhook);
 
 // Health check
