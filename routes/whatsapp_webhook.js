@@ -4,7 +4,7 @@ import { searchProducts } from "./search_routes.js";
 
 const router = express.Router();
 
-// ✅ SIMPLE MEMORY (PER USER)
+// ✅ USER MEMORY
 const userSessions = {};
 
 // ✅ VERIFY
@@ -40,27 +40,29 @@ router.post("/", async (req, res) => {
     // ✅ INIT SESSION
     if (!userSessions[from]) {
       userSessions[from] = {
-        lastQuery: "",
         lastResults: [],
       };
     }
 
-    // ✅ HANDLE ORDER (USER REPLIES 1,2,3...)
+    // ✅ HANDLE ORDER SELECTION
     if (!isNaN(cleanText)) {
       const index = parseInt(cleanText) - 1;
       const selected = userSessions[from].lastResults[index];
 
       if (selected) {
         const reply =
-`✅ Order Confirmed
+`✅ *Order Confirmed*
 
 ${selected.title}
-Rs ${selected.price}
+💰 Rs ${selected.price}
 
-Open link to checkout:
-${selected.url}
+🔗 ${selected.url}
 
-Cash on Delivery available.`;
+✔ Original Quality
+✔ Cash on Delivery
+✔ Fast Delivery Available
+
+Reply *CONFIRM* to proceed.`;
 
         await sendWhatsAppMessage(from, reply);
         return res.sendStatus(200);
@@ -69,34 +71,37 @@ Cash on Delivery available.`;
 
     // ✅ SEARCH PRODUCTS
     const results = await searchProducts(cleanText);
-
     const topResults = results.slice(0, 5);
 
-    // ✅ SAVE SESSION
-    userSessions[from].lastQuery = cleanText;
     userSessions[from].lastResults = topResults;
 
     let reply = "";
 
     if (!topResults.length) {
       reply =
-`No exact match found.
+`❌ No exact match found
 
 Please send:
-Car + Model + Part
+🚗 Car Model
+📅 Year
+🔧 Part Name
 
 Example:
 Mira 2018 brake pad`;
     } else {
-      reply = `Top Results:\n\n`;
+      reply = `🔥 *Best Matches for You*\n\n`;
 
       topResults.forEach((item, i) => {
-        reply += `${i + 1}. ${item.title}\n`;
-        reply += `Rs ${item.price}\n`;
-        reply += `${item.url}\n\n`;
+        reply += `*${i + 1}. ${item.title}*\n`;
+        reply += `💰 Rs ${item.price}\n`;
+        reply += `🔗 ${item.url}\n\n`;
       });
 
-      reply += "Reply with product number to order.";
+      reply +=
+`⚡ Limited Stock Available
+🚚 Fast Delivery Across Pakistan
+
+👉 Reply with *1, 2, 3* to order`;
     }
 
     await sendWhatsAppMessage(from, reply);
