@@ -1,78 +1,97 @@
 import express from "express";
 import axios from "axios";
-import { searchProducts } from "../routes/search_routes.js";
+import { searchProducts } from "./search_routes.js";
 
 const router = express.Router();
 
-// ✅ Webhook Verification
+// ✅ SIMPLE MEMORY (PER USER)
+const userSessions = {};
+
+// ✅ VERIFY
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode === "subscribe" && token === VERIFY_TOKEN) {
-    return res.status(200).send(challenge);
-  } else {
-    return res.sendStatus(403);
+  if (
+    req.query["hub.mode"] === "subscribe" &&
+    req.query["hub.verify_token"] === VERIFY_TOKEN
+  ) {
+    return res.status(200).send(req.query["hub.challenge"]);
   }
+  return res.sendStatus(403);
 });
 
-// ✅ Incoming Messages
+// ✅ MESSAGE HANDLER
 router.post("/", async (req, res) => {
   try {
-    const entry = req.body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const message = value?.messages?.[0];
+    const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
 
     let text = "";
-
-    if (message.type === "text") {
-      text = message.text.body;
-    } else if (message.type === "button") {
-      text = message.button.text;
-    } else {
-      text = "";
-    }
+    if (message.type === "text") text = message.text.body;
+    else if (message.type === "button") text = message.button.text;
 
     const cleanText = text.toLowerCase().trim();
 
     console.log("Incoming:", { from, cleanText });
 
-    // ✅ SEARCH PRODUCTS
-    let results = [];
-    if (cleanText) {
-      results = await searchProducts(cleanText);
+    // ✅ INIT SESSION
+    if (!userSessions[from]) {
+      userSessions[from] = {
+        lastQuery: "",
+        lastResults: [],
+      };
     }
 
-    // ✅ LIMIT RESULTS (MAX 5)
-    results = results?.slice(0, 5) || [];
+    // ✅ HANDLE ORDER (USER REPLIES 1,2,3...)
+    if (!isNaN(cleanText)) {
+      const index = parseInt(cleanText) - 1;
+      const selected = userSessions[from].lastResults[index];
+
+      if (selected) {
+        const reply =
+`✅ Order Confirmed
+
+${selected.title}
+Rs ${selected.price}
+
+Open link to checkout:
+${selected.url}
+
+Cash on Delivery available.`;
+
+        await sendWhatsAppMessage(from, reply);
+        return res.sendStatus(200);
+      }
+    }
+
+    // ✅ SEARCH PRODUCTS
+    const results = await searchProducts(cleanText);
+
+    const topResults = results.slice(0, 5);
+
+    // ✅ SAVE SESSION
+    userSessions[from].lastQuery = cleanText;
+    userSessions[from].lastResults = topResults;
 
     let reply = "";
 
-    // ✅ NO RESULTS HANDLING
-    if (!results.length) {
+    if (!topResults.length) {
       reply =
-`We couldn’t find exact match.
+`No exact match found.
 
-Please share:
-• Car model
-• Year
-• Part name
+Please send:
+Car + Model + Part
 
 Example:
 Mira 2018 brake pad`;
     } else {
-      reply = "Here are best matching products:\n\n";
+      reply = `Top Results:\n\n`;
 
-      results.forEach((item, index) => {
-        reply += `${index + 1}. ${item.title}\n`;
+      topResults.forEach((item, i) => {
+        reply += `${i + 1}. ${item.title}\n`;
         reply += `Rs ${item.price}\n`;
         reply += `${item.url}\n\n`;
       });
@@ -89,7 +108,7 @@ Mira 2018 brake pad`;
   }
 });
 
-// ✅ Send WhatsApp Message
+// ✅ SEND MESSAGE
 async function sendWhatsAppMessage(to, message) {
   const url = `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`;
 
