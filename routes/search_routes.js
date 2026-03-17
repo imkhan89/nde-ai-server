@@ -1,54 +1,40 @@
-import express from "express";
-import { searchProducts } from "../services/search_engine.js";
+import axios from "axios";
 
-const router = express.Router();
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
-/*
-NDE Automotive AI
-Search API Routes
-*/
-
-router.get("/search", async (req, res) => {
-
+// ✅ SEARCH PRODUCTS FROM SHOPIFY
+export async function searchProducts(query) {
   try {
+    const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50`;
 
-    const query = req.query.q || "";
+    const response = await axios.get(url, {
+      headers: {
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
+        "Content-Type": "application/json",
+      },
+    });
 
-    const result = await searchProducts(query);
+    const products = response.data.products || [];
 
-    res.json({
-      success: true,
-      query: query,
-      parsed: result.parsed || null,
-      intentScore: result.intentScore || 0,
-      results: result.results || []
+    const cleanQuery = query.toLowerCase();
+
+    // ✅ FILTER MATCHING PRODUCTS
+    const filtered = products.filter((product) => {
+      return product.title.toLowerCase().includes(cleanQuery);
+    });
+
+    // ✅ FORMAT RESPONSE
+    return filtered.map((product) => {
+      return {
+        title: product.title,
+        price: product.variants?.[0]?.price || "0",
+        url: `https://${SHOPIFY_STORE}/products/${product.handle}`,
+      };
     });
 
   } catch (error) {
-
-    console.error("Search Route Error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: "Search failed",
-      results: []
-    });
-
+    console.error("Search error:", error.message);
+    return [];
   }
-
-});
-
-/*
-Health check
-*/
-
-router.get("/search/health", (req, res) => {
-
-  res.json({
-    status: "ok",
-    service: "NDE Automotive AI Search"
-  });
-
-});
-
-export default router;
+}
