@@ -3,10 +3,34 @@ import axios from "axios";
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
+// ✅ CLEAN + SPLIT QUERY
+function extractKeywords(query) {
+  return query
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .split(" ")
+    .filter((word) => word.length > 1);
+}
+
+// ✅ SCORE PRODUCT BASED ON MATCH
+function scoreProduct(product, keywords) {
+  let score = 0;
+
+  const title = product.title.toLowerCase();
+
+  keywords.forEach((word) => {
+    if (title.includes(word)) {
+      score += 10;
+    }
+  });
+
+  return score;
+}
+
 // ✅ SEARCH PRODUCTS FROM SHOPIFY
 export async function searchProducts(query) {
   try {
-    const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50`;
+    const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=100`;
 
     const response = await axios.get(url, {
       headers: {
@@ -17,21 +41,25 @@ export async function searchProducts(query) {
 
     const products = response.data.products || [];
 
-    const cleanQuery = query.toLowerCase();
+    const keywords = extractKeywords(query);
 
-    // ✅ FILTER MATCHING PRODUCTS
-    const filtered = products.filter((product) => {
-      return product.title.toLowerCase().includes(cleanQuery);
-    });
+    // ✅ SCORE + FILTER
+    const scoredProducts = products
+      .map((product) => {
+        const score = scoreProduct(product, keywords);
+        return { product, score };
+      })
+      .filter((item) => item.score > 0);
+
+    // ✅ SORT BY BEST MATCH
+    scoredProducts.sort((a, b) => b.score - a.score);
 
     // ✅ FORMAT RESPONSE
-    return filtered.map((product) => {
-      return {
-        title: product.title,
-        price: product.variants?.[0]?.price || "0",
-        url: `https://${SHOPIFY_STORE}/products/${product.handle}`,
-      };
-    });
+    return scoredProducts.map((item) => ({
+      title: item.product.title,
+      price: item.product.variants?.[0]?.price || "0",
+      url: `https://${SHOPIFY_STORE}/products/${item.product.handle}`,
+    }));
 
   } catch (error) {
     console.error("Search error:", error.message);
