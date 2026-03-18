@@ -1,5 +1,4 @@
 const { generateProductLink } = require('../shopify-engine/mapper');
-const { getShortLink } = require('../database/shortLinks');
 
 function mainMenu() {
   return `Welcome to ndestore.com AI Support
@@ -38,16 +37,13 @@ Requested Parts:
 `;
 
   parts.forEach((p, index) => {
-    const originalLink = generateProductLink({
+    const link = generateProductLink({
       ...vehicle,
       part: p
     });
 
-    const shortId = getShortLink(originalLink);
-    const shortLink = `${process.env.BASE_URL}/${shortId}`;
-
     response += `${index + 1}. ${p}
-${shortLink}
+${link}
 
 `;
   });
@@ -127,13 +123,10 @@ Air Filter, Brake Pads`,
     // SINGLE PART
     const part = parsed.parts[0];
 
-    const originalLink = generateProductLink({
+    const link = generateProductLink({
       ...parsed.vehicle,
       part
     });
-
-    const shortId = getShortLink(originalLink);
-    const shortLink = `${process.env.BASE_URL}/${shortId}`;
 
     return {
       text: `Vehicle Details:
@@ -144,7 +137,7 @@ Year: ${year || '-'}
 
 Part: ${part}
 
-${shortLink}
+${link}
 
 Reply # to return to Main Menu.`,
       newState: {
