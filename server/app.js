@@ -1,22 +1,41 @@
-require('dotenv').config();
+// server/app.js
 
-const express = require('express');
-const bodyParser = require('body-parser');
+require("dotenv").config();
 
-const webhookRoute = require('./routes/webhook');
+const express = require("express");
+const bodyParser = require("body-parser");
+
+const webhookRoute = require("./routes/webhook");
+const productRoute = require("./routes/productRoute");
 
 const app = express();
 
+// -----------------------------
+// 🔧 MIDDLEWARE
+// -----------------------------
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// WhatsApp Webhook ONLY
-app.use('/webhook/whatsapp', webhookRoute);
+// -----------------------------
+// 📡 ROUTES
+// -----------------------------
 
-// Health check
-app.get('/', (req, res) => {
-  res.send('Server Running');
+// WhatsApp Webhook
+app.use("/webhook", webhookRoute);
+
+// Product Matching API
+app.use("/api/products", productRoute);
+
+// -----------------------------
+// 🏠 ROOT
+// -----------------------------
+app.get("/", (req, res) => {
+  res.send("NDESTORE AI WhatsApp Commerce सिस्टम is running 🚀");
 });
 
+// -----------------------------
+// 🚀 SERVER START
+// -----------------------------
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
