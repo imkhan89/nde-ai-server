@@ -7,57 +7,53 @@ const { matchProducts, formatResponse } = require("../../shopify-engine/productM
 const sendWhatsAppMessage = require("../../integrations/whatsapp");
 const { parseUserInput } = require("../../ai-engine/parser");
 
-// -----------------------------
-// 🔐 VERIFY WEBHOOK
+const { detectIntent } = require("../../conversation-engine/intentDetector");
+const { getMainMenu } = require("../../conversation-engine/menu");
+
 // -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode && token === VERIFY_TOKEN) {
-    return res.status(200).send(challenge);
-  } else {
-    return res.sendStatus(403);
+  if (req.query["hub.verify_token"] === VERIFY_TOKEN) {
+    return res.send(req.query["hub.challenge"]);
   }
+  return res.sendStatus(403);
 });
 
 // -----------------------------
-// 📩 RECEIVE MESSAGE
-// -----------------------------
 router.post("/", async (req, res) => {
   try {
-    console.log("📥 Incoming:", JSON.stringify(req.body, null, 2));
-
-    const entry = req.body.entry?.[0];
-    const changes = entry?.changes?.[0];
-    const value = changes?.value;
-    const message = value?.messages?.[0];
-
-    // Ignore non-message events
+    const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
     const userInput = message.text?.body;
 
-    console.log("👤 From:", from);
+    if (!userInput) return res.sendStatus(200);
+
     console.log("💬 Message:", userInput);
 
-    if (!userInput) {
+    // -----------------------------
+    // 🧠 INTENT DETECTION
+    // -----------------------------
+    const intent = detectIntent(userInput);
+
+    // -----------------------------
+    // 📋 HANDLE GREETING / MENU
+    // -----------------------------
+    if (intent === "GREETING" || intent === "MENU") {
+      const menu = getMainMenu();
+      await sendWhatsAppMessage(from, menu);
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // 🧠 PARSE USER INPUT
+    // 🧠 PARSE INPUT
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
-    console.log("🧠 Parsed:", parsed);
-
     // -----------------------------
-    // ⚠️ VALIDATE VEHICLE
+    // ⚠️ VEHICLE VALIDATION
     // -----------------------------
     if (!parsed.vehicle.make || !parsed.vehicle.model) {
       await sendWhatsAppMessage(
@@ -72,28 +68,14 @@ router.post("/", async (req, res) => {
     // -----------------------------
     const results = await matchProducts(parsed);
 
-    console.log("🔎 Match Results:", results);
+    const reply = formatResponse(results);
 
-    // -----------------------------
-    // 🧾 FORMAT RESPONSE
-    // -----------------------------
-    let reply = formatResponse(results);
-
-    if (!results.length) {
-      reply = "No exact match found. Please refine your query.";
-    }
-
-    console.log("📤 Reply:", reply);
-
-    // -----------------------------
-    // 📤 SEND WHATSAPP MESSAGE
-    // -----------------------------
     await sendWhatsAppMessage(from, reply);
 
     return res.sendStatus(200);
 
   } catch (err) {
-    console.error("❌ Webhook error:", err);
+    console.error(err);
     return res.sendStatus(500);
   }
 });
