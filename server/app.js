@@ -20,8 +20,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // 📡 ROUTES
 // -----------------------------
 
-// WhatsApp Webhook
-app.use("/webhook", webhookRoute);
+// WhatsApp Webhook (FIXED PATH)
+app.use("/webhook/whatsapp", webhookRoute);
 
 // Product Matching API
 app.use("/api/products", productRoute);
@@ -30,7 +30,7 @@ app.use("/api/products", productRoute);
 // 🏠 ROOT
 // -----------------------------
 app.get("/", (req, res) => {
-  res.send("NDESTORE AI WhatsApp Commerce सिस्टम is running 🚀");
+  res.send("NDESTORE AI WhatsApp Commerce System Running 🚀");
 });
 
 // -----------------------------
