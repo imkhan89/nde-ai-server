@@ -7,8 +7,8 @@ const webhookRoute = require('./routes/webhook');
 const app = express();
 app.use(bodyParser.json());
 
-// ✅ IMPORTANT: ONLY THIS ROUTE
-app.use('/webhook', webhookRoute);
+// ✅ FIX: Match Meta webhook path
+app.use('/webhook/whatsapp', webhookRoute);
 
 app.get('/', (req, res) => {
   res.send('Server Running');
