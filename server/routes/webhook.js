@@ -8,27 +8,18 @@ const sendWhatsAppMessage = require("../../integrations/whatsapp");
 const { parseUserInput } = require("../../ai-engine/parser");
 
 const { detectIntent } = require("../../conversation-engine/intentDetector");
-const { getMainMenu } = require("../../conversation-engine/menu");
+const { getMainMenu, getAutoPartsPrompt } = require("../../conversation-engine/menu");
 
-// -----------------------------
-// 🔐 VERIFY WEBHOOK
 // -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
-  const mode = req.query["hub.mode"];
-  const token = req.query["hub.verify_token"];
-  const challenge = req.query["hub.challenge"];
-
-  if (mode && token === VERIFY_TOKEN) {
-    return res.status(200).send(challenge);
-  } else {
-    return res.sendStatus(403);
+  if (req.query["hub.verify_token"] === VERIFY_TOKEN) {
+    return res.send(req.query["hub.challenge"]);
   }
+  return res.sendStatus(403);
 });
 
-// -----------------------------
-// 📩 RECEIVE MESSAGE
 // -----------------------------
 router.post("/", async (req, res) => {
   try {
@@ -42,41 +33,39 @@ router.post("/", async (req, res) => {
 
     console.log("💬 Message:", userInput);
 
-    // -----------------------------
-    // 🧠 INTENT DETECTION
-    // -----------------------------
     const intent = detectIntent(userInput);
 
     // -----------------------------
-    // 📋 GREETING / MENU
+    // GREETING / MENU
     // -----------------------------
     if (intent === "GREETING" || intent === "MENU") {
-      const menu = getMainMenu();
-      await sendWhatsAppMessage(from, menu);
+      await sendWhatsAppMessage(from, getMainMenu());
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // 🔢 MENU SELECTION (1–6)
+    // MENU SELECTION
     // -----------------------------
     if (intent === "MENU_SELECTION") {
+      if (userInput === "1") {
+        // ✅ FIXED RESPONSE (STRUCTURED FORMAT)
+        await sendWhatsAppMessage(from, getAutoPartsPrompt());
+        return res.sendStatus(200);
+      }
+
+      // Other options (placeholder)
       await sendWhatsAppMessage(
         from,
-        "Please describe your requirement.\nExample: Suzuki Swift 2021 brake pads"
+        "This feature will be available soon."
       );
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // 🧠 PARSE INPUT
+    // PRODUCT QUERY FLOW
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
-    console.log("🧠 Parsed:", parsed);
-
-    // -----------------------------
-    // ⚠️ VEHICLE VALIDATION
-    // -----------------------------
     if (!parsed.vehicle.make || !parsed.vehicle.model) {
       await sendWhatsAppMessage(
         from,
@@ -85,33 +74,15 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // -----------------------------
-    // 🔍 MATCH PRODUCTS
-    // -----------------------------
     const results = await matchProducts(parsed);
+    const reply = formatResponse(results);
 
-    console.log("🔎 Match Results:", results);
-
-    // -----------------------------
-    // 🧾 FORMAT RESPONSE
-    // -----------------------------
-    let reply = formatResponse(results);
-
-    if (!results.length) {
-      reply = "No exact match found. Please refine your query.";
-    }
-
-    console.log("📤 Reply:", reply);
-
-    // -----------------------------
-    // 📤 SEND WHATSAPP MESSAGE
-    // -----------------------------
     await sendWhatsAppMessage(from, reply);
 
     return res.sendStatus(200);
 
   } catch (err) {
-    console.error("❌ Webhook error:", err);
+    console.error(err);
     return res.sendStatus(500);
   }
 });
