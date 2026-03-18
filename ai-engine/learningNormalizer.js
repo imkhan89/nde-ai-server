@@ -6,98 +6,79 @@ const path = require("path");
 const LEARNING_FILE = path.join(__dirname, "../data/learning.json");
 
 // -----------------------------
+// CORE PART DEFINITIONS (LOCKED)
+// -----------------------------
+const CORE_PARTS = {
+  brake_pads: ["brake pad", "disc pad", "brake pads"],
+  air_filter: ["air filter", "engine filter", "air cleaner"],
+  cabin_filter: ["ac filter", "cabin filter"],
+  oil_filter: ["oil filter"]
+};
+
+// -----------------------------
 // LOAD / SAVE LEARNING
 // -----------------------------
 function loadLearning() {
   try {
     if (!fs.existsSync(LEARNING_FILE)) return {};
     return JSON.parse(fs.readFileSync(LEARNING_FILE));
-  } catch (e) {
+  } catch {
     return {};
   }
 }
 
 function saveLearning(data) {
-  try {
-    fs.writeFileSync(LEARNING_FILE, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error("Learning save error:", e.message);
-  }
+  fs.writeFileSync(LEARNING_FILE, JSON.stringify(data, null, 2));
 }
 
 // -----------------------------
-// TOKENIZER
-// -----------------------------
-function tokenize(input) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
-// -----------------------------
-// BASE KNOWLEDGE (MINIMAL CORE)
-// -----------------------------
-const BASE_PARTS = {
-  brake_pads: ["brake", "pad"],
-  air_filter: ["air", "filter"],
-  cabin_filter: ["ac", "cabin"],
-  oil_filter: ["oil"]
-};
-
-// -----------------------------
-// NORMALIZER (DYNAMIC LEARNING)
+// NORMALIZER (CONTROLLED)
 // -----------------------------
 function normalizePart(userInput) {
   const text = userInput.toLowerCase();
-  const tokens = tokenize(text);
 
+  // ✅ STEP 1: CORE MATCH (NO DOUBT)
+  for (let part in CORE_PARTS) {
+    for (let keyword of CORE_PARTS[part]) {
+      if (text.includes(keyword)) {
+        return {
+          normalized_part: part,
+          confidence: 95,
+          source: "core"
+        };
+      }
+    }
+  }
+
+  // ✅ STEP 2: LEARNING MATCH
   const learning = loadLearning();
 
-  let bestMatch = null;
-  let bestScore = 0;
-
-  const allParts = new Set([
-    ...Object.keys(BASE_PARTS),
-    ...Object.keys(learning)
-  ]);
-
-  allParts.forEach(part => {
-    let score = 0;
-
-    // BASE KEYWORDS
-    if (BASE_PARTS[part]) {
-      BASE_PARTS[part].forEach(k => {
-        if (tokens.includes(k)) score += 20;
-      });
+  for (let part in learning) {
+    for (let phrase of learning[part]) {
+      if (text.includes(phrase)) {
+        return {
+          normalized_part: part,
+          confidence: 85,
+          source: "learned"
+        };
+      }
     }
+  }
 
-    // LEARNED PHRASES (UNLIMITED)
-    if (learning[part]) {
-      learning[part].forEach(phrase => {
-        if (text.includes(phrase)) {
-          score += 80; // strong boost
-        }
-      });
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestMatch = part;
-    }
-  });
-
+  // ❌ UNKNOWN (NO AUTO LEARNING HERE)
   return {
-    normalized_part: bestMatch || "unknown",
-    confidence: bestScore
+    normalized_part: "unknown",
+    confidence: 40,
+    source: "unknown"
   };
 }
 
 // -----------------------------
-// LEARN FROM USER CORRECTION
+// SAFE LEARNING
 // -----------------------------
 function learnSynonym(userInput, correctPart) {
+  if (correctPart === "unknown") return; // ❌ NEVER LEARN UNKNOWN
+
   const learning = loadLearning();
 
   if (!learning[correctPart]) {
