@@ -73,10 +73,7 @@ async function matchSinglePart(rawPart, vehicle, products) {
   const productType = productTypeMap[query.part];
 
   if (!productType) {
-    return {
-      part: query.part,
-      results: []
-    };
+    return { part: query.part, results: [] };
   }
 
   let matches = [];
@@ -86,11 +83,12 @@ async function matchSinglePart(rawPart, vehicle, products) {
 
     const score = matchTags(p, query);
 
-    // ✅ less strict
     if (score >= 20) {
       matches.push({
         title: p.title,
         handle: p.handle,
+        price: p.variants?.[0]?.price,
+        image: p.images?.[0]?.src,
         score
       });
     }
@@ -100,7 +98,7 @@ async function matchSinglePart(rawPart, vehicle, products) {
 
   return {
     part: query.part,
-    results: matches.slice(0, 2)
+    results: matches.slice(0, 3)
   };
 }
 
@@ -123,7 +121,7 @@ async function matchProducts(parsedInput) {
 }
 
 // -----------------------------
-// RESPONSE FORMAT (HYBRID)
+// RESPONSE FORMAT (FALLBACK)
 // -----------------------------
 function formatResponse(results, vehicle) {
   let message = "Vehicle Details:\n\n";
@@ -142,7 +140,6 @@ function formatResponse(results, vehicle) {
         message += `https://ndestore.com/products/${p.handle}\n\n`;
       });
     } else {
-      // ✅ fallback search
       const query = `${vehicle.make} ${vehicle.model} ${partName} ${vehicle.year}`;
       const url = `https://www.ndestore.com/search?q=${encodeURIComponent(query)}`;
 
