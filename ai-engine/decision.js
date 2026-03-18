@@ -44,7 +44,7 @@ Requested Parts:
     });
 
     const shortId = getShortLink(originalLink);
-    const shortLink = `https://ndestore.com/${shortId}`;
+    const shortLink = `${process.env.BASE_URL}/${shortId}`;
 
     response += `${index + 1}. ${p}
 ${shortLink}
@@ -59,6 +59,7 @@ ${shortLink}
 
 function decideResponse(parsed, state) {
 
+  // RESET
   if (parsed.intent === 'menu' && parsed.value === '#') {
     return {
       text: mainMenu(),
@@ -66,6 +67,7 @@ function decideResponse(parsed, state) {
     };
   }
 
+  // FIRST MESSAGE
   if (state.step === 'menu' && parsed.intent !== 'menu') {
     return {
       text: mainMenu(),
@@ -73,6 +75,7 @@ function decideResponse(parsed, state) {
     };
   }
 
+  // MENU
   if (parsed.intent === 'menu') {
 
     if (parsed.value === '1') {
@@ -88,6 +91,7 @@ function decideResponse(parsed, state) {
     };
   }
 
+  // AUTO PARTS FLOW
   if (state.step === 'auto_parts') {
 
     const { make, model, year } = parsed.vehicle;
@@ -129,7 +133,7 @@ Air Filter, Brake Pads`,
     });
 
     const shortId = getShortLink(originalLink);
-    const shortLink = `https://ndestore.com/${shortId}`;
+    const shortLink = `${process.env.BASE_URL}/${shortId}`;
 
     return {
       text: `Vehicle Details:
