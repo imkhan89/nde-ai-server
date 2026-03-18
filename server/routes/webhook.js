@@ -3,7 +3,6 @@ const router = express.Router();
 
 const { handleMessage } = require('../../integrations/whatsapp');
 
-// ✅ VERIFY WEBHOOK (GET)
 router.get('/', (req, res) => {
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
 
@@ -18,7 +17,6 @@ router.get('/', (req, res) => {
   }
 });
 
-// ✅ RECEIVE MESSAGES (POST)
 router.post('/', async (req, res) => {
   try {
     const body = req.body;
