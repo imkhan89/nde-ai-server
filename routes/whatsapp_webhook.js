@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import { searchProducts } from "./search_routes.js";
 
 const router = express.Router();
 
@@ -16,12 +17,10 @@ router.get("/", (req, res) => {
   return res.sendStatus(403);
 });
 
-// ✅ MESSAGE HANDLER (MINIMAL — DEBUG MODE)
+// ✅ MESSAGE HANDLER (LIVE SEARCH)
 router.post("/", async (req, res) => {
   try {
     const value = req.body?.entry?.[0]?.changes?.[0]?.value;
-
-    console.log("BODY:", JSON.stringify(req.body));
 
     if (!value || !value.messages) {
       return res.sendStatus(200);
@@ -38,22 +37,45 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    console.log("FROM:", from);
-    console.log("TEXT:", text);
+    const cleanText = text.toLowerCase().trim();
 
-    // ✅ FORCE SIMPLE REPLY (NO SEARCH)
-    const reply = "Test reply working ✅";
+    console.log("Incoming:", cleanText);
 
-    // ✅ SEND MESSAGE (SIMPLIFIED)
-    const response = await axios.post(
+    // ✅ REAL SEARCH
+    let results = await searchProducts(cleanText);
+    const topResults = results.slice(0, 5);
+
+    let reply = "";
+
+    if (!topResults.length) {
+      reply =
+`❌ No exact match found
+
+Please send:
+Car Model + Year + Part
+
+Example:
+Mira 2018 brake pad`;
+    } else {
+      reply = `🔥 Best Matches:\n\n`;
+
+      topResults.forEach((item, i) => {
+        reply += `${i + 1}. ${item.title}\n`;
+        reply += `💰 Rs ${item.price}\n`;
+        reply += `🔗 ${item.url}\n\n`;
+      });
+
+      reply += "Reply with product number to order.";
+    }
+
+    // ✅ SEND RESPONSE
+    await axios.post(
       `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to: from,
         type: "text",
-        text: {
-          body: reply,
-        },
+        text: { body: reply },
       },
       {
         headers: {
@@ -63,11 +85,9 @@ router.post("/", async (req, res) => {
       }
     );
 
-    console.log("META RESPONSE:", response.data);
-
     return res.sendStatus(200);
   } catch (error) {
-    console.error("SEND ERROR:", error.response?.data || error.message);
+    console.error("ERROR:", error.response?.data || error.message);
     return res.sendStatus(200);
   }
 });
