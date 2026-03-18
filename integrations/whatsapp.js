@@ -6,13 +6,19 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 // -----------------------------
-// 📤 SEND MESSAGE
-// -----------------------------
 async function sendWhatsAppMessage(to, message) {
   try {
+    console.log("📤 Sending message to:", to);
+    console.log("📨 Message:", message);
+
+    if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) {
+      console.error("❌ Missing WhatsApp credentials");
+      return;
+    }
+
     const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
 
-    await axios.post(
+    const response = await axios.post(
       url,
       {
         messaging_product: "whatsapp",
@@ -29,8 +35,12 @@ async function sendWhatsAppMessage(to, message) {
         }
       }
     );
+
+    console.log("✅ WhatsApp API response:", response.data);
+
   } catch (err) {
-    console.error("WhatsApp send error:", err.response?.data || err.message);
+    console.error("❌ WhatsApp send error:");
+    console.error(err.response?.data || err.message);
   }
 }
 
