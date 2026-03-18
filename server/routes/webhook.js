@@ -15,7 +15,9 @@ const { getMainMenu, getAutoPartsPrompt } = require("../../conversation-engine/m
 const {
   getSession,
   updateVehicle,
-  clearSession
+  hasVehicle,
+  clearSession,
+  getVehicleSummary
 } = require("../../conversation-engine/stateManager");
 
 const {
@@ -53,21 +55,16 @@ router.post("/", async (req, res) => {
 
     let session = getSession(from);
 
-    // -----------------------------
-    // RESET SESSION
-    // -----------------------------
+    // RESET
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
       return res.sendStatus(200);
     }
 
-    // -----------------------------
-    // HANDLE PART CONFIRMATION RESPONSE
-    // -----------------------------
+    // CONFIRMATION HANDLING
     if (session.pendingPartConfirmation) {
       if (userInput.toLowerCase() === "yes") {
-        // Learn only safe mappings
         if (session.pendingPartConfirmation !== "unknown") {
           learnSynonym(session.lastUserInput, session.pendingPartConfirmation);
         }
@@ -81,9 +78,7 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // -----------------------------
-    // INTENT DETECTION
-    // -----------------------------
+    // INTENT
     const intent = detectIntent(userInput);
 
     if (intent === "GREETING" || intent === "MENU") {
@@ -101,49 +96,46 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // -----------------------------
-    // PARSE USER INPUT
-    // -----------------------------
+    // PARSE
     const parsed = parseUserInput(userInput);
 
-    // -----------------------------
-    // UPDATE SESSION VEHICLE
-    // -----------------------------
+    // VEHICLE MEMORY
     session = updateVehicle(from, parsed.vehicle);
     const vehicle = session.vehicle;
 
-    console.log("🚗 Session Vehicle:", vehicle);
+    console.log("🚗 Vehicle:", vehicle);
 
-    // -----------------------------
-    // CLARIFICATION (VEHICLE / PART)
-    // -----------------------------
+    // REQUIRE VEHICLE
+    if (!hasVehicle(from)) {
+      await sendWhatsAppMessage(
+        from,
+        "Please provide your car details.\nExample: Toyota Corolla 2018"
+      );
+      return res.sendStatus(200);
+    }
+
+    const vehicleSummary = getVehicleSummary(vehicle);
+
+    // CLARIFICATION
     const clarification = needsClarification(vehicle, parsed.parts);
     if (clarification) {
       await sendWhatsAppMessage(from, clarification.message);
       return res.sendStatus(200);
     }
 
-    // -----------------------------
-    // PART NORMALIZATION (CONTROLLED)
-    // -----------------------------
+    // PART NORMALIZATION
     const partResult = normalizePart(parsed.parts[0].raw);
-
     session.lastUserInput = parsed.parts[0].raw;
 
-    // ✅ CORE MATCH → NO CONFIRMATION
-    if (partResult.source === "core") {
-      // proceed directly
-    }
-    // ⚠️ UNKNOWN → ASK USER (NO GUESSING)
-    else if (partResult.source === "unknown") {
+    if (partResult.source === "unknown") {
       await sendWhatsAppMessage(
         from,
         "Please specify the correct part.\nExample: Brake Pads"
       );
       return res.sendStatus(200);
     }
-    // ⚠️ LEARNED / LOW CONFIDENCE → OPTIONAL CONFIRM
-    else if (partResult.confidence < 70) {
+
+    if (partResult.source !== "core" && partResult.confidence < 70) {
       const confirm = confirmPartIfNeeded(partResult);
 
       if (confirm) {
@@ -153,17 +145,12 @@ router.post("/", async (req, res) => {
       }
     }
 
-    // -----------------------------
     // MATCH PRODUCTS
-    // -----------------------------
     const results = await matchProducts({
       vehicle,
       parts: parsed.parts
     });
 
-    // -----------------------------
-    // PREPARE PRODUCT LIST
-    // -----------------------------
     let productList = [];
     results.forEach(r => {
       if (r.results.length) {
@@ -172,10 +159,25 @@ router.post("/", async (req, res) => {
     });
 
     // -----------------------------
-    // SEND RESPONSE
+    // SAFE RESPONSE (FIXED)
     // -----------------------------
     if (productList.length) {
-      await sendProductCards(from, productList);
+
+      // ALWAYS send text first
+      await sendWhatsAppMessage(
+        from,
+        `Showing results for: ${vehicleSummary}`
+      );
+
+      try {
+        await sendProductCards(from, productList);
+      } catch (err) {
+        console.error("Card failed → fallback");
+
+        const reply = formatResponse(results, vehicle);
+        await sendWhatsAppMessage(from, reply);
+      }
+
     } else {
       const reply = formatResponse(results, vehicle);
       await sendWhatsAppMessage(from, reply);
