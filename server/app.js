@@ -10,10 +10,10 @@ const app = express();
 
 app.use(bodyParser.json());
 
-// WhatsApp Webhook
+// ✅ WhatsApp Webhook (MUST BE FIRST)
 app.use('/webhook/whatsapp', webhookRoute);
 
-// Short URL Redirect
+// ✅ Short URL Redirect
 app.use('/', redirectRoute);
 
 // Health check
