@@ -59,7 +59,6 @@ ${shortLink}
 
 function decideResponse(parsed, state) {
 
-  // RESET
   if (parsed.intent === 'menu' && parsed.value === '#') {
     return {
       text: mainMenu(),
@@ -67,7 +66,6 @@ function decideResponse(parsed, state) {
     };
   }
 
-  // FIRST MESSAGE
   if (state.step === 'menu' && parsed.intent !== 'menu') {
     return {
       text: mainMenu(),
@@ -75,7 +73,6 @@ function decideResponse(parsed, state) {
     };
   }
 
-  // MENU
   if (parsed.intent === 'menu') {
 
     if (parsed.value === '1') {
@@ -91,12 +88,10 @@ function decideResponse(parsed, state) {
     };
   }
 
-  // AUTO PARTS FLOW
   if (state.step === 'auto_parts') {
 
-    const { make, model, year, part } = parsed.vehicle;
+    const { make, model, year } = parsed.vehicle;
 
-    // MISSING VEHICLE
     if (!make || !model) {
       return {
         text: `Please share complete vehicle details:
@@ -113,7 +108,7 @@ Air Filter, Brake Pads`,
       };
     }
 
-    // MULTI PART FLOW
+    // MULTI PART
     if (parsed.parts.length > 1) {
       return {
         text: buildMultiPartResponse(parsed.parts, parsed.vehicle),
@@ -126,7 +121,13 @@ Air Filter, Brake Pads`,
     }
 
     // SINGLE PART
-    const originalLink = generateProductLink(parsed.vehicle);
+    const part = parsed.parts[0];
+
+    const originalLink = generateProductLink({
+      ...parsed.vehicle,
+      part
+    });
+
     const shortId = getShortLink(originalLink);
     const shortLink = `https://ndestore.com/${shortId}`;
 
@@ -137,7 +138,7 @@ Make: ${make}
 Model: ${model}
 Year: ${year || '-'}
 
-Part: ${part || '-'}
+Part: ${part}
 
 ${shortLink}
 
