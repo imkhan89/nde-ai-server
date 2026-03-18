@@ -15,6 +15,21 @@ Please choose an option:
 Reply with 1-6 to continue.`;
 }
 
+// ✅ AUTO PARTS STRUCTURED PROMPT (FIX)
+function getAutoPartsPrompt() {
+  return `Auto Parts Inquiry
+
+Share details:
+Part Name:
+Make:
+Model:
+Year:
+
+Example:
+Air Filter Suzuki Swift 2021`;
+}
+
 module.exports = {
-  getMainMenu
+  getMainMenu,
+  getAutoPartsPrompt
 };
