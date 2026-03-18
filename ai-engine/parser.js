@@ -4,7 +4,6 @@ function extractVehicleInfo(text) {
   let make = null;
   let model = null;
   let year = null;
-  let part = null;
 
   const makes = ['suzuki', 'toyota', 'honda', 'daihatsu', 'kia', 'hyundai'];
 
@@ -18,11 +17,17 @@ function extractVehicleInfo(text) {
     model = words[index + 1] || null;
   }
 
-  // remove vehicle words → remaining is part
-  const filtered = words.filter(w => w !== make && w !== model && w !== year);
-  part = filtered.join(' ');
+  return { make, model, year };
+}
 
-  return { make, model, year, part };
+function cleanPart(part, vehicle) {
+  let cleaned = part;
+
+  if (vehicle.make) cleaned = cleaned.replace(vehicle.make, '');
+  if (vehicle.model) cleaned = cleaned.replace(vehicle.model, '');
+  if (vehicle.year) cleaned = cleaned.replace(vehicle.year, '');
+
+  return cleaned.trim();
 }
 
 function parseMessage(text) {
@@ -34,10 +39,13 @@ function parseMessage(text) {
     return { intent: 'menu', value: clean };
   }
 
-  // MULTI PART DETECTION
-  const parts = clean.split(/,|and|\+/).map(p => p.trim()).filter(Boolean);
-
   const vehicle = extractVehicleInfo(clean);
+
+  // MULTI PART SPLIT
+  let parts = clean.split(/,|and|\+/).map(p => p.trim()).filter(Boolean);
+
+  // CLEAN PARTS
+  parts = parts.map(p => cleanPart(p, vehicle));
 
   return {
     intent: 'auto_parts',
