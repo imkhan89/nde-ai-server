@@ -42,40 +42,15 @@ async function fetchProducts() {
   return CACHE;
 }
 
-// ✅ STRICT MATCH (PRIMARY ENGINE)
-function strictSearch(products, tokens) {
-  return products.filter((p) => {
-    const text = normalize(p.title + " " + (p.tags || ""));
-
-    // ✅ ALL WORDS MUST MATCH (KEY FIX)
-    return tokens.every((t) => text.includes(t));
-  });
-}
-
-// ✅ PART DICTIONARY (FALLBACK)
-const DICTIONARY = {
+// ✅ PART DICTIONARY
+const PARTS = {
   brake: ["brake", "pad", "pads", "disc", "rotor", "shoe"],
   filter: ["filter", "air", "oil", "cabin"],
 };
 
-// ✅ EXPAND QUERY (SECONDARY AI)
-function expandTokens(tokens) {
-  let expanded = [...tokens];
-
-  tokens.forEach((t) => {
-    Object.values(DICTIONARY).forEach((group) => {
-      if (group.includes(t)) {
-        expanded.push(...group);
-      }
-    });
-  });
-
-  return [...new Set(expanded)];
-}
-
-// ✅ PART FILTER
+// ✅ DETECT PART
 function detectPart(tokens) {
-  for (const [part, words] of Object.entries(DICTIONARY)) {
+  for (const [key, words] of Object.entries(PARTS)) {
     if (tokens.some((t) => words.includes(t))) {
       return words;
     }
@@ -83,16 +58,30 @@ function detectPart(tokens) {
   return null;
 }
 
-// ✅ SCORE (SECONDARY)
-function score(p, tokens) {
-  const text = normalize(p.title + " " + (p.tags || ""));
-  let s = 0;
+// ✅ SCORE ENGINE (CORE FIX)
+function scoreProduct(product, tokens, partWords) {
+  const text = normalize(product.title + " " + (product.tags || ""));
 
+  let score = 0;
+
+  // ✅ TOKEN MATCH
   tokens.forEach((t) => {
-    if (text.includes(t)) s += 10;
+    if (text.includes(t)) score += 10;
   });
 
-  return s;
+  // ✅ PART MATCH (CRITICAL)
+  if (partWords) {
+    const match = partWords.some((w) => text.includes(w));
+
+    if (!match) return 0; // ❌ remove wrong category
+    score += 50;
+  }
+
+  // ✅ MULTI WORD BOOST
+  const matches = tokens.filter((t) => text.includes(t)).length;
+  if (matches >= 2) score += 30;
+
+  return score;
 }
 
 // ✅ MAIN SEARCH
@@ -101,44 +90,21 @@ export async function searchProducts(query) {
     const products = await fetchProducts();
 
     const tokens = tokenize(query);
+    const partWords = detectPart(tokens);
 
-    if (!tokens.length) return [];
+    const scored = products
+      .map((p) => ({
+        product: p,
+        score: scoreProduct(p, tokens, partWords),
+      }))
+      .filter((x) => x.score > 0);
 
-    // 🟢 STEP 1: STRICT MATCH
-    let results = strictSearch(products, tokens);
+    scored.sort((a, b) => b.score - a.score);
 
-    // 🟡 STEP 2: IF NOTHING → AI FALLBACK
-    if (!results.length) {
-      const expanded = expandTokens(tokens);
-      const partWords = detectPart(tokens);
-
-      const scored = products
-        .map((p) => {
-          const text = normalize(p.title + " " + (p.tags || ""));
-
-          // 🚨 FILTER BY PART
-          if (partWords) {
-            const match = partWords.some((w) => text.includes(w));
-            if (!match) return null;
-          }
-
-          return {
-            product: p,
-            score: score(p, expanded),
-          };
-        })
-        .filter((x) => x && x.score > 0);
-
-      scored.sort((a, b) => b.score - a.score);
-
-      results = scored.map((x) => x.product);
-    }
-
-    // ✅ FINAL FORMAT
-    return results.slice(0, 5).map((p) => ({
-      title: p.title,
-      price: p.variants?.[0]?.price || "0",
-      url: `https://${SHOPIFY_STORE}/products/${p.handle}`,
+    return scored.slice(0, 5).map((x) => ({
+      title: x.product.title,
+      price: x.product.variants?.[0]?.price || "0",
+      url: `https://${SHOPIFY_STORE}/products/${x.product.handle}`,
     }));
 
   } catch (error) {
