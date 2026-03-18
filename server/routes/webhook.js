@@ -11,15 +11,24 @@ const { detectIntent } = require("../../conversation-engine/intentDetector");
 const { getMainMenu } = require("../../conversation-engine/menu");
 
 // -----------------------------
+// 🔐 VERIFY WEBHOOK
+// -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
-  if (req.query["hub.verify_token"] === VERIFY_TOKEN) {
-    return res.send(req.query["hub.challenge"]);
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode && token === VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  } else {
+    return res.sendStatus(403);
   }
-  return res.sendStatus(403);
 });
 
+// -----------------------------
+// 📩 RECEIVE MESSAGE
 // -----------------------------
 router.post("/", async (req, res) => {
   try {
@@ -27,7 +36,7 @@ router.post("/", async (req, res) => {
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
-    const userInput = message.text?.body;
+    const userInput = message.text?.body?.trim();
 
     if (!userInput) return res.sendStatus(200);
 
@@ -39,7 +48,7 @@ router.post("/", async (req, res) => {
     const intent = detectIntent(userInput);
 
     // -----------------------------
-    // 📋 HANDLE GREETING / MENU
+    // 📋 GREETING / MENU
     // -----------------------------
     if (intent === "GREETING" || intent === "MENU") {
       const menu = getMainMenu();
@@ -48,9 +57,22 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
+    // 🔢 MENU SELECTION (1–6)
+    // -----------------------------
+    if (intent === "MENU_SELECTION") {
+      await sendWhatsAppMessage(
+        from,
+        "Please describe your requirement.\nExample: Suzuki Swift 2021 brake pads"
+      );
+      return res.sendStatus(200);
+    }
+
+    // -----------------------------
     // 🧠 PARSE INPUT
     // -----------------------------
     const parsed = parseUserInput(userInput);
+
+    console.log("🧠 Parsed:", parsed);
 
     // -----------------------------
     // ⚠️ VEHICLE VALIDATION
@@ -68,14 +90,28 @@ router.post("/", async (req, res) => {
     // -----------------------------
     const results = await matchProducts(parsed);
 
-    const reply = formatResponse(results);
+    console.log("🔎 Match Results:", results);
 
+    // -----------------------------
+    // 🧾 FORMAT RESPONSE
+    // -----------------------------
+    let reply = formatResponse(results);
+
+    if (!results.length) {
+      reply = "No exact match found. Please refine your query.";
+    }
+
+    console.log("📤 Reply:", reply);
+
+    // -----------------------------
+    // 📤 SEND WHATSAPP MESSAGE
+    // -----------------------------
     await sendWhatsAppMessage(from, reply);
 
     return res.sendStatus(200);
 
   } catch (err) {
-    console.error(err);
+    console.error("❌ Webhook error:", err);
     return res.sendStatus(500);
   }
 });
