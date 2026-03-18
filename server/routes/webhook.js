@@ -11,15 +11,20 @@ const { detectIntent } = require("../../conversation-engine/intentDetector");
 const { getMainMenu, getAutoPartsPrompt } = require("../../conversation-engine/menu");
 
 // -----------------------------
+// VERIFY WEBHOOK
+// -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
   if (req.query["hub.verify_token"] === VERIFY_TOKEN) {
     return res.send(req.query["hub.challenge"]);
   }
+
   return res.sendStatus(403);
 });
 
+// -----------------------------
+// RECEIVE MESSAGE
 // -----------------------------
 router.post("/", async (req, res) => {
   try {
@@ -33,10 +38,13 @@ router.post("/", async (req, res) => {
 
     console.log("💬 Message:", userInput);
 
+    // -----------------------------
+    // INTENT DETECTION
+    // -----------------------------
     const intent = detectIntent(userInput);
 
     // -----------------------------
-    // GREETING / MENU
+    // MENU / GREETING
     // -----------------------------
     if (intent === "GREETING" || intent === "MENU") {
       await sendWhatsAppMessage(from, getMainMenu());
@@ -48,21 +56,16 @@ router.post("/", async (req, res) => {
     // -----------------------------
     if (intent === "MENU_SELECTION") {
       if (userInput === "1") {
-        // ✅ FIXED RESPONSE (STRUCTURED FORMAT)
         await sendWhatsAppMessage(from, getAutoPartsPrompt());
         return res.sendStatus(200);
       }
 
-      // Other options (placeholder)
-      await sendWhatsAppMessage(
-        from,
-        "This feature will be available soon."
-      );
+      await sendWhatsAppMessage(from, "This feature will be available soon.");
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // PRODUCT QUERY FLOW
+    // PRODUCT FLOW
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
@@ -75,14 +78,15 @@ router.post("/", async (req, res) => {
     }
 
     const results = await matchProducts(parsed);
-    const reply = formatResponse(results);
+
+    const reply = formatResponse(results, parsed.vehicle);
 
     await sendWhatsAppMessage(from, reply);
 
     return res.sendStatus(200);
 
   } catch (err) {
-    console.error(err);
+    console.error("Webhook error:", err);
     return res.sendStatus(500);
   }
 });
