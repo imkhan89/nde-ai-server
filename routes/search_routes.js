@@ -1,41 +1,74 @@
 import axios from "axios";
 
-// ✅ USE YOUR EXISTING VARIABLES (FROM RAILWAY)
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE_DOMAIN;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_TOKEN;
+
+// ✅ CLEAN TEXT
+function normalize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+}
+
+// ✅ TOKENIZE QUERY
+function tokenize(query) {
+  return normalize(query)
+    .split(" ")
+    .filter((w) => w.length > 1);
+}
+
+// ✅ SCORE ENGINE (SMART)
+function scoreProduct(product, tokens) {
+  let score = 0;
+
+  const title = normalize(product.title);
+  const tags = normalize(product.tags || "");
+
+  tokens.forEach((word) => {
+    if (title.includes(word)) score += 15;   // strong match
+    if (tags.includes(word)) score += 10;    // medium match
+  });
+
+  // ✅ BOOST EXACT PHRASE MATCH
+  if (title.includes(tokens.join(" "))) {
+    score += 50;
+  }
+
+  return score;
+}
 
 // ✅ SEARCH PRODUCTS
 export async function searchProducts(query) {
   try {
-    if (!SHOPIFY_STORE || !SHOPIFY_ACCESS_TOKEN) {
-      console.log("Missing Shopify ENV");
-      return [];
-    }
-
-    const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50`;
+    const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=100`;
 
     const response = await axios.get(url, {
       headers: {
         "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-        "Content-Type": "application/json",
       },
     });
 
     const products = response.data.products || [];
 
-    const q = query.toLowerCase();
+    const tokens = tokenize(query);
 
-    // ✅ IMPROVED MATCH (NOT STRICT)
-    const filtered = products.filter((p) => {
-      const title = p.title.toLowerCase();
+    // ❌ If no tokens, return empty
+    if (!tokens.length) return [];
 
-      return q.split(" ").some(word => title.includes(word));
-    });
+    // ✅ SCORE + FILTER
+    const scored = products
+      .map((p) => ({
+        product: p,
+        score: scoreProduct(p, tokens),
+      }))
+      .filter((item) => item.score > 0);
 
-    return filtered.map((p) => ({
-      title: p.title,
-      price: p.variants?.[0]?.price || "0",
-      url: `https://${SHOPIFY_STORE}/products/${p.handle}`,
+    // ✅ SORT BY BEST MATCH
+    scored.sort((a, b) => b.score - a.score);
+
+    // ✅ RETURN TOP MATCHES ONLY
+    return scored.slice(0, 10).map((item) => ({
+      title: item.product.title,
+      price: item.product.variants?.[0]?.price || "0",
+      url: `https://${SHOPIFY_STORE}/products/${item.product.handle}`,
     }));
 
   } catch (error) {
