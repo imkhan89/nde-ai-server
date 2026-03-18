@@ -1,3 +1,5 @@
+const { generateProductLink } = require('../shopify-engine/mapper');
+
 function mainMenu() {
   return `Welcome to ndestore.com AI Support
 
@@ -24,16 +26,6 @@ Example:
 Air Filter Suzuki Swift 2021`;
 }
 
-function formatResult(vehicle) {
-  return `Vehicle Details:
-
-Make: ${vehicle.make || '-'}
-Model: ${vehicle.model || '-'}
-Year: ${vehicle.year || '-'}
-
-Processing your request...`;
-}
-
 function decideResponse(parsed, state) {
 
   // RESET
@@ -52,8 +44,9 @@ function decideResponse(parsed, state) {
     };
   }
 
-  // MENU
+  // MENU HANDLING
   if (parsed.intent === 'menu') {
+
     if (parsed.value === '1') {
       return {
         text: autoPartsPrompt(),
@@ -67,12 +60,12 @@ function decideResponse(parsed, state) {
     };
   }
 
-  // AUTO PARTS ENGINE
+  // AUTO PARTS FLOW
   if (state.step === 'auto_parts') {
 
     const { make, model, year, part } = parsed.vehicle;
 
-    // MULTI PART
+    // MULTI PART DETECT
     if (parsed.parts.length > 1) {
       return {
         text: `Kindly share all parts with vehicle details.
@@ -102,9 +95,23 @@ Suzuki Swift 2021 Brake Pads`,
       };
     }
 
-    // SUCCESS FLOW
+    // GENERATE LINK
+    const link = generateProductLink(parsed.vehicle);
+
+    // SUCCESS RESPONSE
     return {
-      text: formatResult(parsed.vehicle),
+      text: `Vehicle Details:
+
+Make: ${make}
+Model: ${model}
+Year: ${year || '-'}
+
+Part: ${part || '-'}
+
+Kindly visit the following link:
+${link}
+
+Reply # to return to Main Menu.`,
       newState: {
         step: 'auto_parts_result',
         data: parsed.vehicle,
@@ -113,9 +120,13 @@ Suzuki Swift 2021 Brake Pads`,
     };
   }
 
+  // DEFAULT ERROR
   return {
-    text: `Unable to understand. Try again.`,
-    newState: { ...state, attempts: (state.attempts || 0) + 1 }
+    text: `Unable to understand. Please try again.`,
+    newState: {
+      ...state,
+      attempts: (state.attempts || 0) + 1
+    }
   };
 }
 
