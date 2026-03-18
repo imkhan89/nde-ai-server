@@ -6,11 +6,13 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 // -----------------------------
-// TEXT MESSAGE
+// TEXT MESSAGE (SAFE)
 // -----------------------------
 async function sendWhatsAppMessage(to, message) {
   try {
     const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
+
+    console.log("📤 Sending text:", message);
 
     await axios.post(
       url,
@@ -28,18 +30,23 @@ async function sendWhatsAppMessage(to, message) {
       }
     );
   } catch (err) {
-    console.error("WhatsApp text error:", err.response?.data || err.message);
+    console.error("❌ WhatsApp text error:", err.response?.data || err.message);
   }
 }
 
 // -----------------------------
-// 🛒 PRODUCT CARD (INTERACTIVE)
+// PRODUCT CARDS (SAFE)
 // -----------------------------
 async function sendProductCards(to, products) {
   try {
+    console.log("📦 Sending product cards:", products);
+
     const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
 
-    const sections = products.map((p, index) => ({
+    // Limit products (WhatsApp safe)
+    const limited = products.slice(0, 5);
+
+    const sections = limited.map((p, index) => ({
       title: `Option ${index + 1}`,
       rows: [
         {
@@ -74,8 +81,12 @@ async function sendProductCards(to, products) {
         }
       }
     );
+
+    console.log("✅ Cards sent successfully");
+
   } catch (err) {
-    console.error("WhatsApp card error:", err.response?.data || err.message);
+    console.error("❌ WhatsApp card error:", err.response?.data || err.message);
+    throw err; // important for fallback
   }
 }
 
