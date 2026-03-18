@@ -1,105 +1,100 @@
 // ai-engine/parser.js
 
-// -----------------------------
-// 🧠 VEHICLE DATA
-// -----------------------------
-const MAKES = ["suzuki", "toyota", "honda", "daihatsu", "nissan"];
-
-const MODELS = {
-  suzuki: ["swift", "alto", "cultus", "wagonr"],
-  toyota: ["corolla", "yaris", "prius", "fortuner"],
-  honda: ["civic", "city", "brv"],
-  daihatsu: ["mira", "move"],
-  nissan: ["dayz"]
-};
+const vehicleDB = require("./vehicleDatabase.json");
 
 // -----------------------------
-// 🔍 TOKENIZER
+// TOKENIZER
 // -----------------------------
 function tokenize(input) {
   return input
     .toLowerCase()
-    .replace(/[^a-z0-9,\s]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
     .split(/\s+/)
     .filter(Boolean);
 }
 
 // -----------------------------
-// 🚗 EXTRACT VEHICLE
+// VEHICLE DETECTION (SMART)
 // -----------------------------
 function extractVehicle(userInput) {
-  const tokens = tokenize(userInput);
+  const text = userInput.toLowerCase();
+  const tokens = tokenize(text);
 
-  let make = null;
-  let model = null;
-  let year = null;
+  let detectedMake = null;
+  let detectedModel = null;
+  let detectedYear = null;
 
-  tokens.forEach(token => {
-    if (/^(19|20)\d{2}$/.test(token)) year = token;
-    if (MAKES.includes(token)) make = token;
+  // -----------------------------
+  // YEAR DETECTION
+  // -----------------------------
+  tokens.forEach(t => {
+    if (/^(19|20)\d{2}$/.test(t)) {
+      detectedYear = t;
+    }
   });
 
-  if (make && MODELS[make]) {
-    tokens.forEach(token => {
-      if (MODELS[make].includes(token)) model = token;
-    });
-  } else {
-    Object.values(MODELS).forEach(list => {
-      tokens.forEach(token => {
-        if (list.includes(token)) model = token;
-      });
-    });
+  // -----------------------------
+  // MAKE + MODEL DETECTION
+  // -----------------------------
+  for (let make in vehicleDB) {
+    for (let model in vehicleDB[make]) {
+      const variants = vehicleDB[make][model];
+
+      for (let variant of variants) {
+        if (text.includes(variant)) {
+          detectedMake = make;
+          detectedModel = model;
+        }
+      }
+    }
   }
 
-  return { make, model, year };
+  return {
+    make: detectedMake,
+    model: detectedModel,
+    year: detectedYear
+  };
 }
 
 // -----------------------------
-// 📦 MULTI-PART DETECTION
+// MULTI PART SPLIT
 // -----------------------------
 function extractParts(userInput) {
-  // split by comma or "and"
-  const parts = userInput
+  return userInput
     .toLowerCase()
     .split(/,| and /)
     .map(p => p.trim())
     .filter(Boolean);
-
-  return parts;
 }
 
 // -----------------------------
-// 📍 POSITION DETECTION
+// POSITION DETECTION
 // -----------------------------
 function detectPosition(text) {
   text = text.toLowerCase();
 
-  let position = [];
+  let pos = [];
 
-  if (text.includes("front")) position.push("front");
-  if (text.includes("rear")) position.push("rear");
-  if (text.includes("left")) position.push("left");
-  if (text.includes("right")) position.push("right");
-  if (text.includes("upper")) position.push("upper");
-  if (text.includes("lower")) position.push("lower");
+  if (text.includes("front")) pos.push("front");
+  if (text.includes("rear")) pos.push("rear");
+  if (text.includes("left")) pos.push("left");
+  if (text.includes("right")) pos.push("right");
 
-  return position.length ? position.join("_") : null;
+  return pos.length ? pos.join("_") : null;
 }
 
 // -----------------------------
-// 🧠 MASTER PARSER
+// MASTER PARSER
 // -----------------------------
 function parseUserInput(userInput) {
   const vehicle = extractVehicle(userInput);
 
   const rawParts = extractParts(userInput);
 
-  const parts = rawParts.map(p => {
-    return {
-      raw: p,
-      position: detectPosition(p)
-    };
-  });
+  const parts = rawParts.map(p => ({
+    raw: p,
+    position: detectPosition(p)
+  }));
 
   return {
     vehicle,
@@ -107,9 +102,6 @@ function parseUserInput(userInput) {
   };
 }
 
-// -----------------------------
-// 📤 EXPORT
-// -----------------------------
 module.exports = {
   parseUserInput
 };
