@@ -34,23 +34,36 @@ function getProductType(part) {
   return null;
 }
 
-// 🔥 POSITION DETECTION
-function extractPosition(part) {
+// 🔥 ADVANCED POSITION + SIDE DETECTION
+function extractPositionAndSide(part) {
   if (!part) return null;
 
-  part = part.toLowerCase();
+  const text = part.toLowerCase();
 
-  if (part.includes('front')) return 'front';
-  if (part.includes('rear')) return 'rear';
-  if (part.includes('left')) return 'left';
-  if (part.includes('right')) return 'right';
-  if (part.includes('upper')) return 'upper';
-  if (part.includes('lower')) return 'lower';
+  const hasFront = text.includes('front');
+  const hasRear = text.includes('rear');
+  const hasLeft = text.includes('left');
+  const hasRight = text.includes('right');
+  const hasUpper = text.includes('upper');
+  const hasLower = text.includes('lower');
 
-  return null;
+  let positionParts = [];
+
+  if (hasFront) positionParts.push('front');
+  if (hasRear) positionParts.push('rear');
+
+  if (hasLeft) positionParts.push('left');
+  if (hasRight) positionParts.push('right');
+
+  if (hasUpper) positionParts.push('upper');
+  if (hasLower) positionParts.push('lower');
+
+  if (positionParts.length === 0) return null;
+
+  return positionParts.join(' ');
 }
 
-// 🔥 CLEAN PART NAME (REMOVE POSITION WORDS)
+// 🔥 CLEAN PART NAME
 function cleanPartName(part) {
   if (!part) return part;
 
@@ -62,8 +75,10 @@ function cleanPartName(part) {
 
 function generateProductLink(vehicle) {
 
-  // 🔥 Extract + clean
-  const position = extractPosition(vehicle.part);
+  // 🔥 Extract combined position
+  const position = extractPositionAndSide(vehicle.part);
+
+  // 🔥 Clean part
   const cleanPart = cleanPartName(vehicle.part);
 
   const updatedVehicle = {
