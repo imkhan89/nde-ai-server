@@ -8,6 +8,8 @@ const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
 // -----------------------------
+// FETCH PRODUCTS
+// -----------------------------
 async function fetchProducts() {
   try {
     const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50`;
@@ -20,11 +22,13 @@ async function fetchProducts() {
 
     return res.data.products || [];
   } catch (err) {
-    console.error("Shopify error:", err.message);
+    console.error("Shopify error:", err.response?.data || err.message);
     return [];
   }
 }
 
+// -----------------------------
+// TAG MATCHING
 // -----------------------------
 function matchTags(product, query) {
   const tags = product.tags.toLowerCase().split(",").map(t => t.trim());
@@ -46,13 +50,15 @@ function matchTags(product, query) {
 }
 
 // -----------------------------
-async function matchSinglePart(rawPart, vehicle) {
+// MATCH SINGLE PART
+// -----------------------------
+async function matchSinglePart(rawPart, vehicle, products) {
   const normalized = normalizePart(rawPart);
 
   const query = {
     part: normalized.normalized_part,
-    make: vehicle.make,
-    model: vehicle.model,
+    make: vehicle.make?.toLowerCase(),
+    model: vehicle.model?.toLowerCase(),
     year: vehicle.year,
     position: rawPart.position || null
   };
@@ -66,7 +72,12 @@ async function matchSinglePart(rawPart, vehicle) {
 
   const productType = productTypeMap[query.part];
 
-  const products = await fetchProducts();
+  if (!productType) {
+    return {
+      part: query.part,
+      results: []
+    };
+  }
 
   let matches = [];
 
@@ -75,7 +86,8 @@ async function matchSinglePart(rawPart, vehicle) {
 
     const score = matchTags(p, query);
 
-    if (score > 0) {
+    // ✅ less strict
+    if (score >= 20) {
       matches.push({
         title: p.title,
         handle: p.handle,
@@ -93,13 +105,17 @@ async function matchSinglePart(rawPart, vehicle) {
 }
 
 // -----------------------------
+// MAIN MATCHER
+// -----------------------------
 async function matchProducts(parsedInput) {
   const { vehicle, parts } = parsedInput;
+
+  const products = await fetchProducts();
 
   let finalResults = [];
 
   for (let partObj of parts) {
-    const result = await matchSinglePart(partObj.raw, vehicle);
+    const result = await matchSinglePart(partObj.raw, vehicle, products);
     finalResults.push(result);
   }
 
@@ -107,25 +123,34 @@ async function matchProducts(parsedInput) {
 }
 
 // -----------------------------
-function formatResponse(results) {
-  if (!results.length) {
-    return "No matching products found.";
-  }
+// RESPONSE FORMAT (HYBRID)
+// -----------------------------
+function formatResponse(results, vehicle) {
+  let message = "Vehicle Details:\n\n";
 
-  let message = "Here are your results:\n\n";
+  message += `Make: ${vehicle.make}\n`;
+  message += `Model: ${vehicle.model}\n`;
+  message += `Year: ${vehicle.year}\n\n`;
 
   results.forEach(r => {
-    message += `${r.part.toUpperCase()}:\n`;
+    const partName = r.part.replace("_", " ");
 
-    if (!r.results.length) {
-      message += "No match found\n\n";
-      return;
+    message += `Part: ${partName}\n\n`;
+
+    if (r.results.length) {
+      r.results.forEach(p => {
+        message += `https://ndestore.com/products/${p.handle}\n\n`;
+      });
+    } else {
+      // ✅ fallback search
+      const query = `${vehicle.make} ${vehicle.model} ${partName} ${vehicle.year}`;
+      const url = `https://www.ndestore.com/search?q=${encodeURIComponent(query)}`;
+
+      message += `${url}\n\n`;
     }
-
-    r.results.forEach(p => {
-      message += `${p.title}\nhttps://ndestore.com/products/${p.handle}\n\n`;
-    });
   });
+
+  message += "Reply # to return to Main Menu.";
 
   return message.trim();
 }
