@@ -1,0 +1,24 @@
+{
+  "toyota": {
+    "corolla": [
+      "corolla",
+      "corolla altis",
+      "altis",
+      "gli",
+      "xli",
+      "grande"
+    ],
+    "yaris": ["yaris"]
+  },
+  "suzuki": {
+    "swift": ["swift"],
+    "alto": ["alto"]
+  },
+  "honda": {
+    "civic": ["civic"],
+    "city": ["city"]
+  },
+  "daihatsu": {
+    "mira": ["mira", "mira es"]
+  }
+}
