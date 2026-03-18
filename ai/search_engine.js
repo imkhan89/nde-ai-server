@@ -1,6 +1,36 @@
 import { AI_DICTIONARY, AI_PRODUCT_INDEX } from "./learning_engine.js";
 
-// ✅ EXPAND QUERY USING AI LEARNING
+// ✅ CORE PART DETECTION (AUTO-LEARNED + BASE)
+const BASE_PARTS = {
+  brake: ["brake", "pad", "pads", "disc", "rotor", "shoe"],
+  filter: ["filter", "air", "oil", "cabin"],
+  radiator: ["radiator", "cooling"],
+  shock: ["shock", "absorber"],
+};
+
+// ✅ NORMALIZE
+function normalize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, "");
+}
+
+// ✅ TOKENIZE
+function tokenize(text) {
+  return normalize(text)
+    .split(" ")
+    .filter((w) => w.length > 1);
+}
+
+// ✅ DETECT INTENT (VERY IMPORTANT)
+function detectIntent(tokens) {
+  for (const [type, words] of Object.entries(BASE_PARTS)) {
+    if (tokens.some((t) => words.includes(t))) {
+      return type;
+    }
+  }
+  return null;
+}
+
+// ✅ EXPAND USING AI
 function expandTokens(tokens) {
   let expanded = [...tokens];
 
@@ -13,32 +43,50 @@ function expandTokens(tokens) {
   return [...new Set(expanded)];
 }
 
-// ✅ SCORE ENGINE
-function score(item, tokens) {
-  let score = 0;
+// ✅ STRICT FILTER
+function isRelevant(productTokens, intent) {
+  if (!intent) return true;
 
+  const intentWords = BASE_PARTS[intent];
+
+  return intentWords.some((w) => productTokens.includes(w));
+}
+
+// ✅ SCORE
+function score(item, tokens, intent) {
   const productTokens = item.tokens;
+
+  // ❌ STRICT FILTER FIRST
+  if (!isRelevant(productTokens, intent)) return 0;
+
+  let score = 0;
 
   tokens.forEach((t) => {
     if (productTokens.includes(t)) score += 20;
   });
 
+  // ✅ BOOST MULTI MATCH
+  const matches = tokens.filter((t) =>
+    productTokens.includes(t)
+  ).length;
+
+  if (matches >= 2) score += 40;
+
   return score;
 }
 
-// ✅ SEARCH USING AI INDEX
+// ✅ MAIN SEARCH
 export function aiSearch(query) {
-  const tokens = query
-    .toLowerCase()
-    .split(" ")
-    .filter((w) => w.length > 1);
+  const tokens = tokenize(query);
+
+  const intent = detectIntent(tokens);
 
   const expanded = expandTokens(tokens);
 
   const scored = AI_PRODUCT_INDEX
     .map((item) => ({
       item,
-      score: score(item, expanded),
+      score: score(item, expanded, intent),
     }))
     .filter((x) => x.score > 0);
 
