@@ -16,6 +16,10 @@ const {
   clearSession
 } = require("../../conversation-engine/stateManager");
 
+const {
+  needsClarification
+} = require("../../conversation-engine/clarifier");
+
 // -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
@@ -41,11 +45,10 @@ router.post("/", async (req, res) => {
     console.log("💬 Message:", userInput);
 
     // -----------------------------
-    // 🧠 SESSION
+    // SESSION
     // -----------------------------
     let session = getSession(from);
 
-    // Reset session if user sends #
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
@@ -53,7 +56,7 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // 🧠 INTENT
+    // INTENT
     // -----------------------------
     const intent = detectIntent(userInput);
 
@@ -73,32 +76,30 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // 🧠 PARSE INPUT
+    // PARSE INPUT
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
     // -----------------------------
-    // 💾 UPDATE SESSION VEHICLE
+    // UPDATE SESSION VEHICLE
     // -----------------------------
     session = updateVehicle(from, parsed.vehicle);
-
     const vehicle = session.vehicle;
 
     console.log("🚗 Session Vehicle:", vehicle);
 
     // -----------------------------
-    // ⚠️ VALIDATION
+    // 🧠 SMART CLARIFICATION
     // -----------------------------
-    if (!vehicle.make || !vehicle.model) {
-      await sendWhatsAppMessage(
-        from,
-        "Please provide car make and model.\nExample: Suzuki Swift"
-      );
+    const clarification = needsClarification(vehicle, parsed.parts);
+
+    if (clarification) {
+      await sendWhatsAppMessage(from, clarification.message);
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // 🔍 MATCH PRODUCTS
+    // MATCH PRODUCTS
     // -----------------------------
     const results = await matchProducts({
       vehicle,
