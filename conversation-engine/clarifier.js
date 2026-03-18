@@ -1,7 +1,6 @@
 // conversation-engine/clarifier.js
 
 function needsClarification(vehicle, parts) {
-  // Missing critical vehicle info
   if (!vehicle.make || !vehicle.model) {
     return {
       type: "VEHICLE",
@@ -9,7 +8,6 @@ function needsClarification(vehicle, parts) {
     };
   }
 
-  // Missing year (optional but useful)
   if (!vehicle.year) {
     return {
       type: "YEAR",
@@ -17,7 +15,6 @@ function needsClarification(vehicle, parts) {
     };
   }
 
-  // No part detected
   if (!parts || !parts.length) {
     return {
       type: "PART",
@@ -25,16 +22,17 @@ function needsClarification(vehicle, parts) {
     };
   }
 
-  // Ambiguous part (low confidence handled later)
   return null;
 }
 
-// Optional: part confidence clarification (future-ready)
-function lowConfidenceHandler(partResult) {
-  if (!partResult || partResult.confidence < 60) {
+// ✅ NEW: PART CONFIRMATION
+function confirmPartIfNeeded(partResult) {
+  if (!partResult) return null;
+
+  if (partResult.confidence < 70) {
     return {
       type: "PART_CONFIRM",
-      message: `Did you mean "${partResult.normalized_part.replace("_", " ")}"?`
+      message: `Did you mean "${partResult.normalized_part.replace("_", " ")}"?\nReply YES or NO`
     };
   }
 
@@ -43,5 +41,5 @@ function lowConfidenceHandler(partResult) {
 
 module.exports = {
   needsClarification,
-  lowConfidenceHandler
+  confirmPartIfNeeded
 };
