@@ -17,8 +17,11 @@ const {
 } = require("../../conversation-engine/stateManager");
 
 const {
-  needsClarification
+  needsClarification,
+  confirmPartIfNeeded
 } = require("../../conversation-engine/clarifier");
+
+const { normalizePart } = require("../../ai-engine/learningNormalizer");
 
 // -----------------------------
 router.get("/", (req, res) => {
@@ -38,21 +41,35 @@ router.post("/", async (req, res) => {
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
-    const userInput = message.text?.body?.trim();
+    const userInput = message.text?.body?.trim().toLowerCase();
 
     if (!userInput) return res.sendStatus(200);
 
     console.log("💬 Message:", userInput);
 
-    // -----------------------------
-    // SESSION
-    // -----------------------------
     let session = getSession(from);
 
+    // -----------------------------
+    // RESET
+    // -----------------------------
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
       return res.sendStatus(200);
+    }
+
+    // -----------------------------
+    // HANDLE PART CONFIRMATION RESPONSE
+    // -----------------------------
+    if (session.pendingPartConfirmation) {
+      if (userInput === "yes") {
+        session.confirmedPart = session.pendingPartConfirmation;
+        session.pendingPartConfirmation = null;
+      } else {
+        session.pendingPartConfirmation = null;
+        await sendWhatsAppMessage(from, "Please specify the correct part name.");
+        return res.sendStatus(200);
+      }
     }
 
     // -----------------------------
@@ -76,30 +93,37 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // PARSE INPUT
+    // PARSE
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
-    // -----------------------------
-    // UPDATE SESSION VEHICLE
-    // -----------------------------
     session = updateVehicle(from, parsed.vehicle);
     const vehicle = session.vehicle;
 
-    console.log("🚗 Session Vehicle:", vehicle);
-
     // -----------------------------
-    // 🧠 SMART CLARIFICATION
+    // CLARIFICATION (VEHICLE/PART)
     // -----------------------------
     const clarification = needsClarification(vehicle, parsed.parts);
-
     if (clarification) {
       await sendWhatsAppMessage(from, clarification.message);
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // MATCH PRODUCTS
+    // PART NORMALIZATION + CONFIRMATION
+    // -----------------------------
+    const partResult = normalizePart(parsed.parts[0].raw);
+
+    const confirm = confirmPartIfNeeded(partResult);
+
+    if (confirm) {
+      session.pendingPartConfirmation = partResult.normalized_part;
+      await sendWhatsAppMessage(from, confirm.message);
+      return res.sendStatus(200);
+    }
+
+    // -----------------------------
+    // MATCH
     // -----------------------------
     const results = await matchProducts({
       vehicle,
