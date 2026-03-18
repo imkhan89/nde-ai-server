@@ -6,13 +6,11 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 // -----------------------------
-// TEXT MESSAGE (SAFE)
+// TEXT MESSAGE
 // -----------------------------
 async function sendWhatsAppMessage(to, message) {
   try {
     const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
-
-    console.log("📤 Sending text:", message);
 
     await axios.post(
       url,
@@ -35,42 +33,33 @@ async function sendWhatsAppMessage(to, message) {
 }
 
 // -----------------------------
-// PRODUCT CARDS (SAFE)
+// 🛒 PRODUCT CTA BUTTON (BUY NOW)
 // -----------------------------
-async function sendProductCards(to, products) {
+async function sendProductCTA(to, product) {
   try {
-    console.log("📦 Sending product cards:", products);
-
-    const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
-
-    // Limit products (WhatsApp safe)
-    const limited = products.slice(0, 5);
-
-    const sections = limited.map((p, index) => ({
-      title: `Option ${index + 1}`,
-      rows: [
-        {
-          id: `product_${index}`,
-          title: p.title.substring(0, 24),
-          description: `PKR ${p.price || "N/A"}`
-        }
-      ]
-    }));
+    const url = `https://${process.env.SHOPIFY_DOMAIN}/products/${product.handle}`;
 
     await axios.post(
-      url,
+      `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`,
       {
         messaging_product: "whatsapp",
         to,
         type: "interactive",
         interactive: {
-          type: "list",
+          type: "button",
           body: {
-            text: "Select a product:"
+            text: `${product.title}\nPrice: PKR ${product.price || "N/A"}`
           },
           action: {
-            button: "View Products",
-            sections
+            buttons: [
+              {
+                type: "reply",
+                reply: {
+                  id: "buy_now",
+                  title: "Buy Now"
+                }
+              }
+            ]
           }
         }
       },
@@ -82,15 +71,15 @@ async function sendProductCards(to, products) {
       }
     );
 
-    console.log("✅ Cards sent successfully");
+    // Send checkout link separately
+    await sendWhatsAppMessage(to, `Buy here:\n${url}`);
 
   } catch (err) {
-    console.error("❌ WhatsApp card error:", err.response?.data || err.message);
-    throw err; // important for fallback
+    console.error("❌ CTA error:", err.response?.data || err.message);
   }
 }
 
 module.exports = {
   sendWhatsAppMessage,
-  sendProductCards
+  sendProductCTA
 };
