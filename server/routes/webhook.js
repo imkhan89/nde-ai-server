@@ -10,8 +10,12 @@ const { parseUserInput } = require("../../ai-engine/parser");
 const { detectIntent } = require("../../conversation-engine/intentDetector");
 const { getMainMenu, getAutoPartsPrompt } = require("../../conversation-engine/menu");
 
-// -----------------------------
-// VERIFY WEBHOOK
+const {
+  getSession,
+  updateVehicle,
+  clearSession
+} = require("../../conversation-engine/stateManager");
+
 // -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
@@ -23,8 +27,6 @@ router.get("/", (req, res) => {
   return res.sendStatus(403);
 });
 
-// -----------------------------
-// RECEIVE MESSAGE
 // -----------------------------
 router.post("/", async (req, res) => {
   try {
@@ -39,21 +41,27 @@ router.post("/", async (req, res) => {
     console.log("💬 Message:", userInput);
 
     // -----------------------------
-    // INTENT DETECTION
+    // 🧠 SESSION
     // -----------------------------
-    const intent = detectIntent(userInput);
+    let session = getSession(from);
 
-    // -----------------------------
-    // MENU / GREETING
-    // -----------------------------
-    if (intent === "GREETING" || intent === "MENU") {
+    // Reset session if user sends #
+    if (userInput === "#") {
+      clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
       return res.sendStatus(200);
     }
 
     // -----------------------------
-    // MENU SELECTION
+    // 🧠 INTENT
     // -----------------------------
+    const intent = detectIntent(userInput);
+
+    if (intent === "GREETING" || intent === "MENU") {
+      await sendWhatsAppMessage(from, getMainMenu());
+      return res.sendStatus(200);
+    }
+
     if (intent === "MENU_SELECTION") {
       if (userInput === "1") {
         await sendWhatsAppMessage(from, getAutoPartsPrompt());
@@ -65,21 +73,39 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // PRODUCT FLOW
+    // 🧠 PARSE INPUT
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
-    if (!parsed.vehicle.make || !parsed.vehicle.model) {
+    // -----------------------------
+    // 💾 UPDATE SESSION VEHICLE
+    // -----------------------------
+    session = updateVehicle(from, parsed.vehicle);
+
+    const vehicle = session.vehicle;
+
+    console.log("🚗 Session Vehicle:", vehicle);
+
+    // -----------------------------
+    // ⚠️ VALIDATION
+    // -----------------------------
+    if (!vehicle.make || !vehicle.model) {
       await sendWhatsAppMessage(
         from,
-        "Please provide car make, model and year.\nExample: Suzuki Swift 2021 brake pads"
+        "Please provide car make and model.\nExample: Suzuki Swift"
       );
       return res.sendStatus(200);
     }
 
-    const results = await matchProducts(parsed);
+    // -----------------------------
+    // 🔍 MATCH PRODUCTS
+    // -----------------------------
+    const results = await matchProducts({
+      vehicle,
+      parts: parsed.parts
+    });
 
-    const reply = formatResponse(results, parsed.vehicle);
+    const reply = formatResponse(results, vehicle);
 
     await sendWhatsAppMessage(from, reply);
 
