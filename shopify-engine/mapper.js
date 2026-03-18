@@ -1,5 +1,3 @@
-// shopify-engine/mapper.js
-
 function buildSearchQuery(vehicle) {
   const { make, model, year, part } = vehicle;
 
@@ -14,7 +12,7 @@ function buildSearchQuery(vehicle) {
 }
 
 function generateProductLink(vehicle) {
-  const baseUrl = 'https://ndestore.com/search?q=';
+  const baseUrl = 'https://www.ndestore.com/search?q=';
 
   const query = buildSearchQuery(vehicle);
 
