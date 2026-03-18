@@ -1,4 +1,4 @@
-// shopify-engine/mapper.js
+const { normalizePart } = require('../ai-engine/normalizer');
 
 function buildSearchQuery(vehicle) {
   const { make, model, year, part, position } = vehicle;
@@ -14,56 +14,40 @@ function buildSearchQuery(vehicle) {
   return queryParts.join(' ');
 }
 
-// 🔥 PART → PRODUCT TYPE
+// PRODUCT TYPE MAPPING
 function getProductType(part) {
   if (!part) return null;
 
-  part = part.toLowerCase();
-
-  if (part.includes('brake pad')) return 'Brake Pads';
-  if (part.includes('brake shoe')) return 'Brake Shoe';
+  if (part.includes('brake')) return 'Brake Pads';
   if (part.includes('air filter')) return 'Air Filters';
   if (part.includes('oil filter')) return 'Oil Filters';
   if (part.includes('cabin filter')) return 'Cabin Filters';
-  if (part.includes('spark plug')) return 'Spark Plugs';
-  if (part.includes('radiator')) return 'Radiators';
+  if (part.includes('spark')) return 'Spark Plugs';
   if (part.includes('shock')) return 'Shock Absorbers';
   if (part.includes('control arm')) return 'Control Arms';
-  if (part.includes('ball joint')) return 'Ball Joints';
 
   return null;
 }
 
-// 🔥 ADVANCED POSITION + SIDE DETECTION
+// POSITION + SIDE
 function extractPositionAndSide(part) {
   if (!part) return null;
 
   const text = part.toLowerCase();
 
-  const hasFront = text.includes('front');
-  const hasRear = text.includes('rear');
-  const hasLeft = text.includes('left');
-  const hasRight = text.includes('right');
-  const hasUpper = text.includes('upper');
-  const hasLower = text.includes('lower');
+  let pos = [];
 
-  let positionParts = [];
+  if (text.includes('front')) pos.push('front');
+  if (text.includes('rear')) pos.push('rear');
+  if (text.includes('left')) pos.push('left');
+  if (text.includes('right')) pos.push('right');
+  if (text.includes('upper')) pos.push('upper');
+  if (text.includes('lower')) pos.push('lower');
 
-  if (hasFront) positionParts.push('front');
-  if (hasRear) positionParts.push('rear');
-
-  if (hasLeft) positionParts.push('left');
-  if (hasRight) positionParts.push('right');
-
-  if (hasUpper) positionParts.push('upper');
-  if (hasLower) positionParts.push('lower');
-
-  if (positionParts.length === 0) return null;
-
-  return positionParts.join(' ');
+  return pos.length ? pos.join(' ') : null;
 }
 
-// 🔥 CLEAN PART NAME
+// CLEAN PART
 function cleanPartName(part) {
   if (!part) return part;
 
@@ -75,16 +59,19 @@ function cleanPartName(part) {
 
 function generateProductLink(vehicle) {
 
-  // 🔥 Extract combined position
-  const position = extractPositionAndSide(vehicle.part);
+  // 🔥 Normalize first
+  let normalizedPart = normalizePart(vehicle.part);
+
+  // 🔥 Extract position
+  const position = extractPositionAndSide(normalizedPart);
 
   // 🔥 Clean part
-  const cleanPart = cleanPartName(vehicle.part);
+  const cleanPart = cleanPartName(normalizedPart);
 
   const updatedVehicle = {
     ...vehicle,
     part: cleanPart,
-    position: position
+    position
   };
 
   const baseUrl = 'https://www.ndestore.com/search?q=';
@@ -96,7 +83,6 @@ function generateProductLink(vehicle) {
 
   let url = `${baseUrl}${encodedQuery}`;
 
-  // 🔥 APPLY CATEGORY FILTER
   if (productType) {
     url += `&filter.p.product_type=${encodeURIComponent(productType)}`;
   }
