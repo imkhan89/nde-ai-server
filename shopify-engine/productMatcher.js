@@ -4,38 +4,27 @@ const axios = require("axios");
 const { normalizePart } = require("../ai-engine/learningNormalizer");
 
 // -----------------------------
-// 🔐 CONFIG (SET YOUR VALUES)
-// -----------------------------
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE; // example: ndestore.myshopify.com
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
 // -----------------------------
-// 🌐 SHOPIFY API CALL
-// -----------------------------
-async function fetchProductsByType(productType) {
+async function fetchProducts() {
   try {
     const url = `https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50`;
 
-    const response = await axios.get(url, {
+    const res = await axios.get(url, {
       headers: {
-        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN,
-        "Content-Type": "application/json"
+        "X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN
       }
     });
 
-    // Optional filter by product_type
-    return response.data.products.filter(p =>
-      p.product_type.toLowerCase().includes(productType.toLowerCase())
-    );
-
+    return res.data.products || [];
   } catch (err) {
-    console.error("Shopify API error:", err.message);
+    console.error("Shopify error:", err.message);
     return [];
   }
 }
 
-// -----------------------------
-// 🧩 TAG MATCH CHECK
 // -----------------------------
 function matchTags(product, query) {
   const tags = product.tags.toLowerCase().split(",").map(t => t.trim());
@@ -47,27 +36,27 @@ function matchTags(product, query) {
   if (query.year && tags.includes(`year_${query.year}`)) score += 20;
 
   if (query.position) {
-    if (tags.includes(`position_${query.position}`)) score += 10;
+    const positions = query.position.split("_");
+    positions.forEach(p => {
+      if (tags.includes(`position_${p}`)) score += 10;
+    });
   }
 
   return score;
 }
 
 // -----------------------------
-// 🧠 MAIN MATCHER
-// -----------------------------
-async function matchProducts(userInput, vehicle) {
-  const partResult = normalizePart(userInput);
+async function matchSinglePart(rawPart, vehicle) {
+  const normalized = normalizePart(rawPart);
 
   const query = {
-    part: partResult.normalized_part,
-    make: vehicle.make.toLowerCase(),
-    model: vehicle.model.toLowerCase(),
+    part: normalized.normalized_part,
+    make: vehicle.make,
+    model: vehicle.model,
     year: vehicle.year,
-    position: vehicle.position || null
+    position: rawPart.position || null
   };
 
-  // Convert canonical part → Shopify product_type
   const productTypeMap = {
     air_filter: "Air Filter",
     oil_filter: "Oil Filter",
@@ -77,52 +66,70 @@ async function matchProducts(userInput, vehicle) {
 
   const productType = productTypeMap[query.part];
 
-  if (!productType) {
-    return [];
-  }
+  const products = await fetchProducts();
 
-  const products = await fetchProductsByType(productType);
+  let matches = [];
 
-  let bestProducts = [];
+  products.forEach(p => {
+    if (!p.product_type.toLowerCase().includes(productType.toLowerCase())) return;
 
-  products.forEach(product => {
-    const score = matchTags(product, query);
+    const score = matchTags(p, query);
 
     if (score > 0) {
-      bestProducts.push({
-        title: product.title,
-        handle: product.handle,
+      matches.push({
+        title: p.title,
+        handle: p.handle,
         score
       });
     }
   });
 
-  // Sort by best score
-  bestProducts.sort((a, b) => b.score - a.score);
+  matches.sort((a, b) => b.score - a.score);
 
-  // Return top 3
-  return bestProducts.slice(0, 3);
+  return {
+    part: query.part,
+    results: matches.slice(0, 2)
+  };
 }
 
 // -----------------------------
-// 🔗 FORMAT RESPONSE
-// -----------------------------
-function formatResponse(products) {
-  if (!products.length) {
-    return "No exact match found. Please refine your query.";
+async function matchProducts(parsedInput) {
+  const { vehicle, parts } = parsedInput;
+
+  let finalResults = [];
+
+  for (let partObj of parts) {
+    const result = await matchSinglePart(partObj.raw, vehicle);
+    finalResults.push(result);
   }
 
-  let message = "Here are matching products:\n\n";
+  return finalResults;
+}
 
-  products.forEach(p => {
-    message += `${p.title}\nhttps://ndestore.com/products/${p.handle}\n\n`;
+// -----------------------------
+function formatResponse(results) {
+  if (!results.length) {
+    return "No matching products found.";
+  }
+
+  let message = "Here are your results:\n\n";
+
+  results.forEach(r => {
+    message += `${r.part.toUpperCase()}:\n`;
+
+    if (!r.results.length) {
+      message += "No match found\n\n";
+      return;
+    }
+
+    r.results.forEach(p => {
+      message += `${p.title}\nhttps://ndestore.com/products/${p.handle}\n\n`;
+    });
   });
 
   return message.trim();
 }
 
-// -----------------------------
-// 📤 EXPORTS
 // -----------------------------
 module.exports = {
   matchProducts,
