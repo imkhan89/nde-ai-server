@@ -24,8 +24,19 @@ Example:
 Air Filter Suzuki Swift 2021`;
 }
 
+function formatResult(vehicle) {
+  return `Vehicle Details:
+
+Make: ${vehicle.make || '-'}
+Model: ${vehicle.model || '-'}
+Year: ${vehicle.year || '-'}
+
+Processing your request...`;
+}
+
 function decideResponse(parsed, state) {
 
+  // RESET
   if (parsed.intent === 'menu' && parsed.value === '#') {
     return {
       text: mainMenu(),
@@ -33,6 +44,7 @@ function decideResponse(parsed, state) {
     };
   }
 
+  // FIRST MESSAGE
   if (state.step === 'menu' && parsed.intent !== 'menu') {
     return {
       text: mainMenu(),
@@ -40,8 +52,8 @@ function decideResponse(parsed, state) {
     };
   }
 
+  // MENU
   if (parsed.intent === 'menu') {
-
     if (parsed.value === '1') {
       return {
         text: autoPartsPrompt(),
@@ -55,50 +67,55 @@ function decideResponse(parsed, state) {
     };
   }
 
+  // AUTO PARTS ENGINE
   if (state.step === 'auto_parts') {
 
-    if (!parsed.parts || parsed.parts.length === 0) {
-      return errorResponse(state);
-    }
+    const { make, model, year, part } = parsed.vehicle;
 
+    // MULTI PART
     if (parsed.parts.length > 1) {
       return {
-        text: `Kindly share all required parts with vehicle details.
+        text: `Kindly share all parts with vehicle details.
 
 Example:
 Air Filter, Brake Pads
 Suzuki
 Swift
 2021`,
-        newState: { ...state, attempts: 0 }
+        newState: state
       };
     }
 
+    // MISSING DATA
+    if (!make || !model) {
+      return {
+        text: `Please share complete vehicle details:
+
+Make
+Model
+Year
+Part Name
+
+Example:
+Suzuki Swift 2021 Brake Pads`,
+        newState: state
+      };
+    }
+
+    // SUCCESS FLOW
     return {
-      text: `Processing your request...
-
-(Next phase: product mapping)`,
-      newState: { ...state, attempts: 0 }
-    };
-  }
-
-  return errorResponse(state);
-}
-
-function errorResponse(state) {
-
-  const attempts = (state.attempts || 0) + 1;
-
-  if (attempts >= 2) {
-    return {
-      text: `Connecting you to live agent...`,
-      newState: { step: 'human', data: {}, attempts: 0 }
+      text: formatResult(parsed.vehicle),
+      newState: {
+        step: 'auto_parts_result',
+        data: parsed.vehicle,
+        attempts: 0
+      }
     };
   }
 
   return {
-    text: `Unable to understand. Please try again.`,
-    newState: { ...state, attempts }
+    text: `Unable to understand. Try again.`,
+    newState: { ...state, attempts: (state.attempts || 0) + 1 }
   };
 }
 
