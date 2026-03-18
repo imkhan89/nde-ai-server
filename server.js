@@ -8,20 +8,8 @@ const app = express();
 
 app.use(express.json());
 
-// ✅ ONLY CHECK WHATSAPP ENVS
-const requiredEnv = [
-  "WHATSAPP_TOKEN",
-  "PHONE_NUMBER_ID",
-  "VERIFY_TOKEN"
-];
-
-requiredEnv.forEach((key) => {
-  if (!process.env[key]) {
-    console.error(`❌ Missing ENV: ${key}`);
-  }
-});
-
-// ✅ Webhook Route
+// ✅ FIX: HANDLE BOTH ROUTES
+app.use("/webhook", whatsappWebhook);
 app.use("/webhook/whatsapp", whatsappWebhook);
 
 // Health check
