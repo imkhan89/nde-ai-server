@@ -24,6 +24,8 @@ const {
 } = require("../../conversation-engine/clarifier");
 
 // -----------------------------
+// VERIFY WEBHOOK
+// -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -35,13 +37,15 @@ router.get("/", (req, res) => {
 });
 
 // -----------------------------
+// RECEIVE MESSAGE
+// -----------------------------
 router.post("/", async (req, res) => {
   try {
     const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
-    const userInput = message.text?.body?.trim().toLowerCase();
+    let userInput = message.text?.body?.trim();
 
     if (!userInput) return res.sendStatus(200);
 
@@ -49,26 +53,32 @@ router.post("/", async (req, res) => {
 
     let session = getSession(from);
 
+    // -----------------------------
     // RESET
+    // -----------------------------
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
       return res.sendStatus(200);
     }
 
+    // -----------------------------
     // HANDLE PART CONFIRMATION
+    // -----------------------------
     if (session.pendingPartConfirmation) {
-      if (userInput === "yes") {
-        session.confirmedPart = session.pendingPartConfirmation;
+      if (userInput.toLowerCase() === "yes") {
+        userInput = session.pendingPartConfirmation;
         session.pendingPartConfirmation = null;
       } else {
         session.pendingPartConfirmation = null;
-        await sendWhatsAppMessage(from, "Please specify the correct part.");
+        await sendWhatsAppMessage(from, "Please type the correct part name.");
         return res.sendStatus(200);
       }
     }
 
+    // -----------------------------
     // INTENT
+    // -----------------------------
     const intent = detectIntent(userInput);
 
     if (intent === "GREETING" || intent === "MENU") {
@@ -86,36 +96,53 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // PARSE
+    // -----------------------------
+    // PARSE INPUT
+    // -----------------------------
     const parsed = parseUserInput(userInput);
 
+    // -----------------------------
+    // UPDATE SESSION VEHICLE
+    // -----------------------------
     session = updateVehicle(from, parsed.vehicle);
     const vehicle = session.vehicle;
 
-    // CLARIFICATION
+    // -----------------------------
+    // CLARIFICATION (VEHICLE/PART)
+    // -----------------------------
     const clarification = needsClarification(vehicle, parsed.parts);
     if (clarification) {
       await sendWhatsAppMessage(from, clarification.message);
       return res.sendStatus(200);
     }
 
-    // PART CONFIRMATION CHECK
+    // -----------------------------
+    // PART NORMALIZATION
+    // -----------------------------
     const partResult = normalizePart(parsed.parts[0].raw);
-    const confirm = confirmPartIfNeeded(partResult);
 
-    if (confirm) {
-      session.pendingPartConfirmation = partResult.normalized_part;
-      await sendWhatsAppMessage(from, confirm.message);
-      return res.sendStatus(200);
+    // Only confirm if low confidence
+    if (partResult.confidence < 70) {
+      const confirm = confirmPartIfNeeded(partResult);
+
+      if (confirm) {
+        session.pendingPartConfirmation = partResult.normalized_part;
+        await sendWhatsAppMessage(from, confirm.message);
+        return res.sendStatus(200);
+      }
     }
 
-    // MATCH
+    // -----------------------------
+    // MATCH PRODUCTS
+    // -----------------------------
     const results = await matchProducts({
       vehicle,
       parts: parsed.parts
     });
 
-    // FLATTEN PRODUCTS
+    // -----------------------------
+    // PREPARE PRODUCT LIST
+    // -----------------------------
     let productList = [];
     results.forEach(r => {
       if (r.results.length) {
@@ -123,7 +150,9 @@ router.post("/", async (req, res) => {
       }
     });
 
-    // SEND CARDS OR FALLBACK
+    // -----------------------------
+    // SEND RESPONSE
+    // -----------------------------
     if (productList.length) {
       await sendProductCards(from, productList);
     } else {
