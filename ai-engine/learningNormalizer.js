@@ -1,56 +1,32 @@
 // ai-engine/learningNormalizer.js
 
-const fs = require("fs");
-const path = require("path");
-
 // -----------------------------
-// 📦 DATA STORAGE (LEARNING)
+// ✅ STRONG SYNONYMS (HIGH CONFIDENCE)
 // -----------------------------
-const LEARNING_FILE = path.join(__dirname, "../data/learning.json");
-
-// Load learning data
-function loadLearningData() {
-  try {
-    if (!fs.existsSync(LEARNING_FILE)) {
-      return {};
-    }
-    const data = fs.readFileSync(LEARNING_FILE);
-    return JSON.parse(data);
-  } catch (err) {
-    console.error("Learning data load error:", err);
-    return {};
-  }
-}
-
-// Save learning data
-function saveLearningData(data) {
-  try {
-    fs.writeFileSync(LEARNING_FILE, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error("Learning data save error:", err);
-  }
-}
-
-// -----------------------------
-// 🧩 CANONICAL PART DEFINITIONS
-// -----------------------------
-const PART_DEFINITIONS = {
-  air_filter: {
-    keywords: ["air", "intake", "cleaner", "element"],
-    negative: ["oil", "brake", "cabin"]
-  },
-  oil_filter: {
-    keywords: ["oil", "engine"],
-    negative: ["air", "cabin"]
-  },
-  cabin_filter: {
-    keywords: ["cabin", "ac", "aircon", "filter"],
-    negative: ["engine"]
-  },
-  brake_pads: {
-    keywords: ["brake", "pad", "pads"],
-    negative: []
-  }
+const STRONG_SYNONYMS = {
+  brake_pads: [
+    "brake pad",
+    "brake pads",
+    "disc pad",
+    "disc pads",
+    "break pad",
+    "brake lining"
+  ],
+  air_filter: [
+    "air filter",
+    "engine filter",
+    "air cleaner",
+    "intake filter"
+  ],
+  cabin_filter: [
+    "ac filter",
+    "cabin filter",
+    "aircon filter"
+  ],
+  oil_filter: [
+    "oil filter",
+    "engine oil filter"
+  ]
 };
 
 // -----------------------------
@@ -65,91 +41,64 @@ function tokenize(input) {
 }
 
 // -----------------------------
-// 📊 SCORING ENGINE
+// 📊 BASIC SCORING (FALLBACK)
 // -----------------------------
-function scorePart(tokens, partKey, learningData) {
-  const part = PART_DEFINITIONS[partKey];
-  let score = 0;
-
-  // Keyword matching
-  tokens.forEach(token => {
-    if (part.keywords.includes(token)) {
-      score += 20;
-    }
-
-    // Negative keywords
-    if (part.negative.includes(token)) {
-      score -= 15;
-    }
-  });
-
-  // Learned phrases boost
-  if (learningData[partKey]) {
-    learningData[partKey].forEach(phrase => {
-      const phraseTokens = tokenize(phrase);
-      const matchCount = phraseTokens.filter(t => tokens.includes(t)).length;
-
-      if (matchCount >= 2) {
-        score += 25;
-      }
-    });
-  }
-
-  return score;
-}
+const PART_KEYWORDS = {
+  brake_pads: ["brake", "pad"],
+  air_filter: ["air", "filter", "intake"],
+  cabin_filter: ["ac", "cabin", "aircon"],
+  oil_filter: ["oil", "engine"]
+};
 
 // -----------------------------
-// 🧠 MAIN NORMALIZER FUNCTION
+// 🧠 NORMALIZER
 // -----------------------------
 function normalizePart(userInput) {
-  const tokens = tokenize(userInput);
-  const learningData = loadLearningData();
+  const text = userInput.toLowerCase();
 
-  let bestMatch = null;
-  let highestScore = -Infinity;
+  // -----------------------------
+  // ✅ STRONG SYNONYM MATCH (DIRECT)
+  // -----------------------------
+  for (let part in STRONG_SYNONYMS) {
+    for (let keyword of STRONG_SYNONYMS[part]) {
+      if (text.includes(keyword)) {
+        return {
+          normalized_part: part,
+          confidence: 95
+        };
+      }
+    }
+  }
 
-  Object.keys(PART_DEFINITIONS).forEach(partKey => {
-    const score = scorePart(tokens, partKey, learningData);
+  // -----------------------------
+  // 🔄 FALLBACK SCORING
+  // -----------------------------
+  const tokens = tokenize(text);
 
-    if (score > highestScore) {
-      highestScore = score;
-      bestMatch = partKey;
+  let bestMatch = "unknown";
+  let bestScore = 0;
+
+  Object.keys(PART_KEYWORDS).forEach(part => {
+    let score = 0;
+
+    PART_KEYWORDS[part].forEach(keyword => {
+      if (tokens.includes(keyword)) {
+        score += 20;
+      }
+    });
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMatch = part;
     }
   });
 
-  // Confidence calculation
-  let confidence = Math.min(100, Math.max(0, highestScore));
-
   return {
-    raw_input: userInput,
-    tokens,
     normalized_part: bestMatch,
-    confidence
+    confidence: bestScore
   };
 }
 
-// -----------------------------
-// 📈 LEARNING FUNCTION
-// -----------------------------
-function learnFromQuery(userInput, normalizedPart) {
-  const learningData = loadLearningData();
-
-  if (!learningData[normalizedPart]) {
-    learningData[normalizedPart] = [];
-  }
-
-  // Avoid duplicates
-  if (!learningData[normalizedPart].includes(userInput)) {
-    learningData[normalizedPart].push(userInput);
-  }
-
-  saveLearningData(learningData);
-}
-
-// -----------------------------
-// 📤 EXPORTS
-// -----------------------------
 module.exports = {
-  normalizePart,
-  learnFromQuery
+  normalizePart
 };
