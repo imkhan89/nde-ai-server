@@ -17,21 +17,19 @@ router.get("/", (req, res) => {
   return res.sendStatus(403);
 });
 
-// ✅ MESSAGE HANDLER (FULL SAFE)
+// ✅ MESSAGE HANDLER
 router.post("/", async (req, res) => {
   try {
     const body = req.body;
 
-    // ✅ SAFETY CHECK (prevents 500 crash)
-    if (!body?.entry?.[0]?.changes?.[0]?.value) {
-      return res.sendStatus(200);
-    }
+    console.log("FULL BODY:", JSON.stringify(body)); // DEBUG
 
-    const value = body.entry[0].changes[0].value;
+    const value = body?.entry?.[0]?.changes?.[0]?.value;
 
-    if (!value.messages) {
-      return res.sendStatus(200);
-    }
+    if (!value) return res.sendStatus(200);
+
+    // ✅ IMPORTANT: messages can be undefined (delivery receipts etc.)
+    if (!value.messages) return res.sendStatus(200);
 
     const message = value.messages[0];
     const from = message.from;
@@ -40,25 +38,16 @@ router.post("/", async (req, res) => {
 
     if (message.type === "text") {
       text = message.text.body;
-    } else if (message.type === "button") {
-      text = message.button.text;
     } else {
-      return res.sendStatus(200); // ignore unsupported
+      return res.sendStatus(200);
     }
 
     const cleanText = text.toLowerCase().trim();
 
     console.log("Incoming:", cleanText);
 
-    // ✅ SEARCH (SAFE)
-    let results = [];
-    try {
-      results = await searchProducts(cleanText);
-    } catch (err) {
-      console.error("Search failed:", err.message);
-      results = [];
-    }
-
+    // ✅ SEARCH
+    let results = await searchProducts(cleanText);
     const topResults = results.slice(0, 5);
 
     let reply = "";
@@ -75,38 +64,32 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // ✅ SEND MESSAGE SAFE
-    try {
-      await sendWhatsAppMessage(from, reply);
-    } catch (err) {
-      console.error("Send failed:", err.response?.data || err.message);
-    }
+    // ✅ SEND MESSAGE (FIXED STRUCTURE)
+    await axios.post(
+      `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: from,
+        type: "text",
+        text: {
+          preview_url: false,
+          body: reply,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     return res.sendStatus(200);
   } catch (error) {
-    console.error("Webhook crash:", error.message);
-    return res.sendStatus(200); // NEVER return 500 to Meta
+    console.error("ERROR:", error.response?.data || error.message);
+    return res.sendStatus(200);
   }
 });
-
-// ✅ SEND FUNCTION
-async function sendWhatsAppMessage(to, message) {
-  const url = `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`;
-
-  return axios.post(
-    url,
-    {
-      messaging_product: "whatsapp",
-      to,
-      text: { body: message },
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    }
-  );
-}
 
 export default router;
