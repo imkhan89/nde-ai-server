@@ -7,7 +7,7 @@ const { matchProducts, formatResponse } = require("../../shopify-engine/productM
 const { sendWhatsAppMessage, sendProductCards } = require("../../integrations/whatsapp");
 
 const { parseUserInput } = require("../../ai-engine/parser");
-const { normalizePart } = require("../../ai-engine/learningNormalizer");
+const { normalizePart, learnSynonym } = require("../../ai-engine/learningNormalizer");
 
 const { detectIntent } = require("../../conversation-engine/intentDetector");
 const { getMainMenu, getAutoPartsPrompt } = require("../../conversation-engine/menu");
@@ -24,8 +24,6 @@ const {
 } = require("../../conversation-engine/clarifier");
 
 // -----------------------------
-// VERIFY WEBHOOK
-// -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -37,15 +35,13 @@ router.get("/", (req, res) => {
 });
 
 // -----------------------------
-// RECEIVE MESSAGE
-// -----------------------------
 router.post("/", async (req, res) => {
   try {
     const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
-    let userInput = message.text?.body?.trim();
+    let userInput = message.text?.body?.trim().toLowerCase();
 
     if (!userInput) return res.sendStatus(200);
 
@@ -53,9 +49,7 @@ router.post("/", async (req, res) => {
 
     let session = getSession(from);
 
-    // -----------------------------
     // RESET
-    // -----------------------------
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
@@ -63,10 +57,13 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // HANDLE PART CONFIRMATION
+    // HANDLE CONFIRMATION RESPONSE
     // -----------------------------
     if (session.pendingPartConfirmation) {
-      if (userInput.toLowerCase() === "yes") {
+      if (userInput === "yes") {
+        // ✅ LEARN USER INPUT
+        learnSynonym(session.lastUserInput, session.pendingPartConfirmation);
+
         userInput = session.pendingPartConfirmation;
         session.pendingPartConfirmation = null;
       } else {
@@ -97,18 +94,15 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // PARSE INPUT
+    // PARSE
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
-    // -----------------------------
-    // UPDATE SESSION VEHICLE
-    // -----------------------------
     session = updateVehicle(from, parsed.vehicle);
     const vehicle = session.vehicle;
 
     // -----------------------------
-    // CLARIFICATION (VEHICLE/PART)
+    // CLARIFICATION
     // -----------------------------
     const clarification = needsClarification(vehicle, parsed.parts);
     if (clarification) {
@@ -121,8 +115,9 @@ router.post("/", async (req, res) => {
     // -----------------------------
     const partResult = normalizePart(parsed.parts[0].raw);
 
-    // Only confirm if low confidence
-    if (partResult.confidence < 70) {
+    session.lastUserInput = parsed.parts[0].raw;
+
+    if (partResult.confidence < 60) {
       const confirm = confirmPartIfNeeded(partResult);
 
       if (confirm) {
@@ -133,26 +128,18 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // MATCH PRODUCTS
+    // MATCH
     // -----------------------------
     const results = await matchProducts({
       vehicle,
       parts: parsed.parts
     });
 
-    // -----------------------------
-    // PREPARE PRODUCT LIST
-    // -----------------------------
     let productList = [];
     results.forEach(r => {
-      if (r.results.length) {
-        productList.push(...r.results);
-      }
+      if (r.results.length) productList.push(...r.results);
     });
 
-    // -----------------------------
-    // SEND RESPONSE
-    // -----------------------------
     if (productList.length) {
       await sendProductCards(from, productList);
     } else {
