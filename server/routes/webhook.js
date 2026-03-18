@@ -4,8 +4,10 @@ const express = require("express");
 const router = express.Router();
 
 const { matchProducts, formatResponse } = require("../../shopify-engine/productMatcher");
-const sendWhatsAppMessage = require("../../integrations/whatsapp");
+const { sendWhatsAppMessage, sendProductCards } = require("../../integrations/whatsapp");
+
 const { parseUserInput } = require("../../ai-engine/parser");
+const { normalizePart } = require("../../ai-engine/learningNormalizer");
 
 const { detectIntent } = require("../../conversation-engine/intentDetector");
 const { getMainMenu, getAutoPartsPrompt } = require("../../conversation-engine/menu");
@@ -20,8 +22,6 @@ const {
   needsClarification,
   confirmPartIfNeeded
 } = require("../../conversation-engine/clarifier");
-
-const { normalizePart } = require("../../ai-engine/learningNormalizer");
 
 // -----------------------------
 router.get("/", (req, res) => {
@@ -49,32 +49,26 @@ router.post("/", async (req, res) => {
 
     let session = getSession(from);
 
-    // -----------------------------
     // RESET
-    // -----------------------------
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
       return res.sendStatus(200);
     }
 
-    // -----------------------------
-    // HANDLE PART CONFIRMATION RESPONSE
-    // -----------------------------
+    // HANDLE PART CONFIRMATION
     if (session.pendingPartConfirmation) {
       if (userInput === "yes") {
         session.confirmedPart = session.pendingPartConfirmation;
         session.pendingPartConfirmation = null;
       } else {
         session.pendingPartConfirmation = null;
-        await sendWhatsAppMessage(from, "Please specify the correct part name.");
+        await sendWhatsAppMessage(from, "Please specify the correct part.");
         return res.sendStatus(200);
       }
     }
 
-    // -----------------------------
     // INTENT
-    // -----------------------------
     const intent = detectIntent(userInput);
 
     if (intent === "GREETING" || intent === "MENU") {
@@ -92,28 +86,21 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // -----------------------------
     // PARSE
-    // -----------------------------
     const parsed = parseUserInput(userInput);
 
     session = updateVehicle(from, parsed.vehicle);
     const vehicle = session.vehicle;
 
-    // -----------------------------
-    // CLARIFICATION (VEHICLE/PART)
-    // -----------------------------
+    // CLARIFICATION
     const clarification = needsClarification(vehicle, parsed.parts);
     if (clarification) {
       await sendWhatsAppMessage(from, clarification.message);
       return res.sendStatus(200);
     }
 
-    // -----------------------------
-    // PART NORMALIZATION + CONFIRMATION
-    // -----------------------------
+    // PART CONFIRMATION CHECK
     const partResult = normalizePart(parsed.parts[0].raw);
-
     const confirm = confirmPartIfNeeded(partResult);
 
     if (confirm) {
@@ -122,17 +109,27 @@ router.post("/", async (req, res) => {
       return res.sendStatus(200);
     }
 
-    // -----------------------------
     // MATCH
-    // -----------------------------
     const results = await matchProducts({
       vehicle,
       parts: parsed.parts
     });
 
-    const reply = formatResponse(results, vehicle);
+    // FLATTEN PRODUCTS
+    let productList = [];
+    results.forEach(r => {
+      if (r.results.length) {
+        productList.push(...r.results);
+      }
+    });
 
-    await sendWhatsAppMessage(from, reply);
+    // SEND CARDS OR FALLBACK
+    if (productList.length) {
+      await sendProductCards(from, productList);
+    } else {
+      const reply = formatResponse(results, vehicle);
+      await sendWhatsAppMessage(from, reply);
+    }
 
     return res.sendStatus(200);
 
