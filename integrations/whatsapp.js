@@ -6,26 +6,65 @@ const PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 const ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 
 // -----------------------------
+// TEXT MESSAGE
+// -----------------------------
 async function sendWhatsAppMessage(to, message) {
   try {
-    console.log("📤 Sending message to:", to);
-    console.log("📨 Message:", message);
-
-    if (!PHONE_NUMBER_ID || !ACCESS_TOKEN) {
-      console.error("❌ Missing WhatsApp credentials");
-      return;
-    }
-
     const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
 
-    const response = await axios.post(
+    await axios.post(
       url,
       {
         messaging_product: "whatsapp",
-        to: to,
+        to,
         type: "text",
-        text: {
-          body: message
+        text: { body: message }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+  } catch (err) {
+    console.error("WhatsApp text error:", err.response?.data || err.message);
+  }
+}
+
+// -----------------------------
+// 🛒 PRODUCT CARD (INTERACTIVE)
+// -----------------------------
+async function sendProductCards(to, products) {
+  try {
+    const url = `https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`;
+
+    const sections = products.map((p, index) => ({
+      title: `Option ${index + 1}`,
+      rows: [
+        {
+          id: `product_${index}`,
+          title: p.title.substring(0, 24),
+          description: `PKR ${p.price || "N/A"}`
+        }
+      ]
+    }));
+
+    await axios.post(
+      url,
+      {
+        messaging_product: "whatsapp",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          body: {
+            text: "Select a product:"
+          },
+          action: {
+            button: "View Products",
+            sections
+          }
         }
       },
       {
@@ -35,13 +74,12 @@ async function sendWhatsAppMessage(to, message) {
         }
       }
     );
-
-    console.log("✅ WhatsApp API response:", response.data);
-
   } catch (err) {
-    console.error("❌ WhatsApp send error:");
-    console.error(err.response?.data || err.message);
+    console.error("WhatsApp card error:", err.response?.data || err.message);
   }
 }
 
-module.exports = sendWhatsAppMessage;
+module.exports = {
+  sendWhatsAppMessage,
+  sendProductCards
+};
