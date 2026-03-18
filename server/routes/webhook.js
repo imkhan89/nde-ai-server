@@ -5,9 +5,10 @@ const router = express.Router();
 
 const { matchProducts, formatResponse } = require("../../shopify-engine/productMatcher");
 const sendWhatsAppMessage = require("../../integrations/whatsapp");
+const { extractVehicle } = require("../../ai-engine/parser");
 
 // -----------------------------
-// 🔐 VERIFY WEBHOOK (META)
+// 🔐 VERIFY WEBHOOK
 // -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
@@ -24,7 +25,7 @@ router.get("/", (req, res) => {
 });
 
 // -----------------------------
-// 📩 RECEIVE MESSAGES
+// 📩 RECEIVE MESSAGE
 // -----------------------------
 router.post("/", async (req, res) => {
   try {
@@ -39,14 +40,20 @@ router.post("/", async (req, res) => {
     const userInput = message.text?.body;
 
     // -----------------------------
-    // 🧠 SIMPLE VEHICLE EXTRACTION (TEMP)
-    // Replace later with parser.js
+    // 🚗 PARSE VEHICLE
     // -----------------------------
-    const vehicle = {
-      make: "suzuki",
-      model: "swift",
-      year: "2021"
-    };
+    const vehicle = extractVehicle(userInput);
+
+    // -----------------------------
+    // ⚠️ VALIDATION
+    // -----------------------------
+    if (!vehicle.make || !vehicle.model) {
+      await sendWhatsAppMessage(
+        from,
+        "Please provide your car make, model, and year.\nExample: Suzuki Swift 2021 brake pads"
+      );
+      return res.sendStatus(200);
+    }
 
     // -----------------------------
     // 🔍 MATCH PRODUCTS
@@ -58,13 +65,12 @@ router.post("/", async (req, res) => {
     // -----------------------------
     let reply = formatResponse(products);
 
-    // Low confidence fallback (optional enhancement later)
     if (!products.length) {
-      reply = "Please confirm your car model, year, and part required.";
+      reply = "No exact match found. Please уточнить part or year.";
     }
 
     // -----------------------------
-    // 📤 SEND WHATSAPP MESSAGE
+    // 📤 SEND MESSAGE
     // -----------------------------
     await sendWhatsAppMessage(from, reply);
 
