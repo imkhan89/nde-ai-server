@@ -4,9 +4,6 @@ import { searchProducts } from "./search_routes.js";
 
 const router = express.Router();
 
-// ✅ USER MEMORY
-const userSessions = {};
-
 // ✅ VERIFY
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
@@ -20,124 +17,96 @@ router.get("/", (req, res) => {
   return res.sendStatus(403);
 });
 
-// ✅ MESSAGE HANDLER
+// ✅ MESSAGE HANDLER (FULL SAFE)
 router.post("/", async (req, res) => {
   try {
-    const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const body = req.body;
 
-    if (!message) return res.sendStatus(200);
+    // ✅ SAFETY CHECK (prevents 500 crash)
+    if (!body?.entry?.[0]?.changes?.[0]?.value) {
+      return res.sendStatus(200);
+    }
 
+    const value = body.entry[0].changes[0].value;
+
+    if (!value.messages) {
+      return res.sendStatus(200);
+    }
+
+    const message = value.messages[0];
     const from = message.from;
 
     let text = "";
-    if (message.type === "text") text = message.text.body;
-    else if (message.type === "button") text = message.button.text;
+
+    if (message.type === "text") {
+      text = message.text.body;
+    } else if (message.type === "button") {
+      text = message.button.text;
+    } else {
+      return res.sendStatus(200); // ignore unsupported
+    }
 
     const cleanText = text.toLowerCase().trim();
 
-    console.log("Incoming:", { from, cleanText });
+    console.log("Incoming:", cleanText);
 
-    // ✅ INIT SESSION
-    if (!userSessions[from]) {
-      userSessions[from] = {
-        lastResults: [],
-      };
+    // ✅ SEARCH (SAFE)
+    let results = [];
+    try {
+      results = await searchProducts(cleanText);
+    } catch (err) {
+      console.error("Search failed:", err.message);
+      results = [];
     }
 
-    // ✅ HANDLE ORDER SELECTION
-    if (!isNaN(cleanText)) {
-      const index = parseInt(cleanText) - 1;
-      const selected = userSessions[from].lastResults[index];
-
-      if (selected) {
-        const reply =
-`✅ *Order Confirmed*
-
-${selected.title}
-💰 Rs ${selected.price}
-
-🔗 ${selected.url}
-
-✔ Original Quality
-✔ Cash on Delivery
-✔ Fast Delivery Available
-
-Reply *CONFIRM* to proceed.`;
-
-        await sendWhatsAppMessage(from, reply);
-        return res.sendStatus(200);
-      }
-    }
-
-    // ✅ SEARCH PRODUCTS
-    const results = await searchProducts(cleanText);
     const topResults = results.slice(0, 5);
-
-    userSessions[from].lastResults = topResults;
 
     let reply = "";
 
     if (!topResults.length) {
-      reply =
-`❌ No exact match found
-
-Please send:
-🚗 Car Model
-📅 Year
-🔧 Part Name
-
-Example:
-Mira 2018 brake pad`;
+      reply = "No products found. Try: Mira brake pad";
     } else {
-      reply = `🔥 *Best Matches for You*\n\n`;
+      reply = "Top Results:\n\n";
 
       topResults.forEach((item, i) => {
-        reply += `*${i + 1}. ${item.title}*\n`;
-        reply += `💰 Rs ${item.price}\n`;
-        reply += `🔗 ${item.url}\n\n`;
+        reply += `${i + 1}. ${item.title}\n`;
+        reply += `Rs ${item.price}\n`;
+        reply += `${item.url}\n\n`;
       });
-
-      reply +=
-`⚡ Limited Stock Available
-🚚 Fast Delivery Across Pakistan
-
-👉 Reply with *1, 2, 3* to order`;
     }
 
-    await sendWhatsAppMessage(from, reply);
+    // ✅ SEND MESSAGE SAFE
+    try {
+      await sendWhatsAppMessage(from, reply);
+    } catch (err) {
+      console.error("Send failed:", err.response?.data || err.message);
+    }
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
   } catch (error) {
-    console.error("Webhook error:", error.message);
-    res.sendStatus(500);
+    console.error("Webhook crash:", error.message);
+    return res.sendStatus(200); // NEVER return 500 to Meta
   }
 });
 
-// ✅ SEND MESSAGE
+// ✅ SEND FUNCTION
 async function sendWhatsAppMessage(to, message) {
   const url = `https://graph.facebook.com/v18.0/${process.env.PHONE_NUMBER_ID}/messages`;
 
-  for (let i = 0; i < 3; i++) {
-    try {
-      await axios.post(
-        url,
-        {
-          messaging_product: "whatsapp",
-          to,
-          text: { body: message },
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      return;
-    } catch (error) {
-      if (i === 2) throw error;
+  return axios.post(
+    url,
+    {
+      messaging_product: "whatsapp",
+      to,
+      text: { body: message },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json",
+      },
     }
-  }
+  );
 }
 
 export default router;
