@@ -4,17 +4,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const webhookRoute = require('./routes/webhook');
-const redirectRoute = require('./routes/redirect');
 
 const app = express();
 
 app.use(bodyParser.json());
 
-// ✅ WhatsApp Webhook (MUST BE FIRST)
+// WhatsApp Webhook ONLY
 app.use('/webhook/whatsapp', webhookRoute);
-
-// ✅ Short URL Redirect
-app.use('/', redirectRoute);
 
 // Health check
 app.get('/', (req, res) => {
