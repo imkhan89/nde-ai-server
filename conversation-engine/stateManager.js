@@ -1,107 +1,66 @@
-// ai-engine/parser.js
+// conversation-engine/stateManager.js
 
-const vehicleDB = require("./vehicleDatabase.json");
-
-// -----------------------------
-// TOKENIZER
-// -----------------------------
-function tokenize(input) {
-  return input
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .split(/\s+/)
-    .filter(Boolean);
-}
+const sessions = {};
 
 // -----------------------------
-// VEHICLE DETECTION (SMART)
+// GET SESSION
 // -----------------------------
-function extractVehicle(userInput) {
-  const text = userInput.toLowerCase();
-  const tokens = tokenize(text);
-
-  let detectedMake = null;
-  let detectedModel = null;
-  let detectedYear = null;
-
-  // -----------------------------
-  // YEAR DETECTION
-  // -----------------------------
-  tokens.forEach(t => {
-    if (/^(19|20)\d{2}$/.test(t)) {
-      detectedYear = t;
-    }
-  });
-
-  // -----------------------------
-  // MAKE + MODEL DETECTION
-  // -----------------------------
-  for (let make in vehicleDB) {
-    for (let model in vehicleDB[make]) {
-      const variants = vehicleDB[make][model];
-
-      for (let variant of variants) {
-        if (text.includes(variant)) {
-          detectedMake = make;
-          detectedModel = model;
-        }
-      }
-    }
+function getSession(userId) {
+  if (!sessions[userId]) {
+    sessions[userId] = {
+      vehicle: {
+        make: null,
+        model: null,
+        year: null
+      },
+      awaitingVehicle: false,
+      lastUpdated: Date.now()
+    };
   }
-
-  return {
-    make: detectedMake,
-    model: detectedModel,
-    year: detectedYear
-  };
+  return sessions[userId];
 }
 
 // -----------------------------
-// MULTI PART SPLIT
+// UPDATE VEHICLE (SMART MERGE)
 // -----------------------------
-function extractParts(userInput) {
-  return userInput
-    .toLowerCase()
-    .split(/,| and /)
-    .map(p => p.trim())
-    .filter(Boolean);
+function updateVehicle(userId, newVehicle) {
+  const session = getSession(userId);
+
+  if (newVehicle.make) session.vehicle.make = newVehicle.make;
+  if (newVehicle.model) session.vehicle.model = newVehicle.model;
+  if (newVehicle.year) session.vehicle.year = newVehicle.year;
+
+  session.lastUpdated = Date.now();
+
+  return session;
 }
 
 // -----------------------------
-// POSITION DETECTION
+// HAS VEHICLE
 // -----------------------------
-function detectPosition(text) {
-  text = text.toLowerCase();
-
-  let pos = [];
-
-  if (text.includes("front")) pos.push("front");
-  if (text.includes("rear")) pos.push("rear");
-  if (text.includes("left")) pos.push("left");
-  if (text.includes("right")) pos.push("right");
-
-  return pos.length ? pos.join("_") : null;
+function hasVehicle(userId) {
+  const session = getSession(userId);
+  return session.vehicle.make && session.vehicle.model;
 }
 
 // -----------------------------
-// MASTER PARSER
+// CLEAR SESSION
 // -----------------------------
-function parseUserInput(userInput) {
-  const vehicle = extractVehicle(userInput);
+function clearSession(userId) {
+  delete sessions[userId];
+}
 
-  const rawParts = extractParts(userInput);
-
-  const parts = rawParts.map(p => ({
-    raw: p,
-    position: detectPosition(p)
-  }));
-
-  return {
-    vehicle,
-    parts
-  };
+// -----------------------------
+// GET VEHICLE SUMMARY
+// -----------------------------
+function getVehicleSummary(vehicle) {
+  return `${vehicle.make?.toUpperCase()} ${vehicle.model?.toUpperCase()} ${vehicle.year || ""}`.trim();
 }
 
 module.exports = {
-  parseUserInput
+  getSession,
+  updateVehicle,
+  hasVehicle,
+  clearSession,
+  getVehicleSummary
 };
