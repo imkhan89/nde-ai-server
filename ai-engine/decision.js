@@ -1,4 +1,5 @@
 const { generateProductLink } = require('../shopify-engine/mapper');
+const { getShortLink } = require('../database/shortLinks');
 
 function mainMenu() {
   return `Welcome to ndestore.com AI Support
@@ -95,8 +96,12 @@ Suzuki Swift 2021 Brake Pads`,
       };
     }
 
-    // GENERATE LINK
-    const link = generateProductLink(parsed.vehicle);
+    // GENERATE ORIGINAL LINK
+    const originalLink = generateProductLink(parsed.vehicle);
+
+    // GENERATE SHORT LINK
+    const shortId = getShortLink(originalLink);
+    const shortLink = `https://ndestore.com/${shortId}`;
 
     // SUCCESS RESPONSE
     return {
@@ -109,7 +114,7 @@ Year: ${year || '-'}
 Part: ${part || '-'}
 
 Kindly visit the following link:
-${link}
+${shortLink}
 
 Reply # to return to Main Menu.`,
       newState: {
