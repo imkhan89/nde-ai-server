@@ -24,6 +24,8 @@ const {
 } = require("../../conversation-engine/clarifier");
 
 // -----------------------------
+// VERIFY WEBHOOK
+// -----------------------------
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
 
@@ -35,13 +37,15 @@ router.get("/", (req, res) => {
 });
 
 // -----------------------------
+// RECEIVE MESSAGE
+// -----------------------------
 router.post("/", async (req, res) => {
   try {
     const message = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!message) return res.sendStatus(200);
 
     const from = message.from;
-    let userInput = message.text?.body?.trim().toLowerCase();
+    let userInput = message.text?.body?.trim();
 
     if (!userInput) return res.sendStatus(200);
 
@@ -49,7 +53,9 @@ router.post("/", async (req, res) => {
 
     let session = getSession(from);
 
-    // RESET
+    // -----------------------------
+    // RESET SESSION
+    // -----------------------------
     if (userInput === "#") {
       clearSession(from);
       await sendWhatsAppMessage(from, getMainMenu());
@@ -57,12 +63,14 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // HANDLE CONFIRMATION RESPONSE
+    // HANDLE PART CONFIRMATION RESPONSE
     // -----------------------------
     if (session.pendingPartConfirmation) {
-      if (userInput === "yes") {
-        // ✅ LEARN USER INPUT
-        learnSynonym(session.lastUserInput, session.pendingPartConfirmation);
+      if (userInput.toLowerCase() === "yes") {
+        // Learn only safe mappings
+        if (session.pendingPartConfirmation !== "unknown") {
+          learnSynonym(session.lastUserInput, session.pendingPartConfirmation);
+        }
 
         userInput = session.pendingPartConfirmation;
         session.pendingPartConfirmation = null;
@@ -74,7 +82,7 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // INTENT
+    // INTENT DETECTION
     // -----------------------------
     const intent = detectIntent(userInput);
 
@@ -94,15 +102,20 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // PARSE
+    // PARSE USER INPUT
     // -----------------------------
     const parsed = parseUserInput(userInput);
 
+    // -----------------------------
+    // UPDATE SESSION VEHICLE
+    // -----------------------------
     session = updateVehicle(from, parsed.vehicle);
     const vehicle = session.vehicle;
 
+    console.log("🚗 Session Vehicle:", vehicle);
+
     // -----------------------------
-    // CLARIFICATION
+    // CLARIFICATION (VEHICLE / PART)
     // -----------------------------
     const clarification = needsClarification(vehicle, parsed.parts);
     if (clarification) {
@@ -111,13 +124,26 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // PART NORMALIZATION
+    // PART NORMALIZATION (CONTROLLED)
     // -----------------------------
     const partResult = normalizePart(parsed.parts[0].raw);
 
     session.lastUserInput = parsed.parts[0].raw;
 
-    if (partResult.confidence < 60) {
+    // ✅ CORE MATCH → NO CONFIRMATION
+    if (partResult.source === "core") {
+      // proceed directly
+    }
+    // ⚠️ UNKNOWN → ASK USER (NO GUESSING)
+    else if (partResult.source === "unknown") {
+      await sendWhatsAppMessage(
+        from,
+        "Please specify the correct part.\nExample: Brake Pads"
+      );
+      return res.sendStatus(200);
+    }
+    // ⚠️ LEARNED / LOW CONFIDENCE → OPTIONAL CONFIRM
+    else if (partResult.confidence < 70) {
       const confirm = confirmPartIfNeeded(partResult);
 
       if (confirm) {
@@ -128,18 +154,26 @@ router.post("/", async (req, res) => {
     }
 
     // -----------------------------
-    // MATCH
+    // MATCH PRODUCTS
     // -----------------------------
     const results = await matchProducts({
       vehicle,
       parts: parsed.parts
     });
 
+    // -----------------------------
+    // PREPARE PRODUCT LIST
+    // -----------------------------
     let productList = [];
     results.forEach(r => {
-      if (r.results.length) productList.push(...r.results);
+      if (r.results.length) {
+        productList.push(...r.results);
+      }
     });
 
+    // -----------------------------
+    // SEND RESPONSE
+    // -----------------------------
     if (productList.length) {
       await sendProductCards(from, productList);
     } else {
@@ -150,7 +184,7 @@ router.post("/", async (req, res) => {
     return res.sendStatus(200);
 
   } catch (err) {
-    console.error("Webhook error:", err);
+    console.error("❌ Webhook error:", err);
     return res.sendStatus(500);
   }
 });
