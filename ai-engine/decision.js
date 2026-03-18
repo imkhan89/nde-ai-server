@@ -17,14 +17,44 @@ Reply with 1-6 to continue.`;
 function autoPartsPrompt() {
   return `Auto Parts Inquiry
 
-Share details:
-Part Name
-Make
-Model
-Year
+Share all required parts together with vehicle details.
 
 Example:
-Air Filter Suzuki Swift 2021`;
+Air Filter, Brake Pads, Cabin Filter
+Suzuki
+Swift
+2021`;
+}
+
+function buildMultiPartResponse(parts, vehicle) {
+  let response = `Vehicle Details:
+
+Make: ${vehicle.make}
+Model: ${vehicle.model}
+Year: ${vehicle.year || '-'}
+
+Requested Parts:
+
+`;
+
+  parts.forEach((p, index) => {
+    const originalLink = generateProductLink({
+      ...vehicle,
+      part: p
+    });
+
+    const shortId = getShortLink(originalLink);
+    const shortLink = `https://ndestore.com/${shortId}`;
+
+    response += `${index + 1}. ${p}
+${shortLink}
+
+`;
+  });
+
+  response += `Reply # to return to Main Menu.`;
+
+  return response;
 }
 
 function decideResponse(parsed, state) {
@@ -45,7 +75,7 @@ function decideResponse(parsed, state) {
     };
   }
 
-  // MENU HANDLING
+  // MENU
   if (parsed.intent === 'menu') {
 
     if (parsed.value === '1') {
@@ -66,21 +96,7 @@ function decideResponse(parsed, state) {
 
     const { make, model, year, part } = parsed.vehicle;
 
-    // MULTI PART DETECT
-    if (parsed.parts.length > 1) {
-      return {
-        text: `Kindly share all parts with vehicle details.
-
-Example:
-Air Filter, Brake Pads
-Suzuki
-Swift
-2021`,
-        newState: state
-      };
-    }
-
-    // MISSING DATA
+    // MISSING VEHICLE
     if (!make || !model) {
       return {
         text: `Please share complete vehicle details:
@@ -88,22 +104,32 @@ Swift
 Make
 Model
 Year
-Part Name
+Part Name(s)
 
 Example:
-Suzuki Swift 2021 Brake Pads`,
+Suzuki Swift 2021
+Air Filter, Brake Pads`,
         newState: state
       };
     }
 
-    // GENERATE ORIGINAL LINK
-    const originalLink = generateProductLink(parsed.vehicle);
+    // MULTI PART FLOW
+    if (parsed.parts.length > 1) {
+      return {
+        text: buildMultiPartResponse(parsed.parts, parsed.vehicle),
+        newState: {
+          step: 'auto_parts_result',
+          data: parsed.vehicle,
+          attempts: 0
+        }
+      };
+    }
 
-    // GENERATE SHORT LINK
+    // SINGLE PART
+    const originalLink = generateProductLink(parsed.vehicle);
     const shortId = getShortLink(originalLink);
     const shortLink = `https://ndestore.com/${shortId}`;
 
-    // SUCCESS RESPONSE
     return {
       text: `Vehicle Details:
 
@@ -113,7 +139,6 @@ Year: ${year || '-'}
 
 Part: ${part || '-'}
 
-Kindly visit the following link:
 ${shortLink}
 
 Reply # to return to Main Menu.`,
@@ -125,7 +150,6 @@ Reply # to return to Main Menu.`,
     };
   }
 
-  // DEFAULT ERROR
   return {
     text: `Unable to understand. Please try again.`,
     newState: {
