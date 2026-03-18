@@ -13,14 +13,14 @@ function extractVehicleInfo(text) {
     if (!isNaN(word) && word.length === 4) year = word;
   }
 
-  // simple model detection (next word after make)
   if (make) {
     const index = words.indexOf(make);
     model = words[index + 1] || null;
   }
 
-  // part = remaining words
-  part = words.filter(w => w !== make && w !== model && w !== year).join(' ');
+  // remove vehicle words → remaining is part
+  const filtered = words.filter(w => w !== make && w !== model && w !== year);
+  part = filtered.join(' ');
 
   return { make, model, year, part };
 }
@@ -34,7 +34,8 @@ function parseMessage(text) {
     return { intent: 'menu', value: clean };
   }
 
-  const parts = clean.split(/,|and|\+/).map(p => p.trim());
+  // MULTI PART DETECTION
+  const parts = clean.split(/,|and|\+/).map(p => p.trim()).filter(Boolean);
 
   const vehicle = extractVehicleInfo(clean);
 
