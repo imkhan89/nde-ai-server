@@ -3,17 +3,26 @@ const router = express.Router();
 
 const { resolveShortLink } = require('../../database/shortLinks');
 
-// Redirect short URL → original URL
 router.get('/:id', (req, res) => {
-  const id = req.params.id;
+  try {
+    const id = req.params.id;
 
-  const originalUrl = resolveShortLink(id);
+    console.log('Redirect request for:', id);
 
-  if (originalUrl) {
+    const originalUrl = resolveShortLink(id);
+
+    if (!originalUrl) {
+      return res.status(404).send('Link not found');
+    }
+
+    console.log('Redirecting to:', originalUrl);
+
     return res.redirect(originalUrl);
-  }
 
-  return res.status(404).send('Link not found');
+  } catch (error) {
+    console.error('REDIRECT ERROR:', error);
+    res.status(500).send('Server error');
+  }
 });
 
 module.exports = router;
