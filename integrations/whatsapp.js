@@ -11,6 +11,7 @@ async function sendWhatsAppMessage(to, message) {
     {
       messaging_product: "whatsapp",
       to,
+      type: "text",
       text: { body: message }
     },
     {
