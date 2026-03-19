@@ -2,13 +2,12 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 
-// ✅ FIXED PATH (Railway compatible)
 const DATA_FILE = path.join(process.cwd(), "fitment_database.csv");
 
 let database = [];
 
 // ==============================
-// NORMALIZE FUNCTION (EXPORTED)
+// NORMALIZE
 // ==============================
 function normalizeText(input) {
   return String(input || "")
@@ -19,18 +18,16 @@ function normalizeText(input) {
 }
 
 // ==============================
-// LOAD DATABASE
+// LOAD DB
 // ==============================
 function loadDatabase() {
   return new Promise((resolve, reject) => {
     database = [];
 
-    console.log("📂 Loading DB from:", DATA_FILE);
-
     fs.createReadStream(DATA_FILE)
       .pipe(csv())
       .on("data", (row) => {
-        const record = {
+        database.push({
           part: normalizeText(row.part),
           make: normalizeText(row.make),
           model: normalizeText(row.model),
@@ -38,71 +35,81 @@ function loadDatabase() {
           year_end: parseInt(row.year_end) || 9999,
           url: row.url,
           title: row.title
-        };
-
-        // remove invalid
-        if (!record.make || !record.model) return;
-
-        database.push(record);
+        });
       })
       .on("end", () => {
         console.log("✅ DB Loaded:", database.length);
         resolve();
       })
-      .on("error", (err) => {
-        console.error("❌ DB LOAD ERROR:", err);
-        reject(err);
-      });
+      .on("error", reject);
   });
 }
 
 // ==============================
-// SEARCH ENGINE
+// SMART MATCHING (FIXED)
 // ==============================
 function searchFitment({ part, make, model, year }) {
+
   const qPart = normalizeText(part);
   const qMake = normalizeText(make);
   const qModel = normalizeText(model);
   const qYear = parseInt(year);
 
-  let results = database.filter((item) =>
-    item.make === qMake &&
-    item.model === qModel &&
+  let results = database.filter(item =>
+    item.make.includes(qMake) &&
+    item.model.includes(qModel) &&
     item.part.includes(qPart) &&
-    (!qYear ||
-      (qYear >= item.year_start && qYear <= item.year_end))
+    (!qYear || (qYear >= item.year_start && qYear <= item.year_end))
   );
 
-  // fallback
+  // 🔥 CRITICAL FIX: fallback without year
   if (results.length === 0) {
-    results = database.filter((item) =>
+    results = database.filter(item =>
+      item.make.includes(qMake) &&
+      item.model.includes(qModel) &&
       item.part.includes(qPart)
     );
   }
 
-  return results.slice(0, 5);
+  // 🔥 FINAL fallback (part only)
+  if (results.length === 0) {
+    results = database.filter(item =>
+      item.part.includes(qPart)
+    );
+  }
+
+  return results.slice(0, 3);
 }
 
 // ==============================
-// RESPONSE FORMAT
+// CLEAN WHATSAPP RESPONSE
 // ==============================
 function formatResponse(results, vehicle, part) {
+
   if (!results.length) {
-    return `❌ No results found\n\n${vehicle}\n${part}`;
+    return (
+      "❌ *No exact match found*\n\n" +
+      "🔎 Try again like:\n" +
+      "*Air Filter Honda Civic 2018*\n\n" +
+      "Reply *#* for menu"
+    );
   }
 
-  let msg = `🚗 ${vehicle}\n🔧 ${part}\n\n`;
+  let msg = `🚗 *${vehicle}*\n🔧 *${part}*\n\n`;
+
+  msg += "✅ *Available Options:*\n\n";
 
   results.forEach((r, i) => {
-    msg += `${i + 1}. ${r.title}\n${r.url}\n\n`;
+    msg += `*${i + 1}.* ${r.title}\n`;
+    msg += `${r.url}\n\n`;
   });
+
+  msg += "💬 Reply with option number to order\n";
+  msg += "↩️ Reply *#* for menu";
 
   return msg;
 }
 
-// ==============================
-// EXPORTS (FIXED)
-// ==============================
 module.exports = {
   loadDatabase,
   searchFitment,
