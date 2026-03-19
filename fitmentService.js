@@ -1,16 +1,8 @@
-// ===============================
-// FITMENT SERVICE (Production)
-// ===============================
-
 const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 
 let database = [];
-
-// ===============================
-// LOAD DATABASE (ON SERVER START)
-// ===============================
 
 function loadDatabase() {
     return new Promise((resolve, reject) => {
@@ -23,11 +15,11 @@ function loadDatabase() {
             .pipe(csv())
             .on("data", (row) => {
                 database.push({
-                    part: row.part.toLowerCase(),
-                    make: row.make.toLowerCase(),
-                    model: row.model.toLowerCase(),
-                    year_start: parseInt(row.year_start),
-                    year_end: parseInt(row.year_end),
+                    part: (row.part || "").toLowerCase(),
+                    make: (row.make || "").toLowerCase(),
+                    model: (row.model || "").toLowerCase(),
+                    year_start: parseInt(row.year_start) || 0,
+                    year_end: parseInt(row.year_end) || 9999,
                     url: row.url,
                     title: row.title
                 });
@@ -39,10 +31,6 @@ function loadDatabase() {
             .on("error", reject);
     });
 }
-
-// ===============================
-// CLEAN + NORMALIZE PART
-// ===============================
 
 const PART_MAP = {
     "air filter": ["air filter", "engine air filter"],
@@ -66,10 +54,6 @@ function normalizePart(input) {
     return input;
 }
 
-// ===============================
-// SEARCH FUNCTION (CORE ENGINE)
-// ===============================
-
 function searchFitment({ part, make, model, year }) {
 
     part = normalizePart(part);
@@ -84,17 +68,12 @@ function searchFitment({ part, make, model, year }) {
         year <= item.year_end
     );
 
-    // Rank results (smaller range = better)
     results = results.sort((a, b) =>
         (a.year_end - a.year_start) - (b.year_end - b.year_start)
     );
 
-    return results.slice(0, 3); // top 3
+    return results.slice(0, 3);
 }
-
-// ===============================
-// FORMAT RESPONSE (WHATSAPP READY)
-// ===============================
 
 function formatResponse(results, vehicle, part) {
 
@@ -112,10 +91,6 @@ function formatResponse(results, vehicle, part) {
 
     return message;
 }
-
-// ===============================
-// EXPORT FUNCTIONS
-// ===============================
 
 module.exports = {
     loadDatabase,
