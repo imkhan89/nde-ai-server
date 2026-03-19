@@ -18,12 +18,19 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+// ✅ FIXED START (WAIT FOR DB)
 async function start() {
-  await loadDatabase();
+  try {
+    await loadDatabase();
 
-  app.listen(PORT, () => {
-    console.log("Server running on port", PORT);
-  });
+    app.listen(PORT, () => {
+      console.log("🚀 Server running on port", PORT);
+    });
+
+  } catch (err) {
+    console.error("❌ Startup failed:", err);
+    process.exit(1);
+  }
 }
 
 start();
