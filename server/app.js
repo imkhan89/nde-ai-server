@@ -10,7 +10,8 @@ const app = express();
 
 app.use(bodyParser.json());
 
-app.use("/webhook", webhook);
+// ✅ FIX: MATCH EXACT ROUTE USED BY META
+app.use("/webhook/whatsapp", webhook);
 
 app.get("/", (req, res) => {
   res.send("Server running");
@@ -18,7 +19,6 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-// ✅ FIXED START (WAIT FOR DB)
 async function start() {
   try {
     await loadDatabase();
