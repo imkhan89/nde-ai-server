@@ -5,14 +5,32 @@ const { parseUserInput } = require("../ai-engine/parser");
 const { searchFitment, formatResponse } = require("../fitmentService");
 const { sendWhatsAppMessage } = require("../integrations/whatsapp");
 
+// ✅ VERIFY TOKEN (REQUIRED FOR META)
+router.get("/", (req, res) => {
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  const mode = req.query["hub.mode"];
+  const token = req.query["hub.verify_token"];
+  const challenge = req.query["hub.challenge"];
+
+  if (mode === "subscribe" && token === VERIFY_TOKEN) {
+    return res.status(200).send(challenge);
+  }
+
+  return res.sendStatus(403);
+});
+
+// ✅ RECEIVE MESSAGE
 router.post("/", async (req, res) => {
   try {
-    const msg = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const message = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-    if (!msg || msg.type !== "text") return res.sendStatus(200);
+    if (!message) return res.sendStatus(200);
 
-    const text = msg.text.body;
-    const from = msg.from;
+    if (message.type !== "text") return res.sendStatus(200);
+
+    const text = message.text.body;
+    const from = message.from;
 
     const parsed = parseUserInput(text);
 
@@ -22,7 +40,7 @@ router.post("/", async (req, res) => {
     if (!part) part = text;
 
     if (!make || !model) {
-      await sendWhatsAppMessage(from, "Send: Part + Make + Model + Year");
+      await sendWhatsAppMessage(from, "Send: Part + Make + Model + Year\nExample: Air Filter Honda Civic 2018");
       return res.sendStatus(200);
     }
 
@@ -37,11 +55,11 @@ router.post("/", async (req, res) => {
 
     await sendWhatsAppMessage(from, reply);
 
-    res.sendStatus(200);
+    return res.sendStatus(200);
 
   } catch (err) {
-    console.log(err);
-    res.sendStatus(200);
+    console.error("❌ Webhook Error:", err.response?.data || err.message);
+    return res.sendStatus(200);
   }
 });
 
