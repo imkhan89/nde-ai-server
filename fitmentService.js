@@ -2,39 +2,47 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 
-const DATA_FILE = path.join(__dirname, "../fitment_database.csv");
+// ✅ FIXED PATH (NO ROOT ERROR)
+const DATA_FILE = path.join(process.cwd(), "fitment_database.csv");
 
 let database = [];
+
+// ==============================
+// NORMALIZE
+// ==============================
 
 function normalizeText(input) {
   return String(input || "")
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
+
+// ==============================
+// LOAD DATABASE (FIXED)
+// ==============================
 
 function loadDatabase() {
   return new Promise((resolve, reject) => {
     database = [];
 
+    console.log("📂 Loading DB from:", DATA_FILE);
+
     fs.createReadStream(DATA_FILE)
       .pipe(csv())
       .on("data", (row) => {
         const record = {
-          part: normalizeText(row.part || ""),
-          make: normalizeText(row.make || ""),
-          model: normalizeText(row.model || ""),
-          year_start: Number.isFinite(parseInt(row.year_start))
-            ? parseInt(row.year_start)
-            : 0,
-          year_end: Number.isFinite(parseInt(row.year_end))
-            ? parseInt(row.year_end)
-            : 9999,
+          part: normalizeText(row.part),
+          make: normalizeText(row.make),
+          model: normalizeText(row.model),
+          year_start: parseInt(row.year_start) || 0,
+          year_end: parseInt(row.year_end) || 9999,
           url: row.url,
           title: row.title
         };
 
+        // ✅ FILTER INVALID ROWS
         if (!record.make || !record.model) return;
 
         database.push(record);
@@ -43,44 +51,51 @@ function loadDatabase() {
         console.log("✅ DB Loaded:", database.length);
         resolve();
       })
-      .on("error", reject);
+      .on("error", (err) => {
+        console.error("❌ DB LOAD ERROR:", err);
+        reject(err);
+      });
   });
 }
 
-function normalizePart(part) {
-  return normalizeText(part);
-}
+// ==============================
+// SEARCH ENGINE (FIXED)
+// ==============================
 
 function searchFitment({ part, make, model, year }) {
-  const queryPart = normalizePart(part);
-  const queryMake = normalizeText(make);
-  const queryModel = normalizeText(model);
-  const queryYear = parseInt(year);
+  const qPart = normalizeText(part);
+  const qMake = normalizeText(make);
+  const qModel = normalizeText(model);
+  const qYear = parseInt(year);
 
   let results = database.filter((item) =>
-    item.make === queryMake &&
-    item.model === queryModel &&
-    item.part.includes(queryPart) &&
-    (!queryYear ||
-      (queryYear >= item.year_start && queryYear <= item.year_end))
+    item.make === qMake &&
+    item.model === qModel &&
+    item.part.includes(qPart) &&
+    (!qYear ||
+      (qYear >= item.year_start && qYear <= item.year_end))
   );
 
-  // fallback if no results
+  // ✅ FALLBACK (CRITICAL FIX)
   if (results.length === 0) {
     results = database.filter((item) =>
-      item.part.includes(queryPart)
+      item.part.includes(qPart)
     );
   }
 
   return results.slice(0, 5);
 }
 
+// ==============================
+// RESPONSE FORMAT
+// ==============================
+
 function formatResponse(results, vehicle, part) {
   if (!results.length) {
-    return `No results found for ${vehicle} (${part})`;
+    return `❌ No results found\n\n${vehicle}\n${part}`;
   }
 
-  let msg = `Vehicle: ${vehicle}\nPart: ${part}\n\n`;
+  let msg = `🚗 ${vehicle}\n🔧 ${part}\n\n`;
 
   results.forEach((r, i) => {
     msg += `${i + 1}. ${r.title}\n${r.url}\n\n`;
@@ -88,6 +103,8 @@ function formatResponse(results, vehicle, part) {
 
   return msg;
 }
+
+// ==============================
 
 module.exports = {
   loadDatabase,
