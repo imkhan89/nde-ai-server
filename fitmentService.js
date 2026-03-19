@@ -2,15 +2,14 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 
-// ✅ FIXED PATH (NO ROOT ERROR)
+// ✅ FIXED PATH (Railway compatible)
 const DATA_FILE = path.join(process.cwd(), "fitment_database.csv");
 
 let database = [];
 
 // ==============================
-// NORMALIZE
+// NORMALIZE FUNCTION (EXPORTED)
 // ==============================
-
 function normalizeText(input) {
   return String(input || "")
     .toLowerCase()
@@ -20,9 +19,8 @@ function normalizeText(input) {
 }
 
 // ==============================
-// LOAD DATABASE (FIXED)
+// LOAD DATABASE
 // ==============================
-
 function loadDatabase() {
   return new Promise((resolve, reject) => {
     database = [];
@@ -42,7 +40,7 @@ function loadDatabase() {
           title: row.title
         };
 
-        // ✅ FILTER INVALID ROWS
+        // remove invalid
         if (!record.make || !record.model) return;
 
         database.push(record);
@@ -59,9 +57,8 @@ function loadDatabase() {
 }
 
 // ==============================
-// SEARCH ENGINE (FIXED)
+// SEARCH ENGINE
 // ==============================
-
 function searchFitment({ part, make, model, year }) {
   const qPart = normalizeText(part);
   const qMake = normalizeText(make);
@@ -76,7 +73,7 @@ function searchFitment({ part, make, model, year }) {
       (qYear >= item.year_start && qYear <= item.year_end))
   );
 
-  // ✅ FALLBACK (CRITICAL FIX)
+  // fallback
   if (results.length === 0) {
     results = database.filter((item) =>
       item.part.includes(qPart)
@@ -89,7 +86,6 @@ function searchFitment({ part, make, model, year }) {
 // ==============================
 // RESPONSE FORMAT
 // ==============================
-
 function formatResponse(results, vehicle, part) {
   if (!results.length) {
     return `❌ No results found\n\n${vehicle}\n${part}`;
@@ -105,9 +101,11 @@ function formatResponse(results, vehicle, part) {
 }
 
 // ==============================
-
+// EXPORTS (FIXED)
+// ==============================
 module.exports = {
   loadDatabase,
   searchFitment,
-  formatResponse
+  formatResponse,
+  normalizeText
 };
