@@ -10,7 +10,7 @@ const app = express();
 
 app.use(bodyParser.json());
 
-// ✅ FIX: MATCH EXACT ROUTE USED BY META
+// ✅ IMPORTANT ROUTE
 app.use("/webhook/whatsapp", webhook);
 
 app.get("/", (req, res) => {
