@@ -1,40 +1,74 @@
-function formatSearchResponse(data) {
-  const { query, results } = data;
+// utils/responseFormatter.js
 
-  const part = query.part || "-";
-  const make = query.make || "-";
-  const model = query.model || "-";
+function formatProductList({ part, make, model, results }) {
+  let message = "";
 
-  // LIMIT RESULTS (MAX 3)
-  const limitedResults = results.slice(0, 3);
+  // Header
+  message += `Product Search: ${capitalize(part)}\n`;
+  message += `Vehicle Make: ${capitalize(make)}\n`;
+  message += `Model Name: ${capitalize(model)}\n\n`;
 
-  // ❌ NO RESULTS
-  if (!limitedResults.length) {
-    return formatNoResults(query);
+  // No results case
+  if (!results || results.length === 0) {
+    return formatNoResults();
   }
 
-  // ✅ HEADER
-  let message = `Product Search: ${part}
-Vehicle Make: ${make}
-Model Name: ${model}
+  // Limit results (max 3)
+  const limitedResults = results.slice(0, 3);
 
-Available Options:
+  message += `Available Options:\n\n`;
 
-`;
-
-  // ✅ OPTIONS
   limitedResults.forEach((item, index) => {
-    message += `${index + 1}. ${item.title}
-${item.url}
-
-`;
+    message += `${index + 1}. ${item.title}\n`;
+    message += `${item.url}\n\n`;
   });
 
-  // ✅ FOOTER
-  message += `For more details visit
-www.ndestore.com
-
-Reply # to return to Main Menu`;
+  message += `For more details visit\n`;
+  message += `www.ndestore.com\n\n`;
+  message += `Reply # to return to Main Menu`;
 
   return message;
 }
+
+function formatNoResults() {
+  return `We were not able to find the required article kindly share the following and our parts expert shall get back to you with exact detail:
+
+Part Name:
+Vehicle Make:
+Model Name:
+Model Year:
+
+Contact Number:
+Email Address:`;
+}
+
+function formatEscalationToTeam({
+  customerNumber,
+  email = "",
+  part = "",
+  make = "",
+  model = "",
+  year = ""
+}) {
+  return `UNABLE TO FIND PART
+
+Customer Number: ${customerNumber}
+Email Address: ${email || "N/A"}
+
+Part Name: ${part || "N/A"}
+Vehicle Make: ${make || "N/A"}
+Model Name: ${model || "N/A"}
+Model Year: ${year || "N/A"}`;
+}
+
+// helper
+function capitalize(text) {
+  if (!text) return "";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+module.exports = {
+  formatProductList,
+  formatNoResults,
+  formatEscalationToTeam
+};
