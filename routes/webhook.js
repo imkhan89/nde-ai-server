@@ -6,7 +6,7 @@ const { searchFitment, formatResponse } = require("../fitmentService");
 const { sendWhatsAppMessage } = require("../integrations/whatsapp");
 
 // ==============================
-// MAIN MENU (YOUR ORIGINAL STYLE)
+// MAIN MENU
 // ==============================
 function mainMenu() {
   return (
@@ -22,13 +22,19 @@ function mainMenu() {
 }
 
 // ==============================
-// SEARCH PROMPT
+// AUTO PARTS FORM (FIXED)
 // ==============================
-function searchPrompt() {
+function autoPartsForm() {
   return (
-    "Send Part + Make + Model + Year\n\n" +
+    "Auto Parts Inquiry\n\n" +
+    "Share details:\n" +
+    "Part Name:\n" +
+    "Make:\n" +
+    "Model:\n" +
+    "Year:\n\n" +
     "Example:\n" +
-    "Air Filter Honda Civic 2018"
+    "Air Filter Suzuki Swift 2021\n\n" +
+    "Reply # to return to Main Menu."
   );
 }
 
@@ -76,10 +82,10 @@ router.post("/", async (req, res) => {
     }
 
     // ==============================
-    // OPTION 1 → AUTO PARTS SEARCH
+    // OPTION 1 → AUTO PARTS (FIXED)
     // ==============================
     if (lower === "1") {
-      await sendWhatsAppMessage(from, searchPrompt());
+      await sendWhatsAppMessage(from, autoPartsForm());
       return res.sendStatus(200);
     }
 
@@ -89,7 +95,7 @@ router.post("/", async (req, res) => {
     if (lower === "2") {
       await sendWhatsAppMessage(
         from,
-        "Car Accessories\n\nVisit:\nhttps://www.ndestore.com/collections/accessories"
+        "Car Accessories\n\nhttps://www.ndestore.com/collections/accessories\n\nReply # to return to Main Menu."
       );
       return res.sendStatus(200);
     }
@@ -100,7 +106,7 @@ router.post("/", async (req, res) => {
     if (lower === "3") {
       await sendWhatsAppMessage(
         from,
-        "Sticker Decals\n\nVisit:\nhttps://www.ndestore.com/collections/stickers"
+        "Sticker Decals\n\nhttps://www.ndestore.com/collections/stickers\n\nReply # to return to Main Menu."
       );
       return res.sendStatus(200);
     }
@@ -111,7 +117,7 @@ router.post("/", async (req, res) => {
     if (lower === "4") {
       await sendWhatsAppMessage(
         from,
-        "Please send your Order ID to check status."
+        "Please share your Order ID to check status.\n\nReply # to return to Main Menu."
       );
       return res.sendStatus(200);
     }
@@ -122,7 +128,7 @@ router.post("/", async (req, res) => {
     if (lower === "5") {
       await sendWhatsAppMessage(
         from,
-        "Our support team will contact you shortly."
+        "Our support team will contact you shortly.\n\nReply # to return to Main Menu."
       );
       return res.sendStatus(200);
     }
@@ -133,13 +139,13 @@ router.post("/", async (req, res) => {
     if (lower === "6") {
       await sendWhatsAppMessage(
         from,
-        "Please describe your issue. Our team will review it."
+        "Please describe your issue.\n\nReply # to return to Main Menu."
       );
       return res.sendStatus(200);
     }
 
     // ==============================
-    // FITMENT SEARCH (DEFAULT)
+    // FITMENT SEARCH
     // ==============================
     const parsed = parseUserInput(text);
 
@@ -149,10 +155,7 @@ router.post("/", async (req, res) => {
     if (!part) part = text;
 
     if (!make || !model) {
-      await sendWhatsAppMessage(
-        from,
-        "Please send complete details:\n\nPart + Make + Model + Year\n\nExample:\nAir Filter Honda Civic 2018"
-      );
+      await sendWhatsAppMessage(from, autoPartsForm());
       return res.sendStatus(200);
     }
 
@@ -169,7 +172,7 @@ router.post("/", async (req, res) => {
       part
     );
 
-    reply += "\n\nReply # to return to Main Menu";
+    reply += "\n\nReply # to return to Main Menu.";
 
     await sendWhatsAppMessage(from, reply);
 
