@@ -6,22 +6,34 @@ const { searchFitment, formatResponse } = require("../fitmentService");
 const { sendWhatsAppMessage } = require("../integrations/whatsapp");
 
 // ==============================
-// MAIN MENU
+// MAIN MENU (YOUR ORIGINAL STYLE)
 // ==============================
 function mainMenu() {
   return (
-    "🚗 *NDE Auto Parts*\n\n" +
-    "Please choose:\n\n" +
-    "1️⃣ Search Parts\n" +
-    "2️⃣ Browse Categories\n" +
-    "3️⃣ Support\n\n" +
-    "💬 Example:\n*Air Filter Honda Civic 2018*\n\n" +
-    "Reply *#* anytime for menu"
+    "Welcome to ndestore.com AI Support\n\n" +
+    "1 Auto Parts\n" +
+    "2 Car Accessories\n" +
+    "3 Sticker Decals\n" +
+    "4 Order Status\n" +
+    "5 Chat Support\n" +
+    "6 Complaints\n\n" +
+    "Reply with 1-6 to continue."
   );
 }
 
 // ==============================
-// VERIFY
+// SEARCH PROMPT
+// ==============================
+function searchPrompt() {
+  return (
+    "Send Part + Make + Model + Year\n\n" +
+    "Example:\n" +
+    "Air Filter Honda Civic 2018"
+  );
+}
+
+// ==============================
+// VERIFY WEBHOOK
 // ==============================
 router.get("/", (req, res) => {
   const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
@@ -41,7 +53,6 @@ router.get("/", (req, res) => {
 // ==============================
 router.post("/", async (req, res) => {
   try {
-
     const msg = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
     if (!msg || msg.type !== "text") return res.sendStatus(200);
@@ -51,26 +62,84 @@ router.post("/", async (req, res) => {
     const lower = text.toLowerCase();
 
     // ==============================
-    // MENU
+    // MENU TRIGGERS
     // ==============================
-    if (["hi","hello","start","#","menu"].includes(lower)) {
+    if (
+      lower === "hi" ||
+      lower === "hello" ||
+      lower === "start" ||
+      lower === "#" ||
+      lower === "menu"
+    ) {
       await sendWhatsAppMessage(from, mainMenu());
       return res.sendStatus(200);
     }
 
     // ==============================
-    // OPTION 1
+    // OPTION 1 → AUTO PARTS SEARCH
     // ==============================
     if (lower === "1") {
+      await sendWhatsAppMessage(from, searchPrompt());
+      return res.sendStatus(200);
+    }
+
+    // ==============================
+    // OPTION 2 → ACCESSORIES
+    // ==============================
+    if (lower === "2") {
       await sendWhatsAppMessage(
         from,
-        "🔍 Send:\n*Part + Make + Model + Year*\n\nExample:\n*Air Filter Honda Civic 2018*"
+        "Car Accessories\n\nVisit:\nhttps://www.ndestore.com/collections/accessories"
       );
       return res.sendStatus(200);
     }
 
     // ==============================
-    // SEARCH FLOW
+    // OPTION 3 → DECALS
+    // ==============================
+    if (lower === "3") {
+      await sendWhatsAppMessage(
+        from,
+        "Sticker Decals\n\nVisit:\nhttps://www.ndestore.com/collections/stickers"
+      );
+      return res.sendStatus(200);
+    }
+
+    // ==============================
+    // OPTION 4 → ORDER STATUS
+    // ==============================
+    if (lower === "4") {
+      await sendWhatsAppMessage(
+        from,
+        "Please send your Order ID to check status."
+      );
+      return res.sendStatus(200);
+    }
+
+    // ==============================
+    // OPTION 5 → SUPPORT
+    // ==============================
+    if (lower === "5") {
+      await sendWhatsAppMessage(
+        from,
+        "Our support team will contact you shortly."
+      );
+      return res.sendStatus(200);
+    }
+
+    // ==============================
+    // OPTION 6 → COMPLAINT
+    // ==============================
+    if (lower === "6") {
+      await sendWhatsAppMessage(
+        from,
+        "Please describe your issue. Our team will review it."
+      );
+      return res.sendStatus(200);
+    }
+
+    // ==============================
+    // FITMENT SEARCH (DEFAULT)
     // ==============================
     const parsed = parseUserInput(text);
 
@@ -82,7 +151,7 @@ router.post("/", async (req, res) => {
     if (!make || !model) {
       await sendWhatsAppMessage(
         from,
-        "⚠️ Please send complete details\n\nExample:\n*Air Filter Honda Civic 2018*\n\nReply *#* for menu"
+        "Please send complete details:\n\nPart + Make + Model + Year\n\nExample:\nAir Filter Honda Civic 2018"
       );
       return res.sendStatus(200);
     }
@@ -94,11 +163,13 @@ router.post("/", async (req, res) => {
       year
     });
 
-    const reply = formatResponse(
+    let reply = formatResponse(
       results,
       `${make} ${model} ${year}`,
       part
     );
+
+    reply += "\n\nReply # to return to Main Menu";
 
     await sendWhatsAppMessage(from, reply);
 
