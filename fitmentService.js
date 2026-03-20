@@ -7,8 +7,6 @@ const DATA_FILE = path.join(process.cwd(), "fitment_database.csv");
 let database = [];
 
 // ==============================
-// NORMALIZE
-// ==============================
 function normalizeText(input) {
   return String(input || "")
     .toLowerCase()
@@ -18,7 +16,7 @@ function normalizeText(input) {
 }
 
 // ==============================
-// LOAD DB
+// LOAD
 // ==============================
 function loadDatabase() {
   return new Promise((resolve, reject) => {
@@ -46,7 +44,7 @@ function loadDatabase() {
 }
 
 // ==============================
-// SMART MATCHING (FIXED)
+// SMART MATCH (FIXED)
 // ==============================
 function searchFitment({ part, make, model, year }) {
 
@@ -62,7 +60,7 @@ function searchFitment({ part, make, model, year }) {
     (!qYear || (qYear >= item.year_start && qYear <= item.year_end))
   );
 
-  // 🔥 CRITICAL FIX: fallback without year
+  // 🔥 fallback without year
   if (results.length === 0) {
     results = database.filter(item =>
       item.make.includes(qMake) &&
@@ -71,7 +69,7 @@ function searchFitment({ part, make, model, year }) {
     );
   }
 
-  // 🔥 FINAL fallback (part only)
+  // 🔥 fallback part only
   if (results.length === 0) {
     results = database.filter(item =>
       item.part.includes(qPart)
@@ -82,34 +80,31 @@ function searchFitment({ part, make, model, year }) {
 }
 
 // ==============================
-// CLEAN WHATSAPP RESPONSE
-// ==============================
 function formatResponse(results, vehicle, part) {
 
   if (!results.length) {
     return (
-      "❌ *No exact match found*\n\n" +
-      "🔎 Try again like:\n" +
-      "*Air Filter Honda Civic 2018*\n\n" +
-      "Reply *#* for menu"
+      "No exact match found.\n\n" +
+      "Try:\nAir Filter Honda Civic 2018\n\n" +
+      "Reply # to return to Main Menu."
     );
   }
 
-  let msg = `🚗 *${vehicle}*\n🔧 *${part}*\n\n`;
+  let msg = `${vehicle}\n${part}\n\n`;
 
-  msg += "✅ *Available Options:*\n\n";
+  msg += "Available Options:\n\n";
 
   results.forEach((r, i) => {
-    msg += `*${i + 1}.* ${r.title}\n`;
-    msg += `${r.url}\n\n`;
+    msg += `${i + 1}. ${r.title}\n${r.url}\n\n`;
   });
 
-  msg += "💬 Reply with option number to order\n";
-  msg += "↩️ Reply *#* for menu";
+  msg += "Reply with option number to order\n";
+  msg += "Reply # to return to Main Menu.";
 
   return msg;
 }
 
+// ==============================
 module.exports = {
   loadDatabase,
   searchFitment,
