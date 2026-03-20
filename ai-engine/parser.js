@@ -9,35 +9,61 @@ function extractYear(text) {
 }
 
 // ==============================
-// MAKE
+// MAKE LIST
+// ==============================
+const MAKES = [
+  "honda","toyota","suzuki","daihatsu",
+  "nissan","kia","hyundai"
+];
+
+// ==============================
+// MODEL MAP (CRITICAL FIX)
+// ==============================
+const MODELS = {
+  honda: ["civic","city","brv","hrv"],
+  toyota: ["corolla","yaris","vitz","revo"],
+  suzuki: ["swift","alto","cultus","wagon r"],
+  daihatsu: ["mira","move"],
+  nissan: [],
+  kia: [],
+  hyundai: []
+};
+
+// ==============================
+// DETECT MAKE
 // ==============================
 function detectMake(text) {
-  const makes = ["honda","toyota","suzuki","daihatsu","nissan","kia","hyundai"];
-
   const t = normalizeText(text);
-
-  return makes.find(m => t.includes(m)) || null;
+  return MAKES.find(m => t.includes(m)) || null;
 }
 
 // ==============================
-// MODEL
+// DETECT MODEL (FIXED)
 // ==============================
-function detectModel(text) {
-  const models = [
-    "civic","city","corolla","yaris","vitz",
-    "alto","cultus","wagon r","mira"
-  ];
-
+function detectModel(text, make) {
   const t = normalizeText(text);
+
+  if (!make) return null;
+
+  const models = MODELS[make] || [];
 
   return models.find(m => t.includes(m)) || null;
 }
 
 // ==============================
-// PART
+// DETECT PART (IMPROVED)
 // ==============================
-function detectPart(text) {
-  return normalizeText(text);
+function detectPart(text, make, model) {
+
+  let t = normalizeText(text);
+
+  // remove make + model + year
+  if (make) t = t.replace(make, "");
+  if (model) t = t.replace(model, "");
+
+  t = t.replace(/\b(19|20)\d{2}\b/g, "");
+
+  return t.trim();
 }
 
 // ==============================
@@ -46,13 +72,15 @@ function detectPart(text) {
 function parseUserInput(text) {
 
   const make = detectMake(text);
-  const model = detectModel(text);
+  const model = detectModel(text, make);
   const year = extractYear(text);
+
+  const part = detectPart(text, make, model);
 
   return {
     vehicle: { make, model, year },
     parts: [{
-      raw: detectPart(text)
+      raw: part || text
     }]
   };
 }
